@@ -1,0 +1,61 @@
+# ======================================================
+# ✅ Python / FastAPI / Backend
+# ======================================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environment (backend/.venv)
+app/backend/.venv/
+.venv/
+venv/
+env/
+
+# 환경 변수 / 민감 파일 (절대 커밋 ❌)
+app/backend/.env
+app/backend/credentials.json
+app/backend/token.json
+
+# Logs & temp
+*.log
+*.tmp
+*.temp
+
+# Database
+app/backend/*.db
+*.sqlite3
+
+# ======================================================
+# ✅ Frontend (React / Node)
+# ======================================================
+app/frontend/node_modules/
+app/frontend/build/
+app/frontend/dist/
+
+# Cache files
+**/.cache/
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+
+# ======================================================
+# ✅ IDE / OS Files
+# ======================================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ======================================================
+# ✅ Python tools cache
+# ======================================================
+.mypy_cache/
+.pytest_cache/
+.uvicorn/
+
