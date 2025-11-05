@@ -7,6 +7,7 @@ import logging
 import os
 from pathlib import Path
 from api.v1.endpoints import router as v1_router
+from models import *  # 테이블 생성
 
 # ─────────────────────────────────────────────────────────────
 # ⚙️ Settings

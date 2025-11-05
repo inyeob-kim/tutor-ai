@@ -33,27 +33,27 @@ SYSTEM_PROMPT = """
 
         EXAMPLES:
         {
-        "action": "schedule_create",
-        "params": {
-            "student_name": "김철수",
-            "date": "2025-11-06",
-            "start_time": "15:00",
-            "duration_minutes": 60
-        }
+            "action": "schedule_create",
+            "params": {
+                "student_name": "김철수",
+                "date": "2025-11-06",
+                "start_time": "15:00",
+                "duration_minutes": 60
+            }
         }
 
         {
-        "action": "session_add",
-        "params": {
-            "student_name": "김철수",
-            "session_count": 5
-        }
+            "action": "session_add",
+            "params": {
+                "student_name": "김철수",
+                "session_count": 5
+            }
         }
 
         **ANY DEVIATION FROM THESE RULES WILL BREAK THE SYSTEM.**
 """
 
-def extract_intent(user_id: str, message: str) -> ActionPlan:
+def extract_intent(message: str) -> ActionPlan:
     
     current_time = datetime.now(LOCAL_TZ).strftime("%Y-%m-%d %H:%M KST")
 

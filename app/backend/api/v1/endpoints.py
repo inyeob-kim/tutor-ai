@@ -1,4 +1,7 @@
-from fastapi import APIRouter, HTTPException
+# app/api/v1/endpoints.py
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from database import get_db
 from schemas.command import CommandRequest, ActionPlan
 from services.intent_extractor import extract_intent
 from services.orchestra import execute_action_plan
@@ -6,13 +9,16 @@ from services.orchestra import execute_action_plan
 router = APIRouter()
 
 @router.post("/command", response_model=dict)
-async def process_command(request: CommandRequest):
+async def process_command(
+    request: CommandRequest,
+    db: Session = Depends(get_db)
+):
     try:
-        # 1. LLM으로 의도 추출
-        action_plan: ActionPlan = extract_intent(request.user_id, request.message)
+        # 1. LLM → ActionPlan
+        action_plan: ActionPlan = extract_intent(request.message)
         
-        # 2. 오케스트레이터 실행
-        result = execute_action_plan(action_plan)
+        # 2. 오케스트레이터 → DB 사용
+        result = execute_action_plan(db, request.user_id, action_plan)
         
         return result
         
