@@ -5,6 +5,36 @@ from schemas.command import ActionPlan
 from datetime import datetime, time
 from core.config import LOCAL_TZ
 from datetime import datetime, time, timedelta, date 
+from core.redis import save_conversation, clear_conversation
+from services.intent_extractor import extract_intent_with_history
+
+def process_command_with_redis(
+    db: Session,
+    user_id: str,
+    message: str,
+    session_id: str
+):
+    # 1. 히스토리 포함해서 LLM 호출
+    result = extract_intent_with_history(session_id, message)
+    
+    # 2. 재질문
+    if result["type"] == "question":
+        return {
+            "question": result["question"],
+            "session_id": session_id
+        }
+    
+    # 3. 액션 실행
+    if result["type"] == "action":
+        plan = result["plan"]
+        exec_result = execute_action_plan(db, user_id, plan)
+        
+        # 성공 시 히스토리 초기화
+        clear_conversation(session_id)
+        return {**exec_result, "session_id": session_id}
+    
+    # 4. 오류
+    return {"error": result["message"]}
 
 def execute_action_plan(db: Session, user_id: str, plan: ActionPlan):
 
