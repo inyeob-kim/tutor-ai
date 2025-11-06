@@ -27,3 +27,9 @@ uvicorn main:app --reload
 
 fastapi가 지원하는 api test (Swagger)
  http://127.0.0.1:8000/docs 로 접속
+
+----------------------------------------------------------------------
+새로운 의존성 설치를 했다면, 아래 명령어로 텍스트파일 업데이트 부탁드립니다~
+```bash
+pip freeze > requirements.txt
+```
