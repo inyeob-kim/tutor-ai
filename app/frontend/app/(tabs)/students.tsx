@@ -1,13 +1,16 @@
+import { Link } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useStudentStore } from "../../src/stores/students";
 
 export default function Students() {
   const [q, setQ] = useState("");
-  const data = [
-    { name: "김민지", grade: "중2", guardian: "김수현", phone: "010-1234-5678" },
-    { name: "Alex", grade: "HS-1", guardian: "—", phone: "010-5555-9999" },
-  ];
-  const items = useMemo(() => data.filter(s => s.name.includes(q)), [q]);
+  const students = useStudentStore((s) => s.students);
+
+  const items = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    return students.filter((s) => s.name.toLowerCase().includes(query));
+  }, [q, students]);
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 12 }}>
@@ -20,25 +23,39 @@ export default function Students() {
           placeholder="학생 검색"
           style={{ borderWidth: 1, borderRadius: 10, padding: 10, flex: 1 }}
         />
-        <Pressable style={{ borderWidth: 1, padding: 10, borderRadius: 10 }}>
-          <Text>학생 등록</Text>
-        </Pressable>
+        <Link href="/students/new" asChild>
+          <Pressable style={{ borderWidth: 1, padding: 10, borderRadius: 10 }}>
+            <Text>학생 등록</Text>
+          </Pressable>
+        </Link>
       </View>
 
-      {items.map((s, i) => (
-        <View key={i} style={{ borderWidth: 1, borderRadius: 16, padding: 12 }}>
+      {items.length === 0 ? (
+        <View style={{ padding: 16, borderWidth: 1, borderRadius: 16 }}>
+          <Text style={{ opacity: 0.7 }}>검색 결과가 없습니다.</Text>
+        </View>
+      ) : null}
+
+      {items.map((s) => (
+        <View key={s.id} style={{ borderWidth: 1, borderRadius: 16, padding: 12 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <View>
               <Text style={{ fontWeight: "600" }}>
-                {s.name} <Text style={{ opacity: 0.6, fontSize: 12 }}>· {s.grade}</Text>
+                {s.name} {s.grade ? <Text style={{ opacity: 0.6, fontSize: 12 }}>· {s.grade}</Text> : null}
+                {s.isAdult ? <Text style={{ opacity: 0.6, fontSize: 12 }}> · 성인</Text> : null}
               </Text>
-              <Text style={{ opacity: 0.6, fontSize: 12 }}>
-                보호자 {s.guardian} / {s.phone}
-              </Text>
+
+              {/* 미성년일 때만 보호자 표시 */}
+              {!s.isAdult && (
+                <Text style={{ opacity: 0.6, fontSize: 12 }}>
+                  보호자 {s.guardianName ?? "-"} / {s.guardianPhone ?? "-"}
+                </Text>
+              )}
             </View>
-            {/* <Link href={`/students/${encodeURIComponent(s.name)}`} style={{ textDecorationLine: "underline" }}>
+
+            <Link href={`/students/${s.id}`} style={{ textDecorationLine: "underline" }}>
               프로필
-            </Link> */}
+            </Link>
           </View>
         </View>
       ))}
