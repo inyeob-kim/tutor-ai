@@ -59,3 +59,49 @@ Thumbs.db
 .pytest_cache/
 .uvicorn/
 
+
+
+# =======================================
+# Global ignores for tutor-ai monorepo
+# =======================================
+
+# macOS / system
+.DS_Store
+*.log
+.vscode/
+.idea/
+tmp/
+temp/
+
+# =======================================
+# FRONTEND (Expo / React Native)
+# path: app/frontend
+# =======================================
+app/frontend/node_modules/
+app/frontend/.expo/
+app/frontend/.expo-shared/
+app/frontend/dist/
+app/frontend/build/
+app/frontend/web-build/
+app/frontend/.expo/web/cache/
+app/frontend/android/
+app/frontend/ios/
+
+# Expo build / credentials
+app/frontend/*.jks
+app/frontend/*.keystore
+app/frontend/*.p8
+app/frontend/*.p12
+app/frontend/*.key
+app/frontend/credentials.json
+app/frontend/eas.json
+
+# Expo local env files (절대 커밋 금지)
+app/frontend/.env
+app/frontend/.env.local
+app/frontend/.env.development
+app/frontend/.env.production
+app/frontend/.env.staging
+
+# TypeScript artifacts
+app/frontend/*.tsbuildinfo
