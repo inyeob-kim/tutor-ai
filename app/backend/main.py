@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 from api.v1.endpoints import router as v1_router
 from models import *  # 테이블 생성
+from models import create_test_data
+import threading
 
 # ─────────────────────────────────────────────────────────────
 # ⚙️ Settings
@@ -34,6 +36,21 @@ app.add_middleware(
 )
 
 app.include_router(v1_router, prefix="/api/v1")
+
+# 전역 락으로 중복 실행 방지
+_test_data_lock = threading.Lock()
+
+@app.on_event("startup")
+def startup_event():
+    if _test_data_lock.acquire(blocking=False):
+        try:
+            print("테스트 데이터 생성 시작...")
+            create_test_data()
+        finally:
+            _test_data_lock.release()
+    else:
+        print("테스트 데이터 생성 스킵 (이미 실행 중)")
+
 
 # ─────────────────────────────────────────────────────────────
 # 🏠 Health / Root

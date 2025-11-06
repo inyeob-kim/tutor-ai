@@ -1,13 +1,15 @@
 # app/schemas/command.py
 from pydantic import BaseModel
-from typing import Literal, Dict, Any
+from typing import Literal, Dict, Any, Optional
 
-# Request model (for API input)
+
+# === API 요청 ===
 class CommandRequest(BaseModel):
     user_id: str
     message: str
 
-# Response model (from LLM)
+
+# === LLM이 정보 충분할 때만 생성되는 액션 ===
 class ActionPlan(BaseModel):
     action: Literal[
         "schedule_create",
@@ -17,5 +19,4 @@ class ActionPlan(BaseModel):
         "session_use",
         "session_add"
     ]
-    params: Dict[str, Any]
-    requires_validation: bool = True
+    params: Dict[str, Any] = {}  # 기본값 빈 dict → schedule_list 등 사용 가능
