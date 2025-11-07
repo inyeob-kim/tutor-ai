@@ -1,0 +1,33 @@
+# ✅ Node
+node_modules/
+
+# ✅ Expo / React Native
+frontend/.expo/
+frontend/.expo-shared/
+frontend/dist/
+frontend/web-build/
+frontend/android/
+frontend/ios/
+
+# ✅ Backend Python
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/venv/
+backend/*.db
+
+# ✅ Env files (절대 올리면 안 됨)
+*.env
+.env
+.env.local
+.env.*
+
+# ✅ IDE / OS
+.DS_Store
+.vscode/
+.idea/
+
+# ✅ Logs
+*.log
+logs/
+
