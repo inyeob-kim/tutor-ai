@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'routes/app_routes.dart';
-import 'screens/main_navigation_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,13 +13,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '과외선생님 행정관리',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      initialRoute: AppRoutes.mainNavigation,
+      theme: AppTheme.light(),
+      initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
-      home: const MainNavigationScreen(),
     );
   }
 }

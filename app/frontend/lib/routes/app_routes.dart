@@ -4,9 +4,11 @@ import '../screens/schedule_screen.dart';
 import '../screens/students_screen.dart';
 import '../screens/billing_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/splash_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
+  static const String splash = '/splash';
   static const String mainNavigation = '/main';
   static const String schedule = '/schedule';
   static const String students = '/students';
@@ -14,9 +16,14 @@ class AppRoutes {
   static const String settings = '/settings';
 
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
-    final routeName = routeSettings.name ?? mainNavigation;
+    final routeName = routeSettings.name ?? splash;
     
     switch (routeName) {
+      case splash:
+        return MaterialPageRoute(
+          builder: (_) => const SplashScreen(),
+          settings: routeSettings,
+        );
       case mainNavigation:
       case home:
         return MaterialPageRoute(
