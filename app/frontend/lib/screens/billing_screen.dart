@@ -142,7 +142,7 @@ class _BillingScreenState extends State<BillingScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '총 ${billings.length}건의 청구',
+                    '청구를 관리하고 확인하세요',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -172,29 +172,28 @@ class _BillingScreenState extends State<BillingScreen> {
 
           // Content
           SliverPadding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate(
                 [
-                // 통계 카드
-                _buildStatsCard(theme, colorScheme),
-                const SizedBox(height: 16),
-
                 // 필터 탭
                 _buildFilterTabs(theme, colorScheme),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // 청구 리스트
                 if (filteredBillings.isEmpty)
                   _buildEmptyState(theme, colorScheme)
                 else
-                  ...filteredBillings.map((billing) => _buildBillingCard(
-                        billing,
-                        theme,
-                        colorScheme,
+                  ...filteredBillings.map((billing) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: _buildBillingCard(
+                          billing,
+                          theme,
+                          colorScheme,
+                        ),
                       )),
 
-                const SizedBox(height: 100),
+                const SizedBox(height: 40),
               ],
                 addAutomaticKeepAlives: false,
                 addRepaintBoundaries: true,
@@ -206,65 +205,32 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
-  Widget _buildStatsCard(ThemeData theme, ColorScheme colorScheme) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.1),
-        ),
-      ),
+  Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme) {
+    return Center(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(40),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 총 청구 금액
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '총 청구 금액',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  _formatCurrency(stats['total'] as int),
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ],
+            Icon(
+              Icons.receipt_long_outlined,
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    icon: Icons.check_circle_rounded,
-                    iconColor: const Color(0xFF10B981),
-                    backgroundColor: const Color(0xFFD1FAE5),
-                    value: _formatCurrency(stats['paid'] as int),
-                    label: '납부 완료',
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatItem(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    icon: Icons.warning_rounded,
-                    iconColor: const Color(0xFFF97316),
-                    backgroundColor: const Color(0xFFFDEAD7),
-                    value: '${stats['unpaidCount']}건',
-                    label: '미납',
-                  ),
-                ),
-              ],
+            const SizedBox(height: 16),
+            Text(
+              '청구 내역이 없습니다',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '청구를 추가하여 시작하세요',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
@@ -272,88 +238,63 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
-  Widget _buildStatItem({
-    required ThemeData theme,
-    required ColorScheme colorScheme,
-    required IconData icon,
-    required Color iconColor,
-    required Color backgroundColor,
-    required String value,
-    required String label,
-  }) {
+  Widget _buildFilterTabs(ThemeData theme, ColorScheme colorScheme) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Icon(icon, color: iconColor, size: 24),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
+          Expanded(
+            child: _buildFilterTab(
+              theme: theme,
+              colorScheme: colorScheme,
+              label: '전체',
+              isActive: activeFilter == BillingFilter.all,
+              onTap: () => setState(() => activeFilter = BillingFilter.all),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildFilterTab(
+              theme: theme,
+              colorScheme: colorScheme,
+              label: '미납',
+              isActive: activeFilter == BillingFilter.unpaid,
+              onTap: () => setState(() => activeFilter = BillingFilter.unpaid),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildFilterTab(
+              theme: theme,
+              colorScheme: colorScheme,
+              label: '납부',
+              isActive: activeFilter == BillingFilter.paid,
+              onTap: () => setState(() => activeFilter = BillingFilter.paid),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildFilterTab(
+              theme: theme,
+              colorScheme: colorScheme,
+              label: '이번 달',
+              isActive: activeFilter == BillingFilter.thisMonth,
+              onTap: () => setState(() => activeFilter = BillingFilter.thisMonth),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFilterTabs(ThemeData theme, ColorScheme colorScheme) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildFilterTab(
-            theme: theme,
-            colorScheme: colorScheme,
-            label: '전체',
-            isActive: activeFilter == BillingFilter.all,
-            onTap: () => setState(() => activeFilter = BillingFilter.all),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildFilterTab(
-            theme: theme,
-            colorScheme: colorScheme,
-            label: '미납',
-            isActive: activeFilter == BillingFilter.unpaid,
-            onTap: () => setState(() => activeFilter = BillingFilter.unpaid),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildFilterTab(
-            theme: theme,
-            colorScheme: colorScheme,
-            label: '납부',
-            isActive: activeFilter == BillingFilter.paid,
-            onTap: () => setState(() => activeFilter = BillingFilter.paid),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildFilterTab(
-            theme: theme,
-            colorScheme: colorScheme,
-            label: '이번 달',
-            isActive: activeFilter == BillingFilter.thisMonth,
-            onTap: () => setState(() => activeFilter = BillingFilter.thisMonth),
-          ),
-        ),
-      ],
     );
   }
 
@@ -368,25 +309,20 @@ class _BillingScreenState extends State<BillingScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isActive ? colorScheme.primary : colorScheme.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isActive
-                  ? colorScheme.primary
-                  : colorScheme.outline.withOpacity(0.2),
-            ),
+            color: isActive ? colorScheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
             child: Text(
               label,
-              style: theme.textTheme.labelLarge?.copyWith(
+              style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: isActive
-                    ? colorScheme.onPrimary
+                    ? Colors.white
                     : colorScheme.onSurfaceVariant,
               ),
             ),
@@ -402,8 +338,6 @@ class _BillingScreenState extends State<BillingScreen> {
     ColorScheme colorScheme,
   ) {
     final status = billing['status'] as BillingStatus;
-    final isPaid = status == BillingStatus.paid;
-    final isUnpaid = status == BillingStatus.unpaid;
     final dueDate = DateTime.parse(billing['dueDate']);
     final dateStr = '${dueDate.month}월 ${dueDate.day}일';
 
@@ -429,228 +363,151 @@ class _BillingScreenState extends State<BillingScreen> {
         break;
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.1),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFE7F0FF),
+            Color(0xFFDCE8FF),
+          ],
         ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.blue.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withValues(alpha: 0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 14),
+          ),
+        ],
       ),
-      child: InkWell(
-        onTap: () {
-          // TODO: 청구 상세 페이지
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: [
-            // Accent line
-            Container(
-              height: 4,
-              decoration: BoxDecoration(
-                color: billing['color'] as Color,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 헤더
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            // TODO: 청구 상세 페이지
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 헤더
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: billing['color'] as Color,
-                            child: Text(
-                              (billing['student'] as String)[0],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                          Text(
+                            billing['student'] as String,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                billing['student'] as String,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                billing['subject'] as String,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 6),
+                          Text(
+                            billing['subject'] as String,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(statusIcon, size: 14, color: statusColor),
-                            const SizedBox(width: 4),
-                            Text(
-                              statusText,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: statusColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // 금액
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '청구 금액',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        _formatCurrency(billing['amount'] as int),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // 마감일
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isUnpaid
-                          ? const Color(0xFFFEF2F2)
-                          : const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_rounded,
-                          size: 16,
-                          color: isUnpaid
-                              ? const Color(0xFFEF4444)
-                              : colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isUnpaid ? '마감일' : '납부일',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                dateStr,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: isUnpaid
-                                      ? const Color(0xFFEF4444)
-                                      : colorScheme.primary,
-                                ),
-                              ),
-                            ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            statusIcon,
+                            size: 16,
+                            color: statusColor,
                           ),
-                        ),
-                        if (isUnpaid)
-                          FilledButton(
-                            onPressed: () {
-                              // TODO: 납부 처리
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              backgroundColor: statusColor,
+                          const SizedBox(width: 6),
+                          Text(
+                            statusText,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: statusColor,
                             ),
-                            child: const Text('납부 처리'),
                           ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Divider(
+                  height: 1,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '청구 금액',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _formatCurrency(billing['amount'] as int),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                ],
-              ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '마감일',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          dateStr,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.1),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(48),
-        child: Column(
-          children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 64,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '청구 내역이 없습니다',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '새로운 청구를 추가해보세요',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

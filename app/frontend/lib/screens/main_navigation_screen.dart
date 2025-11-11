@@ -3,6 +3,7 @@ import 'home_screen.dart';
 import 'schedule_screen.dart';
 import 'students_screen.dart';
 import 'billing_screen.dart';
+import 'stats_screen.dart';
 import 'settings_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ScheduleScreen(),
     StudentsScreen(),
     BillingScreen(),
+    StatsScreen(),
     SettingsScreen(),
   ];
 
@@ -47,36 +49,42 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           child: NavigationBar(
             selectedIndex: _currentIndex,
             onDestinationSelected: _onTabTapped,
-            height: 72,
+            height: 64,
             backgroundColor: Colors.white.withValues(alpha: 0.92),
             surfaceTintColor: Colors.transparent,
             indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
             shadowColor: Colors.black.withValues(alpha: 0.08),
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
+            elevation: 0,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_rounded),
+                icon: Icon(Icons.home_outlined, size: 28),
+                selectedIcon: Icon(Icons.home_filled, size: 28, color: colorScheme.primary),
                 label: '홈',
               ),
               NavigationDestination(
-                icon: Icon(Icons.calendar_today_outlined),
-                selectedIcon: Icon(Icons.calendar_today_rounded),
+                icon: Icon(Icons.event_note_outlined, size: 28),
+                selectedIcon: Icon(Icons.event_note_rounded, size: 28, color: colorScheme.primary),
                 label: '스케줄',
               ),
               NavigationDestination(
-                icon: Icon(Icons.school_outlined),
-                selectedIcon: Icon(Icons.school_rounded),
+                icon: Icon(Icons.person_outline_rounded, size: 28),
+                selectedIcon: Icon(Icons.person_rounded, size: 28, color: colorScheme.primary),
                 label: '학생',
               ),
               NavigationDestination(
-                icon: Icon(Icons.receipt_long_outlined),
-                selectedIcon: Icon(Icons.receipt_long_rounded),
+                icon: Icon(Icons.receipt_long_outlined, size: 28),
+                selectedIcon: Icon(Icons.receipt_long_rounded, size: 28, color: colorScheme.primary),
                 label: '청구',
               ),
               NavigationDestination(
-                icon: Icon(Icons.menu_rounded),
-                selectedIcon: Icon(Icons.menu_open_rounded),
+                icon: Icon(Icons.bar_chart_outlined, size: 28),
+                selectedIcon: Icon(Icons.bar_chart_rounded, size: 28, color: colorScheme.primary),
+                label: '통계',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.tune_outlined, size: 28),
+                selectedIcon: Icon(Icons.tune_rounded, size: 28, color: colorScheme.primary),
                 label: '설정',
               ),
             ],

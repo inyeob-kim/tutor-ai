@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
-import '../routes/app_routes.dart';
 import '../theme/scroll_physics.dart';
 
 class AddStudentScreen extends StatefulWidget {
@@ -23,10 +22,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   final _notesController = TextEditingController();
 
   DateTime? _startDate;
-  String? _lessonDay;
-  String? _lessonTime;
   bool _isActive = true;
   bool _isLoading = false;
+  bool _isAdult = true; // 디폴트는 성인
 
   final List<String> _gradeOptions = [
     '초등학교 1학년',
@@ -41,16 +39,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     '고등학교 1학년',
     '고등학교 2학년',
     '고등학교 3학년',
-  ];
-
-  final List<String> _dayOptions = [
-    '월요일',
-    '화요일',
-    '수요일',
-    '목요일',
-    '금요일',
-    '토요일',
-    '일요일',
   ];
 
   @override
@@ -78,21 +66,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     }
   }
 
-  Future<void> _selectTime(BuildContext context) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _lessonTime != null
-          ? TimeOfDay(
-              hour: int.parse(_lessonTime!.split(':')[0]),
-              minute: int.parse(_lessonTime!.split(':')[1]),
-            )
-          : TimeOfDay.now(),
-    );
-    if (picked != null) {
-      setState(() => _lessonTime =
-          '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}');
-    }
-  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -100,18 +73,20 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final data = {
+      final data = <String, dynamic>{
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
-        if (_parentPhoneController.text.isNotEmpty)
+        'is_adult': _isAdult,
+        // 성인이 아닐 경우에만 보호자 전화번호, 학교, 학년 포함
+        if (!_isAdult && _parentPhoneController.text.isNotEmpty)
           'parent_phone': _parentPhoneController.text.trim(),
-        if (_schoolController.text.isNotEmpty) 'school': _schoolController.text.trim(),
-        if (_gradeController.text.isNotEmpty) 'grade': _gradeController.text.trim(),
+        if (!_isAdult && _schoolController.text.isNotEmpty) 
+          'school': _schoolController.text.trim(),
+        if (!_isAdult && _gradeController.text.isNotEmpty) 
+          'grade': _gradeController.text.trim(),
         if (_subjectController.text.isNotEmpty) 'subject': _subjectController.text.trim(),
         if (_startDate != null)
           'start_date': DateFormat('yyyy-MM-dd').format(_startDate!),
-        if (_lessonDay != null) 'lesson_day': _lessonDay,
-        if (_lessonTime != null) 'lesson_time': _lessonTime,
         if (_hourlyRateController.text.isNotEmpty)
           'hourly_rate': int.tryParse(_hourlyRateController.text) ?? 0,
         if (_notesController.text.isNotEmpty) 'notes': _notesController.text.trim(),
@@ -192,34 +167,64 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
             // 추가 정보 섹션
             _buildSectionTitle('추가 정보', theme, colorScheme),
             const SizedBox(height: 12),
-            _buildTextField(
-              controller: _parentPhoneController,
-              label: '보호자 전화번호',
-              hint: '010-1234-5678',
-              icon: Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-              theme: theme,
-              colorScheme: colorScheme,
+            // 성인 여부 토글
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: colorScheme.outline.withOpacity(0.1),
+                ),
+              ),
+              child: SwitchListTile(
+                title: const Text('성인 여부'),
+                subtitle: const Text('성인일 경우 보호자 정보와 학년을 입력하지 않습니다'),
+                value: _isAdult,
+                onChanged: (value) {
+                  setState(() {
+                    _isAdult = value;
+                    if (value) {
+                      // 성인으로 변경하면 미성년자 전용 필드들 초기화
+                      _gradeController.clear();
+                      _parentPhoneController.clear();
+                      _schoolController.clear();
+                    }
+                  });
+                },
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _schoolController,
-              label: '학교',
-              hint: '학교명을 입력하세요',
-              icon: Icons.school_outlined,
-              theme: theme,
-              colorScheme: colorScheme,
-            ),
-            const SizedBox(height: 16),
-            _buildDropdownField(
-              label: '학년',
-              value: _gradeController.text.isEmpty ? null : _gradeController.text,
-              options: _gradeOptions,
-              icon: Icons.class_outlined,
-              onChanged: (value) => setState(() => _gradeController.text = value ?? ''),
-              theme: theme,
-              colorScheme: colorScheme,
-            ),
+            // 성인이 아닐 경우에만 보호자 전화번호, 학교, 학년 필드 표시
+            if (!_isAdult) ...[
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _parentPhoneController,
+                label: '보호자 전화번호',
+                hint: '010-1234-5678',
+                icon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+                theme: theme,
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(height: 16),
+              _buildTextField(
+                controller: _schoolController,
+                label: '학교',
+                hint: '학교명을 입력하세요',
+                icon: Icons.school_outlined,
+                theme: theme,
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(height: 16),
+              _buildDropdownField(
+                label: '학년',
+                value: _gradeController.text.isEmpty ? null : _gradeController.text,
+                options: _gradeOptions,
+                icon: Icons.class_outlined,
+                onChanged: (value) => setState(() => _gradeController.text = value ?? ''),
+                theme: theme,
+                colorScheme: colorScheme,
+              ),
+            ],
             const SizedBox(height: 16),
             _buildTextField(
               controller: _subjectController,
@@ -235,25 +240,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               value: _startDate,
               icon: Icons.calendar_today_outlined,
               onTap: () => _selectDate(context),
-              theme: theme,
-              colorScheme: colorScheme,
-            ),
-            const SizedBox(height: 16),
-            _buildDropdownField(
-              label: '수업 요일',
-              value: _lessonDay,
-              options: _dayOptions,
-              icon: Icons.calendar_view_week_outlined,
-              onChanged: (value) => setState(() => _lessonDay = value),
-              theme: theme,
-              colorScheme: colorScheme,
-            ),
-            const SizedBox(height: 16),
-            _buildTimeField(
-              label: '수업 시간',
-              value: _lessonTime,
-              icon: Icons.access_time_outlined,
-              onTap: () => _selectTime(context),
               theme: theme,
               colorScheme: colorScheme,
             ),
@@ -461,44 +447,5 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     );
   }
 
-  Widget _buildTimeField({
-    required String label,
-    required String? value,
-    required IconData icon,
-    required VoidCallback onTap,
-    required ThemeData theme,
-    required ColorScheme colorScheme,
-  }) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colorScheme.outline.withOpacity(0.1),
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: Icon(icon, color: colorScheme.primary),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.all(16),
-            suffixIcon: const Icon(Icons.chevron_right),
-          ),
-          child: Text(
-            value ?? '시간 선택',
-            style: TextStyle(
-              color: value != null
-                  ? colorScheme.onSurface
-                  : colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 

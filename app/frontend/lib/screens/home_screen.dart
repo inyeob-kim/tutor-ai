@@ -73,17 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Map<String, dynamic> get stats {
-    final total = schedule.length;
-    final completed = schedule.where((s) => s.status == ScheduleStatus.completed).length;
-    final completionRate = total > 0 ? ((completed / total) * 100).round() : 0;
-    const unpaid = 2;
-    return {
-      'total': total,
-      'completed': completed,
-      'completionRate': completionRate,
-      'unpaid': unpaid,
-    };
+  int get todayLessonCount {
+    return schedule.length;
   }
 
   @override
@@ -117,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
-                        '${stats['total']}개',
+                        '$todayLessonCount개',
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.w600,
@@ -139,14 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildQuickActions(theme, colorScheme),
-                  const SizedBox(height: 32),
-                  _buildSectionHeader(
-                    context,
-                    title: '오늘의 현황',
-                    subtitle: '수업과 청구 현황을 확인하세요',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildStatsPanel(theme, colorScheme),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -222,7 +205,48 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // 날씨 정보 (데모 데이터)
+  Map<String, dynamic> get _weatherInfo {
+    // 실제로는 API에서 가져오지만, 데모용으로 랜덤 선택
+    final weatherTypes = [
+      {'icon': Icons.wb_sunny_rounded, 'text': '맑음', 'temp': '22°', 'color': const Color(0xFFFFB84D)},
+      {'icon': Icons.cloud_rounded, 'text': '흐림', 'temp': '18°', 'color': const Color(0xFF94A3B8)},
+      {'icon': Icons.wb_cloudy_rounded, 'text': '구름 많음', 'temp': '20°', 'color': const Color(0xFFCBD5E1)},
+      {'icon': Icons.water_drop_rounded, 'text': '비', 'temp': '15°', 'color': const Color(0xFF60A5FA)},
+    ];
+    // 날짜 기반으로 선택 (같은 날에는 같은 날씨)
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    return weatherTypes[dayOfYear % weatherTypes.length];
+  }
+
+  // 매일 달라지는 덕담 메시지
+  String get _dailyMessage {
+    final messages = [
+      '오늘도 화이팅해요! 🌟',
+      '수업이 많지만 오늘도 할 수 있어요! 💪',
+      '한 걸음씩 차근차근! 📚',
+      '오늘의 노력이 내일의 성과가 됩니다! ✨',
+      '포기하지 않으면 성공할 거예요! 🎯',
+      '오늘 하루도 수고 많으셨어요! 👏',
+      '작은 성취도 축하할 가치가 있어요! 🎉',
+      '오늘의 수업도 잘 마무리하세요! 📖',
+      '학생들과의 소중한 시간이에요! 💙',
+      '지금의 노력이 미래를 만들어요! 🌈',
+      '오늘도 학생들에게 좋은 영향을 주세요! 🌱',
+      '포기하지 않는 모습이 멋져요! ⭐',
+      '오늘의 수업도 기대가 돼요! 📝',
+      '한 걸음씩 성장하고 있어요! 🌿',
+      '오늘도 최선을 다하세요! 💯',
+    ];
+    // 날짜 기반으로 선택 (같은 날에는 같은 메시지)
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    return messages[dayOfYear % messages.length];
+  }
+
   Widget _buildHeroCard(ThemeData theme, ColorScheme colorScheme) {
+    final weather = _weatherInfo;
+    final dailyMessage = _dailyMessage;
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -246,47 +270,78 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(Icons.star_rounded, color: colorScheme.primary, size: 30),
+          // 날씨 정보
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  weather['icon'] as IconData,
+                  color: weather['color'] as Color,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    weather['text'] as String,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    weather['temp'] as String,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // 오늘 수업 개수
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '오늘 $todayLessonCount개',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 24),
+          // 덕담 메시지
           Text(
-            '돌봄 대시보드',
+            dailyMessage,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '오늘의 수업과 청구 현황을 한 번에 확인하고\n빠르게 관리해보세요.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.7),
               height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.tonal(
-            onPressed: () {
-              // TODO: 포인트 페이지 연결
-            },
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('포인트 받으러 가기'),
-                const SizedBox(width: 8),
-                Icon(Icons.arrow_forward_ios_rounded, size: 16, color: colorScheme.primary),
-              ],
             ),
           ),
         ],
@@ -475,6 +530,15 @@ class _HomeScreenState extends State<HomeScreen> {
         subtitle: '새 과외 일정 만들기',
         background: const Color(0xFFE9F2FF),
         iconColor: const Color(0xFF2563EB),
+        route: '/schedules/add',
+      ),
+      (
+        icon: Icons.link_rounded,
+        title: '예약 요청',
+        subtitle: '학생에게 링크 보내기',
+        background: const Color(0xFFFFF4E6),
+        iconColor: const Color(0xFFF59E0B),
+        route: '/booking-request',
       ),
       (
         icon: Icons.play_circle_fill_rounded,
@@ -482,161 +546,70 @@ class _HomeScreenState extends State<HomeScreen> {
         subtitle: '음성으로 관리',
         background: const Color(0xFFF3E8FF),
         iconColor: const Color(0xFF9333EA),
+        route: '/ai-assistant',
       ),
     ];
 
     return Row(
-      children: [
-        for (int i = 0; i < items.length; i++)
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: i == 0 ? 12 : 0),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 18,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: InkWell(
-                onTap: () {
-                  if (i == 0) {
-                    Navigator.of(context).pushNamed('/schedules/add');
-                  } else if (i == 1) {
-                    Navigator.of(context).pushNamed('/ai-assistant');
-                  }
-                },
-                borderRadius: BorderRadius.circular(22),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: items[i].background,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(items[i].icon, color: items[i].iconColor),
-                    ),
-                  const SizedBox(height: 16),
-                  Text(
-                    items[i].title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                    const SizedBox(height: 6),
-                    Text(
-                      items[i].subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+      children: items.asMap().entries.map((entry) {
+        final index = entry.key;
+        final item = entry.value;
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: index < items.length - 1 ? 12 : 0),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 18,
+                  offset: const Offset(0, 12),
                 ),
-              ),
+              ],
             ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildStatsPanel(ThemeData theme, ColorScheme colorScheme) {
-    final statsItems = [
-      (
-        icon: Icons.calendar_today_rounded,
-        value: stats['total'].toString(),
-        label: '오늘 수업',
-        background: const Color(0xFFE9F2FF),
-        iconColor: const Color(0xFF2563EB),
-      ),
-      (
-        icon: Icons.check_circle_rounded,
-        value: stats['completed'].toString(),
-        label: '완료',
-        background: const Color(0xFFE8F7F0),
-        iconColor: const Color(0xFF10B981),
-      ),
-      (
-        icon: Icons.trending_up_rounded,
-        value: '${stats['completionRate']}%',
-        label: '완료율',
-        background: const Color(0xFFF3E8FF),
-        iconColor: const Color(0xFF9333EA),
-      ),
-      (
-        icon: Icons.warning_rounded,
-        value: stats['unpaid'].toString(),
-        label: '미납',
-        background: const Color(0xFFFDEAD7),
-        iconColor: const Color(0xFFF97316),
-      ),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 24,
-            offset: const Offset(0, 18),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-      child: Row(
-        children: [
-          for (int i = 0; i < statsItems.length; i++) ...[
-            Expanded(
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).pushNamed(item.route);
+              },
+              borderRadius: BorderRadius.circular(22),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: statsItems[i].background,
+                      color: item.background,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(statsItems[i].icon, color: statsItems[i].iconColor),
+                    child: Icon(item.icon, color: item.iconColor),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Text(
-                    statsItems[i].value,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    item.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    statsItems[i].label,
+                    item.subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            if (i != statsItems.length - 1)
-              Container(
-                width: 1,
-                height: 64,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-              ),
-          ],
-        ],
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
+
 }
