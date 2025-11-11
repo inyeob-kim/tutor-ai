@@ -140,8 +140,13 @@ class _StudentsScreenState extends State<StudentsScreen> {
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: 학생 추가 페이지로 이동
+                  onPressed: () async {
+                    final result = await Navigator.of(context).pushNamed(
+                      '/students/add',
+                    );
+                    if (result == true) {
+                      // TODO: 학생 목록 새로고침
+                    }
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('학생 추가'),

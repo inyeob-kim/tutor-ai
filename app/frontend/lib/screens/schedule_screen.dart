@@ -170,8 +170,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: 일정 추가 페이지로 이동
+                  onPressed: () async {
+                    final result = await Navigator.of(context).pushNamed(
+                      '/schedules/add',
+                    );
+                    if (result == true) {
+                      // TODO: 일정 목록 새로고침
+                    }
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('일정 추가'),
