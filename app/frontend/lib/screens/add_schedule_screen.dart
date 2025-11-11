@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../theme/scroll_physics.dart';
 
 class AddScheduleScreen extends StatefulWidget {
   const AddScheduleScreen({super.key});
@@ -25,12 +26,12 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
   List<Map<String, dynamic>> _students = [];
   bool _isLoadingStudents = false;
 
-  final List<String> _scheduleTypes = ['lesson', 'consultation', 'meeting', 'other'];
+  final List<String> _scheduleTypes = ['lesson', 'available', 'vacation', 'personal'];
   final List<Map<String, String>> _scheduleTypeLabels = [
     {'value': 'lesson', 'label': '수업'},
-    {'value': 'consultation', 'label': '상담'},
-    {'value': 'meeting', 'label': '미팅'},
-    {'value': 'other', 'label': '기타'},
+    {'value': 'available', 'label': '가능 시간'},
+    {'value': 'vacation', 'label': '휴가'},
+    {'value': 'personal', 'label': '개인 일정'},
   ];
 
   final List<String> _colors = [
@@ -232,7 +233,9 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
+          physics: const TossScrollPhysics(),
           padding: const EdgeInsets.all(16),
+          cacheExtent: 500,
           children: [
             // 필수 정보
             _buildSectionTitle('필수 정보', theme, colorScheme),

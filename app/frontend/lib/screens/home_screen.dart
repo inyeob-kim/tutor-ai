@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/scroll_physics.dart';
 
 enum ScheduleStatus { completed, current, upcoming }
 
@@ -93,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const TossScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Padding(

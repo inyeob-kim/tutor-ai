@@ -46,6 +46,11 @@ class AppTheme {
           borderRadius: BorderRadius.circular(18),
         ),
       ),
+      // 전역 스크롤 물리학 설정 (기본값으로 사용)
+      scrollbarTheme: ScrollbarThemeData(
+        thickness: MaterialStateProperty.all(4.0),
+        radius: const Radius.circular(4),
+      ),
     );
   }
 }

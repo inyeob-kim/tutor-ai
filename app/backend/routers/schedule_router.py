@@ -104,12 +104,18 @@ async def check_conflict(
     end_time: str,
     session: AsyncSession = Depends(get_session),
 ):
+    from datetime import datetime
+    # 문자열을 date/time으로 변환
+    lesson_date_obj = datetime.strptime(lesson_date, "%Y-%m-%d").date()
+    start_time_obj = datetime.strptime(start_time, "%H:%M").time()
+    end_time_obj = datetime.strptime(end_time, "%H:%M").time()
+    
     stmt = select(func.count()).select_from(Schedule).where(
         and_(
             Schedule.teacher_id == teacher_id,
-            Schedule.lesson_date == lesson_date,
-            Schedule.start_time < end_time,
-            Schedule.end_time > start_time,
+            Schedule.lesson_date == lesson_date_obj,
+            Schedule.start_time < end_time_obj,
+            Schedule.end_time > start_time_obj,
         )
     )
     count = (await session.execute(stmt)).scalar_one()

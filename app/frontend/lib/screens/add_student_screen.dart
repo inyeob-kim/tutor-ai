@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../routes/app_routes.dart';
+import '../theme/scroll_physics.dart';
 
 class AddStudentScreen extends StatefulWidget {
   const AddStudentScreen({super.key});
@@ -159,7 +160,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
+          physics: const TossScrollPhysics(),
           padding: const EdgeInsets.all(16),
+          cacheExtent: 500,
           children: [
             // 필수 정보 섹션
             _buildSectionTitle('필수 정보', theme, colorScheme),

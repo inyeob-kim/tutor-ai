@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
+import '../theme/scroll_physics.dart';
 
 enum ScheduleFilter { all, today, week, month }
 
@@ -134,6 +135,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerHighest,
       body: CustomScrollView(
+        physics: const TossScrollPhysics(),
         slivers: [
           // AppBar
           SliverAppBar(
@@ -142,7 +144,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             pinned: true,
             backgroundColor: colorScheme.surface,
             elevation: 0,
-        automaticallyImplyLeading: false,
+            automaticallyImplyLeading: false,
+            snap: false,
+            forceElevated: false,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
               title: Column(
@@ -195,7 +199,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
-              delegate: SliverChildListDelegate([
+              delegate: SliverChildListDelegate(
+                [
                 // 통계 카드
                 _buildStatsCard(theme, colorScheme),
                 const SizedBox(height: 16),
@@ -215,7 +220,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       )),
 
                 const SizedBox(height: 100),
-              ]),
+              ],
+                addAutomaticKeepAlives: false,
+                addRepaintBoundaries: true,
+              ),
             ),
           ),
         ],

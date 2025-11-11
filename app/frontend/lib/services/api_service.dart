@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8000/api/v1';
+  static const String baseUrl = 'http://localhost:8000';  // /api/v1 제거 (백엔드 라우터가 직접 /students, /schedules 사용)
   
   static Future<Map<String, dynamic>> createStudent(Map<String, dynamic> data) async {
     try {
@@ -67,16 +67,16 @@ class ApiService {
     required String endTime,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/schedules/check-conflict'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'teacher_id': teacherId,
+      final uri = Uri.parse('$baseUrl/schedules/check-conflict').replace(
+        queryParameters: {
+          'teacher_id': teacherId.toString(),
           'lesson_date': lessonDate,
           'start_time': startTime,
           'end_time': endTime,
-        }),
+        },
       );
+      
+      final response = await http.post(uri);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/scroll_physics.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -20,6 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerHighest,
       body: CustomScrollView(
+        physics: const TossScrollPhysics(),
         slivers: [
           // AppBar
           SliverAppBar(
@@ -29,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             backgroundColor: colorScheme.surface,
             elevation: 0,
             automaticallyImplyLeading: false,
+            snap: false,
+            forceElevated: false,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
               title: Column(
@@ -58,7 +62,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
-              delegate: SliverChildListDelegate([
+              delegate: SliverChildListDelegate(
+                [
                 // 프로필 섹션
                 _buildProfileSection(theme, colorScheme),
                 const SizedBox(height: 16),
@@ -253,7 +258,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 100),
-              ]),
+              ],
+                addAutomaticKeepAlives: false,
+                addRepaintBoundaries: true,
+              ),
             ),
           ),
         ],

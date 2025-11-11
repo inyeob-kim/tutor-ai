@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/scroll_physics.dart';
 
 enum BillingStatus { paid, unpaid, pending }
 enum BillingFilter { all, unpaid, paid, thisMonth }
@@ -114,6 +115,7 @@ class _BillingScreenState extends State<BillingScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerHighest,
       body: CustomScrollView(
+        physics: const TossScrollPhysics(),
         slivers: [
           // AppBar
           SliverAppBar(
@@ -123,6 +125,8 @@ class _BillingScreenState extends State<BillingScreen> {
             backgroundColor: colorScheme.surface,
             elevation: 0,
             automaticallyImplyLeading: false,
+            snap: false,
+            forceElevated: false,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
               title: Column(
@@ -170,7 +174,8 @@ class _BillingScreenState extends State<BillingScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
-              delegate: SliverChildListDelegate([
+              delegate: SliverChildListDelegate(
+                [
                 // 통계 카드
                 _buildStatsCard(theme, colorScheme),
                 const SizedBox(height: 16),
@@ -190,7 +195,10 @@ class _BillingScreenState extends State<BillingScreen> {
                       )),
 
                 const SizedBox(height: 100),
-              ]),
+              ],
+                addAutomaticKeepAlives: false,
+                addRepaintBoundaries: true,
+              ),
             ),
           ),
         ],
