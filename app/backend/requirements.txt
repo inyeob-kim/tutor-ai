@@ -8,6 +8,13 @@ click==8.3.0
 colorama==0.4.6
 distro==1.9.0
 fastapi==0.115.0
+uvicorn==0.30.6
+pydantic==2.9.2
+SQLAlchemy==2.0.36
+asyncpg==0.29.0
+alembic==1.13.2
+python-dotenv==1.0.1
+pydantic-settings==2.*
 google-ai-generativelanguage==0.6.15
 google-api-core==2.28.1
 google-api-python-client==2.186.0
