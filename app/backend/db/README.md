@@ -81,3 +81,102 @@
 - **PK**: `schedule_id`
 - **UNIQUE**: `uniq_teacher_date_time (teacher_id, lesson_date, start_time)`
 - **INDEX**: `idx_teacher (teacher_id)`, `idx_date (lesson_date)`, `idx_student (student_id)`
+
+---
+
+## Teacher Subject
+
+### teacher_subjects 테이블 구조
+
+| 컬럼명 | 타입 | NULL | 기본값 | 설명 |
+|--------|------|------|--------|------|
+| `teacher_id` | BIGINT | NOT NULL | - | 교사 ID (FK: teachers.teacher_id, PK) |
+| `subject` | VARCHAR(50) | NOT NULL | - | 과목명 (PK) |
+| `hourly_rate` | INT | NULL | - | 과목별 시급 (NULL이면 기본 시급) |
+
+### 제약 조건
+- **Primary Key**: (`teacher_id`, `subject`) - 복합 키
+- **Foreign Key**: `teacher_id` → `teachers.teacher_id`
+
+---
+
+## Student Subject
+
+### student_subjects 테이블 구조
+
+| 컬럼명 | 타입 | NULL | 기본값 | 설명 |
+|--------|------|------|--------|------|
+| `student_id` | BIGINT | NOT NULL | - | 학생 ID (FK: students.student_id, PK) |
+| `teacher_id` | BIGINT | NOT NULL | - | 교사 ID (FK: teachers.teacher_id, PK) |
+| `subject` | VARCHAR(50) | NOT NULL | - | 과목명 (PK) |
+| `hourly_rate` | INT | NOT NULL | - | 실제 청구 시급 |
+| `lesson_day` | VARCHAR(20) | NULL | - | 수업 요일 (월수, 화목 등) |
+| `start_time` | TIME | NULL | - | 시작 시간 |
+| `end_time` | TIME | NULL | - | 종료 시간 |
+
+### 제약 조건
+- **Primary Key**: (`student_id`, `teacher_id`, `subject`) - 복합 키
+- **Foreign Key**: `student_id` → `students.student_id`
+- **Foreign Key**: `teacher_id` → `teachers.teacher_id`
+
+---
+
+## Invoice
+
+### invoices 테이블 구조
+
+| 컬럼명 | 타입 | NULL | 기본값 | 설명 |
+|--------|------|------|--------|------|
+| `invoice_id` | BIGINT | NOT NULL | AUTO_INCREMENT | 내부용 고유 ID (Primary Key) |
+| `teacher_id` | BIGINT | NOT NULL | - | 교사 ID (FK: teachers.teacher_id) |
+| `student_id` | BIGINT | NOT NULL | - | 학생 ID (FK: students.student_id) |
+| `invoice_number` | VARCHAR(50) | NOT NULL | - | 청구서 번호 (UNIQUE) |
+| `status` | ENUM('draft','sent','partial','paid','void') | NOT NULL | 'draft' | 청구 상태 |
+| `total_amount` | INT | NOT NULL | - | 총 청구 금액 |
+| `tax_amount` | INT | NOT NULL | 0 | 세금 |
+| `final_amount` | INT | NOT NULL | - | 최종 결제 금액 |
+| `kakao_pay_link` | TEXT | NULL | - | 카카오페이 청구 링크 |
+| `kakao_pay_tid` | VARCHAR(100) | NULL | - | 카카오페이 거래 ID |
+| `billing_period_start` | DATETIME | NULL | - | 청구 기간 시작 |
+| `billing_period_end` | DATETIME | NULL | - | 청구 기간 종료 |
+| `paid_at` | DATETIME | NULL | - | 결제 완료 시간 |
+| `notes` | TEXT | NULL | - | 메모 |
+| `created_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 생성일시 |
+| `updated_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 수정일시 |
+
+### 제약 조건
+- **Primary Key**: `invoice_id`
+- **Unique**: `invoice_number` - 청구서 번호 유니크
+- **Foreign Key**: `teacher_id` → `teachers.teacher_id`
+- **Foreign Key**: `student_id` → `students.student_id`
+- **Index**: `teacher_id`, `student_id`, `invoice_number`
+
+### 상태 설명
+- `draft`: 청구전 (청구 데이터만 적재)
+- `sent`: 청구중 (카카오페이 링크 발송됨)
+- `partial`: 부분 결제
+- `paid`: 청구완료 (결제 완료)
+- `void`: 취소
+
+---
+
+## Invoice Item
+
+### invoice_items 테이블 구조
+
+| 컬럼명 | 타입 | NULL | 기본값 | 설명 |
+|--------|------|------|--------|------|
+| `item_id` | BIGINT | NOT NULL | AUTO_INCREMENT | 내부용 고유 ID (Primary Key) |
+| `invoice_id` | BIGINT | NOT NULL | - | 청구서 ID (FK: invoices.invoice_id) |
+| `description` | VARCHAR(200) | NOT NULL | - | 항목 설명 (예: "수학 수업 4회차") |
+| `subject` | VARCHAR(50) | NULL | - | 과목 |
+| `quantity` | INT | NOT NULL | 1 | 수량 (수업 횟수 등) |
+| `unit_price` | INT | NOT NULL | - | 단가 (시급) |
+| `amount` | INT | NOT NULL | - | 금액 (quantity * unit_price) |
+| `lesson_date` | VARCHAR(50) | NULL | - | 수업 날짜들 (예: "2025-01-01, 2025-01-08") |
+| `notes` | VARCHAR(500) | NULL | - | 비고 |
+
+### 제약 조건
+- **Primary Key**: `item_id`
+- **Foreign Key**: `invoice_id` → `invoices.invoice_id` (CASCADE DELETE)
+- **Index**: `invoice_id`
