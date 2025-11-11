@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.backend.routers.student_router import router as students_router
 from app.backend.routers.teacher_router import router as teachers_router
 from app.backend.routers.schedule_router import router as schedules_router
+from app.backend.routers.invoice_router import router as invoices_router
 
 app = FastAPI(title="Tutor API", version="0.1.0")
 
@@ -28,3 +29,4 @@ app.add_middleware(
 app.include_router(students_router)
 app.include_router(teachers_router)
 app.include_router(schedules_router)
+app.include_router(invoices_router)
