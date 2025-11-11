@@ -16,7 +16,7 @@ async def create_student(payload: StudentCreate, session: AsyncSession = Depends
     # 안전장치: 실제 컬럼만 생성에 사용
     cols = set(Student.__table__.columns.keys())
     safe = {k: v for k, v in data.items() if k in cols}
-    student = Student(**safe, user_id=1)  # TODO: 인증 붙으면 실제 사용자 ID
+    student = Student(**safe)
     session.add(student)
     await session.commit()
     await session.refresh(student)
@@ -35,7 +35,8 @@ async def list_students(
         "created_at": Student.created_at,
         "name": Student.name,
         "grade": Student.grade,
-        "email": Student.email,
+        "phone": Student.phone,
+        "start_date": Student.start_date,
     }
     order_col = ORDERABLE.get(orderBy, Student.created_at)
     if order.lower() == "desc":
