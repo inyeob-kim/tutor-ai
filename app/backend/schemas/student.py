@@ -1,30 +1,42 @@
 # app/backend/schemas/student.py
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
 class StudentBase(BaseModel):
     name: str
-    email: Optional[str] = None
+    phone: str
+    parent_phone: Optional[str] = None
+    school: Optional[str] = None
     grade: Optional[str] = None
-    student_phone: Optional[str] = None
-    guardian_phone: Optional[str] = None
-    memo: Optional[str] = None
+    subject: Optional[str] = None
+    start_date: Optional[date] = None
+    lesson_day: Optional[str] = None
+    lesson_time: Optional[str] = None
+    hourly_rate: Optional[int] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = True
 
 class StudentCreate(StudentBase):
     pass
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[str] = None
+    phone: Optional[str] = None
+    parent_phone: Optional[str] = None
+    school: Optional[str] = None
     grade: Optional[str] = None
-    student_phone: Optional[str] = None
-    guardian_phone: Optional[str] = None
-    memo: Optional[str] = None
+    subject: Optional[str] = None
+    start_date: Optional[date] = None
+    lesson_day: Optional[str] = None
+    lesson_time: Optional[str] = None
+    hourly_rate: Optional[int] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class StudentOut(StudentBase):
     model_config = ConfigDict(from_attributes=True)
-    user_id: int
+    student_id: int
     created_at: datetime
     updated_at: datetime
 
