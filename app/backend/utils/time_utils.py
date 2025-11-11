@@ -25,3 +25,4 @@ def get_kst_range(range_type: str):
         else:
             end = datetime(start.year, start.month + 1, 1, tzinfo=KST)
     return start.astimezone(timezone.utc), end.astimezone(timezone.utc)
+

@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     AES_KEY_B64: str | None = None
     HMAC_KEY_B64: str | None = None
     ENV: str = "local"
+    
+    # 카카오페이 설정
+    KAKAO_PAY_ADMIN_KEY: str | None = None  # 카카오페이 Admin Key
+    KAKAO_PAY_CID: str = "TC0ONETIME"  # 테스트용 CID (실서비스는 실제 CID 사용)
+    KAKAO_PAY_TEST_MODE: bool = True  # 테스트 모드 (실제 API 호출 없이 모의 응답)
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE),

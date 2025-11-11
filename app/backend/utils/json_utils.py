@@ -15,3 +15,4 @@ def safe_json_loads(text: str, fallback=None):
     except Exception as e:
         logging.error(f"JSON Parsing failed: {e} / raw={text}")
         return fallback
+
