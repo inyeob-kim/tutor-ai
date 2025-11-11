@@ -7,6 +7,7 @@ import '../screens/settings_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/add_student_screen.dart';
 import '../screens/add_schedule_screen.dart';
+import '../screens/ai_assistant_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -16,8 +17,9 @@ class AppRoutes {
   static const String students = '/students';
   static const String billing = '/billing';
   static const String settings = '/settings';
-  static const String addStudent = '/students/add';
-  static const String addSchedule = '/schedules/add';
+        static const String addStudent = '/students/add';
+        static const String addSchedule = '/schedules/add';
+        static const String aiAssistant = '/ai-assistant';
 
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
     final routeName = routeSettings.name ?? splash;
@@ -59,12 +61,17 @@ class AppRoutes {
           builder: (_) => const AddStudentScreen(),
           settings: routeSettings,
         );
-      case addSchedule:
-        return MaterialPageRoute(
-          builder: (_) => const AddScheduleScreen(),
-          settings: routeSettings,
-        );
-      default:
+            case addSchedule:
+              return MaterialPageRoute(
+                builder: (_) => const AddScheduleScreen(),
+                settings: routeSettings,
+              );
+            case aiAssistant:
+              return MaterialPageRoute(
+                builder: (_) => const AiAssistantScreen(),
+                settings: routeSettings,
+              );
+            default:
         return MaterialPageRoute(
           builder: (_) => const MainNavigationScreen(),
           settings: routeSettings,

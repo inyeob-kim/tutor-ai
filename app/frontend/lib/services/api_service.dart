@@ -88,5 +88,40 @@ class ApiService {
       throw Exception('Error checking conflict: $e');
     }
   }
+
+  static Future<Map<String, dynamic>> processAudio(
+    List<int> audioBytes, {
+    String? sessionId,
+    int teacherId = 1,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/ai/process_audio');
+      final request = http.MultipartRequest('POST', uri);
+      
+      if (sessionId != null) {
+        request.fields['session_id'] = sessionId;
+      }
+      request.fields['teacher_id'] = teacherId.toString();
+      
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'audio',
+          audioBytes,
+          filename: 'recording.m4a',
+        ),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to process audio: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error processing audio: $e');
+    }
+  }
 }
 

@@ -11,7 +11,7 @@ for key in list(os.environ.keys()):
 
 # === OpenAI 클라이언트 생성 ===
 client = OpenAI(
-    api_key=settings.OPENAI_API_KEY,
+    api_key=settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY"),
 )
 
 # app/core/llm.py

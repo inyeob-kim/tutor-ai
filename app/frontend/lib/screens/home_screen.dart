@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: AI assistant 기능 연결
+          Navigator.of(context).pushNamed('/ai-assistant');
         },
         backgroundColor: colorScheme.primary,
         icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
@@ -503,18 +503,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: items[i].background,
-                      borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: () {
+                  if (i == 0) {
+                    Navigator.of(context).pushNamed('/schedules/add');
+                  } else if (i == 1) {
+                    Navigator.of(context).pushNamed('/ai-assistant');
+                  }
+                },
+                borderRadius: BorderRadius.circular(22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: items[i].background,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(items[i].icon, color: items[i].iconColor),
                     ),
-                    child: Icon(items[i].icon, color: items[i].iconColor),
-                  ),
                   const SizedBox(height: 16),
                   Text(
                     items[i].title,
@@ -523,14 +532,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    items[i].subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 6),
+                    Text(
+                      items[i].subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
