@@ -1,0 +1,39 @@
+from __future__ import annotations
+from datetime import datetime, date
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, BigInteger, Integer, Date, DateTime, Text, func, UniqueConstraint
+
+from app.backend.db.base_class import Base
+from app.backend.db.enums import teacher_tax_type, auth_provider
+
+
+class Teacher(Base):
+    __tablename__ = "teachers"
+
+    teacher_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    bank_name: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    account_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    tax_type: Mapped[str] = mapped_column(teacher_tax_type, nullable=False, server_default="사업소득")
+    hourly_rate_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    hourly_rate_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    available_days: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    available_time: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    vacation_start: Mapped[date | None] = mapped_column(Date, nullable=True)
+    vacation_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    total_students: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    monthly_income: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Social auth
+    provider: Mapped[str] = mapped_column(auth_provider, nullable=False)
+    oauth_id: Mapped[str] = mapped_column(String(191), nullable=False)  # provider-issued subject/id
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("provider", "oauth_id", name="uniq_provider_oauth_id"),
+    )
