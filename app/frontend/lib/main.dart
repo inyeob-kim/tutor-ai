@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '과외선생님 행정관리',
+      title: '쌤대신',
       theme: AppTheme.light(),
       initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
