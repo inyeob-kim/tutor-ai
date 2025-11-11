@@ -24,10 +24,16 @@ app/backend/token.json
 *.log
 *.tmp
 *.temp
+*.pid
+*.bak
+tmp/
 
 # Database
 app/backend/*.db
 *.sqlite3
+
+# Alembic
+app/backend/alembic/versions/__pycache__/
 
 # ======================================================
 # ✅ Frontend (React / Node)
@@ -49,6 +55,8 @@ yarn-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
 *.swp
 *.swo
 
@@ -58,4 +66,13 @@ Thumbs.db
 .mypy_cache/
 .pytest_cache/
 .uvicorn/
+.coverage
+htmlcov/
+pytestdebug.log
 
+# ======================================================
+# ✅ Dependency manager (optional)
+# ======================================================
+poetry.lock
+Pipfile
+Pipfile.lock
