@@ -4,14 +4,21 @@ from datetime import datetime, date
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Integer, BigInteger, DateTime, Date, Text, Boolean, func, UniqueConstraint
 from app.backend.db.base_class import Base
+from app.backend.db.types import EncryptedString, HashedString
+from app.backend.db.mixins import setup_hash_fields
 
 class Student(Base):
     __tablename__ = "students"
 
     student_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(50), nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
-    parent_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    name: Mapped[str] = mapped_column(EncryptedString, nullable=False)
+    phone: Mapped[str] = mapped_column(EncryptedString, nullable=False)
+    parent_phone: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    
+    # 해시 필드 (unique constraint 및 검색용)
+    name_hash: Mapped[str] = mapped_column(HashedString, nullable=False, index=True)
+    phone_hash: Mapped[str] = mapped_column(HashedString, nullable=False, index=True)
+    
     school: Mapped[str | None] = mapped_column(String(100), nullable=True)
     grade: Mapped[str | None] = mapped_column(String(20), nullable=True)
     subject: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -30,5 +37,8 @@ class Student(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint('name', 'phone', name='uniq_name_phone'),
+        UniqueConstraint('name_hash', 'phone_hash', name='uniq_name_phone'),
     )
+
+# 해시 필드 자동 업데이트 이벤트 리스너 등록
+setup_hash_fields(Student)

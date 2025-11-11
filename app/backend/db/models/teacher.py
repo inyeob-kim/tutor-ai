@@ -5,17 +5,24 @@ from sqlalchemy import String, BigInteger, Integer, Date, DateTime, Text, func, 
 
 from app.backend.db.base_class import Base
 from app.backend.db.enums import teacher_tax_type, auth_provider
+from app.backend.db.types import EncryptedString, HashedString
+from app.backend.db.mixins import setup_hash_fields
 
 
 class Teacher(Base):
     __tablename__ = "teachers"
 
     teacher_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(50), nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
-    email: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    bank_name: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    account_number: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    name: Mapped[str] = mapped_column(EncryptedString, nullable=False)
+    phone: Mapped[str] = mapped_column(EncryptedString, nullable=False)
+    email: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    bank_name: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    account_number: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    
+    # 해시 필드 (검색용, 필요시 unique constraint에도 사용 가능)
+    phone_hash: Mapped[str] = mapped_column(HashedString, nullable=False, index=True)
+    email_hash: Mapped[str | None] = mapped_column(HashedString, nullable=True, index=True)
+    
     tax_type: Mapped[str] = mapped_column(teacher_tax_type, nullable=False, server_default="사업소득")
     hourly_rate_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     hourly_rate_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -37,3 +44,6 @@ class Teacher(Base):
     __table_args__ = (
         UniqueConstraint("provider", "oauth_id", name="uniq_provider_oauth_id"),
     )
+
+# 해시 필드 자동 업데이트 이벤트 리스너 등록
+setup_hash_fields(Teacher)

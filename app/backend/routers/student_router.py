@@ -16,9 +16,18 @@ async def create_student(payload: StudentCreate, session: AsyncSession = Depends
     # 안전장치: 실제 컬럼만 생성에 사용
     cols = set(Student.__table__.columns.keys())
     safe = {k: v for k, v in data.items() if k in cols}
+    
+    # 해시 필드는 자동 생성되므로 제외
+    safe.pop('name_hash', None)
+    safe.pop('phone_hash', None)
+    
     student = Student(**safe)
     session.add(student)
-    await session.commit()
+    try:
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create student: {str(e)}")
     await session.refresh(student)
     return student
 
@@ -46,9 +55,14 @@ async def list_students(
     cnt = select(func.count()).select_from(Student)
 
     if q:
-        like = f"%{q}%"
-        base = base.where(Student.name.ilike(like))
-        cnt = cnt.where(Student.name.ilike(like))
+        # 암호화된 필드는 직접 검색 불가, 해시 필드로 정확 일치 검색
+        # 부분 검색은 모든 레코드를 가져와서 복호화 후 필터링 (비효율적)
+        # TODO: 검색 인덱스 테이블 또는 별도 검색 엔진 사용 고려
+        # 임시로 해시 기반 정확 일치만 지원
+        from app.backend.core.crypto import hmac_sha256_hex
+        q_hash = hmac_sha256_hex(q)
+        base = base.where(Student.name_hash == q_hash)
+        cnt = cnt.where(Student.name_hash == q_hash)
 
     total = (await session.execute(cnt)).scalar_one()
     rows = (await session.execute(
