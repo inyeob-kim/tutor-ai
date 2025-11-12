@@ -1,6 +1,6 @@
 # app/services/schedule_service.py
 from sqlalchemy.orm import Session
-from models import Schedule, Student
+from app.backend.db.models import Schedule, Student
 from datetime import datetime, time, timedelta
 from typing import List, Dict
 

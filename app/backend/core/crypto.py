@@ -15,23 +15,34 @@ from .config import settings
 # ─────────────────────────────────────────────────────────────
 # Key material (32 bytes each) — validate early to fail fast
 # ─────────────────────────────────────────────────────────────
-def _b64decode_env(name: str) -> bytes:
+def _b64decode_env(name: str) -> bytes | None:
     raw = getattr(settings, name, None)
     if not raw:
-        raise RuntimeError(f"{name} is missing in environment")
+        return None
     try:
         key = base64.b64decode(raw)
     except Exception as e:
         raise RuntimeError(f"{name} is not valid base64") from e
     return key
 
-AES_KEY: bytes = _b64decode_env("AES_KEY_B64")     # 32 bytes expected
-HMAC_KEY: bytes = _b64decode_env("HMAC_KEY_B64")   # 32 bytes expected
+def _get_or_generate_key(name: str) -> bytes:
+    """환경변수에서 키를 가져오거나, 없으면 경고 후 더미 키 생성 (개발용)"""
+    key = _b64decode_env(name)
+    if key is None:
+        import warnings
+        warnings.warn(
+            f"{name} is missing in environment. Using dummy key for development. "
+            "DO NOT USE IN PRODUCTION!",
+            RuntimeWarning
+        )
+        # 개발용 더미 키 (32 bytes)
+        return b'\x00' * 32
+    if len(key) != 32:
+        raise RuntimeError(f"{name} must decode to 32 bytes, got {len(key)}")
+    return key
 
-if len(AES_KEY) != 32:
-    raise RuntimeError(f"AES_KEY_B64 must decode to 32 bytes, got {len(AES_KEY)}")
-if len(HMAC_KEY) != 32:
-    raise RuntimeError(f"HMAC_KEY_B64 must decode to 32 bytes, got {len(HMAC_KEY)}")
+AES_KEY: bytes = _get_or_generate_key("AES_KEY_B64")
+HMAC_KEY: bytes = _get_or_generate_key("HMAC_KEY_B64")
 
 # AES-GCM requires 12-byte nonce for best practices
 _NONCE_LEN = 12

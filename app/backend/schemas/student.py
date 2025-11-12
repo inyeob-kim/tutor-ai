@@ -16,6 +16,7 @@ class StudentBase(BaseModel):
     hourly_rate: Optional[int] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = True
+    is_adult: Optional[bool] = False
 
 class StudentCreate(StudentBase):
     pass
@@ -33,6 +34,7 @@ class StudentUpdate(BaseModel):
     hourly_rate: Optional[int] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = None
+    is_adult: Optional[bool] = None
 
 class StudentOut(StudentBase):
     model_config = ConfigDict(from_attributes=True)

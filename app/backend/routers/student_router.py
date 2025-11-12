@@ -1,14 +1,68 @@
 # app/backend/routers/student_router.py
 from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.inspection import inspect
 from app.backend.db.database import get_session
-from app.backend.db.models import Student
+from app.backend.db.models import Student, StudentHistory
 from app.backend.schemas.student import (
-    StudentCreate, StudentOut, StudentListResp, StudentUpdate
+    StudentCreate,
+    StudentOut,
+    StudentListResp,
+    StudentUpdate,
+)
+from app.backend.schemas.student_history import (
+    StudentHistoryOut,
+    StudentHistoryChangeType,
 )
 
 router = APIRouter(prefix="/students", tags=["students"])
+
+
+def _student_snapshot(student: Student) -> dict:
+    """Serialize a Student ORM object to a JSON-friendly dict."""
+    mapper = inspect(student)
+    raw = {attr.key: getattr(student, attr.key) for attr in mapper.mapper.column_attrs}
+    return jsonable_encoder(raw)
+
+
+def _snapshot_to_out(snapshot: dict) -> StudentOut:
+    filtered = {field: snapshot.get(field) for field in StudentOut.model_fields}
+    return StudentOut.model_validate(filtered)
+
+
+def _diff_snapshots(before: dict | None, after: dict | None) -> dict:
+    if not before or not after:
+        return {}
+    diff = {}
+    for key in after.keys():
+        if before.get(key) != after.get(key):
+            diff[key] = {"before": before.get(key), "after": after.get(key)}
+    return diff
+
+
+def _build_history_entry(
+    student_id: int,
+    change_type: StudentHistoryChangeType,
+    *,
+    before: dict | None = None,
+    after: dict | None = None,
+) -> StudentHistory:
+    payload: dict = {}
+    if before is not None:
+        payload["before"] = before
+    if after is not None:
+        payload["after"] = after
+    diff = _diff_snapshots(before, after)
+    if diff:
+        payload["diff"] = diff
+    return StudentHistory(
+        student_id=student_id,
+        change_type=change_type.value,
+        payload=payload or {"note": "no changes"},
+    )
+
 
 @router.post("", response_model=StudentOut, status_code=201)
 async def create_student(payload: StudentCreate, session: AsyncSession = Depends(get_session)):
@@ -24,12 +78,21 @@ async def create_student(payload: StudentCreate, session: AsyncSession = Depends
     student = Student(**safe)
     session.add(student)
     try:
+        await session.flush()
+        await session.refresh(student)
+        after_snapshot = _student_snapshot(student)
+        session.add(
+            _build_history_entry(
+                student.student_id,
+                StudentHistoryChangeType.CREATE,
+                after=after_snapshot,
+            )
+        )
         await session.commit()
     except Exception as e:
         await session.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to create student: {str(e)}")
-    await session.refresh(student)
-    return student
+    return _snapshot_to_out(after_snapshot)
 
 @router.get("", response_model=StudentListResp)
 async def list_students(
@@ -65,18 +128,21 @@ async def list_students(
         cnt = cnt.where(Student.name_hash == q_hash)
 
     total = (await session.execute(cnt)).scalar_one()
-    rows = (await session.execute(
-        base.order_by(order_col).offset((page - 1) * pageSize).limit(pageSize)
-    )).scalars().all()
+    rows = (
+        await session.execute(
+            base.order_by(order_col).offset((page - 1) * pageSize).limit(pageSize)
+        )
+    ).scalars().all()
 
-    return StudentListResp(total=total, page=page, pageSize=pageSize, items=rows)
+    items = [_snapshot_to_out(_student_snapshot(s)) for s in rows]
+    return StudentListResp(total=total, page=page, pageSize=pageSize, items=items)
 
 @router.get("/{student_id}", response_model=StudentOut)
 async def get_student(student_id: int, session: AsyncSession = Depends(get_session)):
     obj = await session.get(Student, student_id)
     if not obj:
         raise HTTPException(404, "Student not found")
-    return obj
+    return _snapshot_to_out(_student_snapshot(obj))
 
 @router.patch("/{student_id}", response_model=StudentOut)
 async def update_student(
@@ -88,21 +154,66 @@ async def update_student(
     if not obj:
         raise HTTPException(404, "Student not found")
 
+    before_snapshot = _student_snapshot(obj)
     data = payload.model_dump(exclude_unset=True)
     cols = set(Student.__table__.columns.keys())
     for k, v in data.items():
         if k in cols:
             setattr(obj, k, v)
 
-    await session.commit()
-    await session.refresh(obj)
-    return obj
+    try:
+        await session.flush()
+        await session.refresh(obj)
+        after_snapshot = _student_snapshot(obj)
+        session.add(
+            _build_history_entry(
+                student_id,
+                StudentHistoryChangeType.UPDATE,
+                before=before_snapshot,
+                after=after_snapshot,
+            )
+        )
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update student: {str(e)}")
+    return _snapshot_to_out(after_snapshot)
 
 @router.delete("/{student_id}", status_code=204)
 async def delete_student(student_id: int, session: AsyncSession = Depends(get_session)):
     obj = await session.get(Student, student_id)
     if not obj:
         raise HTTPException(404, "Student not found")
-    await session.delete(obj)
-    await session.commit()
+    before_snapshot = _student_snapshot(obj)
+    try:
+        session.add(
+            _build_history_entry(
+                student_id,
+                StudentHistoryChangeType.DELETE,
+                before=before_snapshot,
+            )
+        )
+        await session.delete(obj)
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete student: {str(e)}")
     return None
+
+
+@router.get("/{student_id}/history", response_model=list[StudentHistoryOut])
+async def list_student_history(
+    student_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    student_exists = await session.scalar(select(func.count()).select_from(Student).where(Student.student_id == student_id))
+    if not student_exists:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    stmt = (
+        select(StudentHistory)
+        .where(StudentHistory.student_id == student_id)
+        .order_by(StudentHistory.changed_at.desc(), StudentHistory.history_id.desc())
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return rows

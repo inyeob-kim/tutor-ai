@@ -1,8 +1,8 @@
 # app/services/intent_extractor.py
 import json
-from core.llm import call_llm
-from schemas.command import ActionPlan
-from core.redis import get_conversation, save_conversation, clear_conversation
+from app.backend.core.llm import call_llm
+from app.backend.schemas.command import ActionPlan
+from app.backend.core.redis import get_conversation, save_conversation, clear_conversation
 
 SYSTEM_PROMPT = """
         You are a tutoring schedule assistant. 
