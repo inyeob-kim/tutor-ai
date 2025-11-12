@@ -97,6 +97,7 @@ async def create_teacher(payload: TeacherCreate, session: AsyncSession = Depends
 @router.get("", response_model=TeacherListResp)
 async def list_teachers(
     q: str | None = Query(None, description="이름 또는 전화번호 검색"),
+    subject_id: int | None = Query(None, description="담당 과목 ID"),
     orderBy: str = Query("created_at"),
     order: str = Query("desc"),
     page: int = Query(1, ge=1),
@@ -120,6 +121,9 @@ async def list_teachers(
         like = f"%{q}%"
         stmt = stmt.where((Teacher.name.ilike(like)) | (Teacher.phone.ilike(like)))
         count_stmt = count_stmt.where((Teacher.name.ilike(like)) | (Teacher.phone.ilike(like)))
+    if subject_id is not None:
+        stmt = stmt.where(Teacher.subject_id == subject_id)
+        count_stmt = count_stmt.where(Teacher.subject_id == subject_id)
 
     total = (await session.execute(count_stmt)).scalar_one()
     rows = (
@@ -156,6 +160,7 @@ async def update_teacher(
         "name",
         "phone",
         "email",
+        "subject_id",
         "bank_name",
         "account_number",
         "tax_type",

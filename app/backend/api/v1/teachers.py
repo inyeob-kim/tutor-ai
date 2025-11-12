@@ -11,6 +11,7 @@ router = APIRouter(prefix="/teachers", tags=["teachers"])
 @router.get("/list")
 async def list_teachers(
     q: str | None = Query(None),
+    subject_id: int | None = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_session),
@@ -19,6 +20,8 @@ async def list_teachers(
     if q:
         like = f"%{q}%"
         stmt = stmt.where((Teacher.name.ilike(like)) | (Teacher.phone.ilike(like)))
+    if subject_id is not None:
+        stmt = stmt.where(Teacher.subject_id == subject_id)
     stmt = stmt.order_by(Teacher.created_at.desc()).limit(size).offset((page - 1) * size)
     rows = (await db.execute(stmt)).scalars().all()
     return {
@@ -28,6 +31,7 @@ async def list_teachers(
                 "name": t.name,
                 "phone": t.phone,
                 "email": t.email,
+                "subject_id": t.subject_id,
                 "bank_name": t.bank_name,
                 "account_number": t.account_number,
                 "tax_type": t.tax_type,
@@ -60,6 +64,7 @@ async def get_teacher(teacher_id: int, db: AsyncSession = Depends(get_session)):
         "name": teacher.name,
         "phone": teacher.phone,
         "email": teacher.email,
+        "subject_id": teacher.subject_id,
         "bank_name": teacher.bank_name,
         "account_number": teacher.account_number,
         "tax_type": teacher.tax_type,

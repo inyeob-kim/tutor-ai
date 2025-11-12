@@ -1,7 +1,17 @@
 from __future__ import annotations
 from datetime import datetime, date
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, BigInteger, Integer, Date, DateTime, Text, func, UniqueConstraint
+from sqlalchemy import (
+    String,
+    BigInteger,
+    Integer,
+    Date,
+    DateTime,
+    Text,
+    func,
+    UniqueConstraint,
+    ForeignKey,
+)
 
 from app.backend.db.base_class import Base
 from app.backend.db.enums import teacher_tax_type, auth_provider
@@ -23,6 +33,9 @@ class Teacher(Base):
     phone_hash: Mapped[str] = mapped_column(HashedString, nullable=False, index=True)
     email_hash: Mapped[str | None] = mapped_column(HashedString, nullable=True, index=True)
     
+    subject_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("subjects.id"), nullable=True, index=True
+    )
     tax_type: Mapped[str | None] = mapped_column(teacher_tax_type, nullable=True)
     hourly_rate_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     hourly_rate_max: Mapped[int | None] = mapped_column(Integer, nullable=True)

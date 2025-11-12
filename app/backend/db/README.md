@@ -38,6 +38,7 @@
 | `teacher_id` | BIGINT | NOT NULL | AUTO_INCREMENT | 내부용 고유 ID (Primary Key) |
 | `name` | VARCHAR(50) | NOT NULL | - | 본명 |
 | `phone` | VARCHAR(20) | NOT NULL | - | 연락처 |
+| `subject_id` | INT | NULL | - | 대표 과목 ID (FK: subjects.id) |
 | `email` | VARCHAR(100) | NULL | - | 이메일 |
 | `bank_name` | VARCHAR(50) | NULL | - | 입금받을 은행 |
 | `account_number` | VARCHAR(30) | NULL | - | 계좌번호 |
