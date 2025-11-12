@@ -35,7 +35,9 @@ class Student(Base):
     )
     school: Mapped[str | None] = mapped_column(String(100), nullable=True)
     grade: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    subject: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    subject_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("subjects.id"), nullable=True, index=True
+    )
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     lesson_day: Mapped[str | None] = mapped_column(String(50), nullable=True)
     lesson_time: Mapped[str | None] = mapped_column(String(50), nullable=True)

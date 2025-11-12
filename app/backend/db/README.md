@@ -11,7 +11,7 @@
 | `teacher_id` | BIGINT | NULL | - | 담당 교사 ID (FK: teachers.teacher_id) |
 | `school` | VARCHAR(100) | NULL | - | 학교/학년 |
 | `grade` | VARCHAR(20) | NULL | - | 학년 (예: 고1, 중3, 초6) |
-| `subject` | VARCHAR(100) | NULL | - | 과목 (수학, 영어, 국어+수학 등) |
+| `subject_id` | INT | NULL | - | 대표 과목 ID (FK: subjects.id) |
 | `start_date` | DATE | NULL | - | 과외 시작일 |
 | `lesson_day` | VARCHAR(50) | NULL | - | 수업 요일 (월수금, 토일 등) |
 | `lesson_time` | VARCHAR(50) | NULL | - | 수업 시간 (19:00~21:00 등) |
@@ -120,45 +120,6 @@
 - **PK**: `schedule_id`
 - **UNIQUE**: `uniq_teacher_date_time (teacher_id, lesson_date, start_time)`
 - **INDEX**: `idx_teacher (teacher_id)`, `idx_date (lesson_date)`, `idx_student (student_id)`, `ix_schedules_subject_id (subject_id)`
-
----
-
-## Teacher Subject
-
-### teacher_subjects 테이블 구조
-
-| 컬럼명 | 타입 | NULL | 기본값 | 설명 |
-|--------|------|------|--------|------|
-| `teacher_id` | BIGINT | NOT NULL | - | 교사 ID (FK: teachers.teacher_id, PK) |
-| `subject_id` | INT | NOT NULL | - | 과목 ID (FK: subjects.id, PK) |
-| `price_per_hour` | INT | NOT NULL | - | 시간당 수업료 |
-| `is_active` | BOOLEAN | NOT NULL | true | 사용 여부 |
-
-### 제약 조건
-- **Primary Key**: (`teacher_id`, `subject_id`) - 복합 키
-- **Foreign Key**: `teacher_id` → `teachers.teacher_id`
-- **Foreign Key**: `subject_id` → `subjects.id`
-
----
-
-## Student Subject
-
-### student_subjects 테이블 구조
-
-| 컬럼명 | 타입 | NULL | 기본값 | 설명 |
-|--------|------|------|--------|------|
-| `student_id` | BIGINT | NOT NULL | - | 학생 ID (FK: students.student_id, PK) |
-| `teacher_id` | BIGINT | NOT NULL | - | 교사 ID (FK: teachers.teacher_id, PK) |
-| `subject` | VARCHAR(50) | NOT NULL | - | 과목명 (PK) |
-| `hourly_rate` | INT | NOT NULL | - | 실제 청구 시급 |
-| `lesson_day` | VARCHAR(20) | NULL | - | 수업 요일 (월수, 화목 등) |
-| `start_time` | TIME | NULL | - | 시작 시간 |
-| `end_time` | TIME | NULL | - | 종료 시간 |
-
-### 제약 조건
-- **Primary Key**: (`student_id`, `teacher_id`, `subject`) - 복합 키
-- **Foreign Key**: `student_id` → `students.student_id`
-- **Foreign Key**: `teacher_id` → `teachers.teacher_id`
 
 ---
 

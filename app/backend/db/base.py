@@ -8,8 +8,6 @@ from app.backend.db.models import (
     Student,
     Teacher,
     Schedule,
-    TeacherSubject,
-    StudentSubject,
     Invoice,
     InvoiceItem,
 )  # noqa: F401
