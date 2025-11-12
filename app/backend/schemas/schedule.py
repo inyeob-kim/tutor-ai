@@ -50,5 +50,3 @@ class ScheduleListResp(BaseModel):
     page: int
     pageSize: int
     items: list[ScheduleOut]
-from __future__ import annotations
-
