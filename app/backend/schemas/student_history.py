@@ -18,6 +18,7 @@ class StudentHistoryOut(BaseModel):
 
     history_id: int
     student_id: int
+    teacher_id: int | None = None
     change_type: StudentHistoryChangeType
     payload: Dict[str, Any]
     changed_at: datetime

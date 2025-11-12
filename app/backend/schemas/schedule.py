@@ -1,23 +1,25 @@
 from __future__ import annotations
 
-from datetime import datetime, date, time
+from datetime import datetime, date
 from typing import Optional, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-ScheduleType = Literal["lesson", "available", "vacation", "personal"]
+ScheduleStatus = Literal["confirmed", "cancelled", "completed", "no_show"]
 
 
 class ScheduleBase(BaseModel):
     teacher_id: int
+    student_id: int
     lesson_date: date
-    start_time: time
-    end_time: time
-    student_id: Optional[int] = None
-    schedule_type: ScheduleType
-    title: Optional[str] = None
+    start_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
+    end_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
+    subject_id: int
     notes: Optional[str] = None
-    color: Optional[str] = "#3788D8"
+    status: ScheduleStatus = "confirmed"
+    cancelled_at: Optional[datetime] = None
+    cancelled_by: Optional[int] = None
+    cancel_reason: Optional[str] = None
 
 
 class ScheduleCreate(ScheduleBase):
@@ -25,15 +27,15 @@ class ScheduleCreate(ScheduleBase):
 
 
 class ScheduleUpdate(BaseModel):
-    teacher_id: Optional[int] = None
     lesson_date: Optional[date] = None
-    start_time: Optional[time] = None
-    end_time: Optional[time] = None
-    student_id: Optional[int] = None
-    schedule_type: Optional[ScheduleType] = None
-    title: Optional[str] = None
+    start_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
+    end_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
+    subject_id: Optional[int] = None
     notes: Optional[str] = None
-    color: Optional[str] = None
+    status: Optional[ScheduleStatus] = None
+    cancelled_at: Optional[datetime] = None
+    cancelled_by: Optional[int] = None
+    cancel_reason: Optional[str] = None
 
 
 class ScheduleOut(ScheduleBase):

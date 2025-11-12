@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -17,25 +18,32 @@ from app.backend.schemas.schedule import (
 router = APIRouter(prefix="/schedules", tags=["schedules"])
 
 
+def _schedule_to_out(schedule: Schedule) -> ScheduleOut:
+    data = jsonable_encoder(schedule)
+    return ScheduleOut.model_validate(data)
+
+
 @router.post("", response_model=ScheduleOut, status_code=201)
 async def create_schedule(payload: ScheduleCreate, session: AsyncSession = Depends(get_session)):
     data = payload.model_dump(exclude_unset=True)
-    cols = set(Schedule.__table__.columns.keys())
-    safe = {k: v for k, v in data.items() if k in cols}
-    sched = Schedule(**safe)
+    sched = Schedule(**data)
     session.add(sched)
     try:
+        await session.flush()
         await session.commit()
     except IntegrityError:
         await session.rollback()
         raise HTTPException(status_code=409, detail="Duplicated schedule for the teacher at the same time")
     await session.refresh(sched)
-    return sched
+    return _schedule_to_out(sched)
 
 
 @router.get("", response_model=ScheduleListResp)
 async def list_schedules(
     teacher_id: int | None = Query(None),
+    student_id: int | None = Query(None),
+    subject_id: int | None = Query(None),
+    status: str | None = Query(None),
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
     page: int = Query(1, ge=1),
@@ -45,9 +53,18 @@ async def list_schedules(
     stmt = select(Schedule)
     cnt = select(func.count()).select_from(Schedule)
 
-    if teacher_id:
+    if teacher_id is not None:
         stmt = stmt.where(Schedule.teacher_id == teacher_id)
         cnt = cnt.where(Schedule.teacher_id == teacher_id)
+    if student_id is not None:
+        stmt = stmt.where(Schedule.student_id == student_id)
+        cnt = cnt.where(Schedule.student_id == student_id)
+    if subject_id is not None:
+        stmt = stmt.where(Schedule.subject_id == subject_id)
+        cnt = cnt.where(Schedule.subject_id == subject_id)
+    if status:
+        stmt = stmt.where(Schedule.status == status)
+        cnt = cnt.where(Schedule.status == status)
     if date_from:
         stmt = stmt.where(Schedule.lesson_date >= date_from)
         cnt = cnt.where(Schedule.lesson_date >= date_from)
@@ -64,7 +81,8 @@ async def list_schedules(
         )
     ).scalars().all()
 
-    return ScheduleListResp(total=total, page=page, pageSize=pageSize, items=rows)
+    items = [_schedule_to_out(row) for row in rows]
+    return ScheduleListResp(total=total, page=page, pageSize=pageSize, items=items)
 
 
 @router.get("/{schedule_id}", response_model=ScheduleOut)
@@ -72,7 +90,7 @@ async def get_schedule(schedule_id: int, session: AsyncSession = Depends(get_ses
     obj = await session.get(Schedule, schedule_id)
     if not obj:
         raise HTTPException(404, "Schedule not found")
-    return obj
+    return _schedule_to_out(obj)
 
 
 @router.patch("/{schedule_id}", response_model=ScheduleOut)
@@ -86,14 +104,12 @@ async def update_schedule(
         raise HTTPException(404, "Schedule not found")
 
     data = payload.model_dump(exclude_unset=True)
-    cols = set(Schedule.__table__.columns.keys())
     for k, v in data.items():
-        if k in cols:
-            setattr(obj, k, v)
+        setattr(obj, k, v)
 
     await session.commit()
     await session.refresh(obj)
-    return obj
+    return _schedule_to_out(obj)
 
 
 @router.post("/check-conflict")
@@ -105,17 +121,19 @@ async def check_conflict(
     session: AsyncSession = Depends(get_session),
 ):
     from datetime import datetime
-    # 문자열을 date/time으로 변환
+
     lesson_date_obj = datetime.strptime(lesson_date, "%Y-%m-%d").date()
     start_time_obj = datetime.strptime(start_time, "%H:%M").time()
     end_time_obj = datetime.strptime(end_time, "%H:%M").time()
-    
+    start_time_str = start_time_obj.strftime("%H:%M")
+    end_time_str = end_time_obj.strftime("%H:%M")
+
     stmt = select(func.count()).select_from(Schedule).where(
         and_(
             Schedule.teacher_id == teacher_id,
             Schedule.lesson_date == lesson_date_obj,
-            Schedule.start_time < end_time_obj,
-            Schedule.end_time > start_time_obj,
+            Schedule.start_time < end_time_str,
+            Schedule.end_time > start_time_str,
         )
     )
     count = (await session.execute(stmt)).scalar_one()
@@ -125,14 +143,13 @@ async def check_conflict(
 @router.post("/bulk-generate")
 async def bulk_generate(
     teacher_id: int,
+    student_id: int,
+    subject_id: int,
     weekday: int,  # 0=Mon ... 6=Sun
     start_time: str,
     end_time: str,
     date_from: str,
     date_to: str,
-    schedule_type: str = "lesson",
-    title: str | None = None,
-    color: str = "#3788D8",
     session: AsyncSession = Depends(get_session),
 ):
     from datetime import datetime, timedelta
@@ -147,6 +164,8 @@ async def bulk_generate(
     dt = parse_date(date_to)
     st = parse_time(start_time)
     et = parse_time(end_time)
+    st_str = st.strftime("%H:%M")
+    et_str = et.strftime("%H:%M")
 
     # move df to first target weekday
     cur = df
@@ -163,20 +182,20 @@ async def bulk_generate(
                 and_(
                     Schedule.teacher_id == teacher_id,
                     Schedule.lesson_date == cur,
-                    Schedule.start_time < et,
-                    Schedule.end_time > st,
+                    Schedule.start_time < et_str,
+                    Schedule.end_time > st_str,
                 )
             )
         )
         if dup.scalar_one() == 0:
             sched = Schedule(
                 teacher_id=teacher_id,
+                student_id=student_id,
                 lesson_date=cur,
-                start_time=st,
-                end_time=et,
-                schedule_type=schedule_type,
-                title=title,
-                color=color,
+                start_time=st_str,
+                end_time=et_str,
+                subject_id=subject_id,
+                status="confirmed",
             )
             session.add(sched)
             created += 1

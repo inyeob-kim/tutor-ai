@@ -8,6 +8,7 @@
 | `name` | VARCHAR(50) | NOT NULL | - | 학생 이름 |
 | `phone` | VARCHAR(20) | NOT NULL | - | 전화번호 (하이픈 없이 01012345678) |
 | `parent_phone` | VARCHAR(20) | NULL | - | 부모님 연락처 (선택) |
+| `teacher_id` | BIGINT | NULL | - | 담당 교사 ID (FK: teachers.teacher_id) |
 | `school` | VARCHAR(100) | NULL | - | 학교/학년 |
 | `grade` | VARCHAR(20) | NULL | - | 학년 (예: 고1, 중3, 초6) |
 | `subject` | VARCHAR(100) | NULL | - | 과목 (수학, 영어, 국어+수학 등) |
@@ -59,6 +60,40 @@
 - **Unique Constraint**: `uniq_provider_oauth_id` (`provider`, `oauth_id`) - 소셜 계정 식별자 유니크
 ---
 
+## Category
+
+### categories 테이블 구조
+
+| 컬럼명 | 타입 | NULL | 기본값 | 설명 |
+|--------|------|------|--------|------|
+| `id` | SERIAL | NOT NULL | AUTO_INCREMENT | 내부용 고유 ID (Primary Key) |
+| `name` | VARCHAR(50) | NOT NULL | - | 대분류 이름 (언어, 음악 등) |
+| `icon` | VARCHAR(100) | NULL | - | UI 표시용 아이콘(이모지/FontAwesome) |
+| `sort_order` | INT | NOT NULL | 0 | 정렬 우선순위 (작을수록 상위) |
+| `is_active` | BOOLEAN | NOT NULL | true | 사용 여부 |
+
+---
+
+## Subject
+
+### subjects 테이블 구조
+
+| 컬럼명 | 타입 | NULL | 기본값 | 설명 |
+|--------|------|------|--------|------|
+| `id` | SERIAL | NOT NULL | AUTO_INCREMENT | 내부용 고유 ID (Primary Key) |
+| `category_id` | INT | NOT NULL | - | 대분류 ID (FK: categories.id) |
+| `code` | VARCHAR(20) | NOT NULL | - | 과목 코드 (예: ENG, MATH) |
+| `name` | VARCHAR(50) | NOT NULL | - | 과목명 (예: 영어 회화) |
+| `color` | VARCHAR(7) | NOT NULL | '#3788D8' | 과목 색상 HEX |
+| `is_active` | BOOLEAN | NOT NULL | true | 사용 여부 |
+
+### 제약 조건
+- **Primary Key**: `id`
+- **Foreign Key**: `category_id` → `categories.id`
+- **Unique Constraint**: `code`
+
+---
+
 ## Schedule
 
 ### schedules 테이블 구조
@@ -67,21 +102,23 @@
 |--------|------|------|--------|------|
 | `schedule_id` | BIGINT | NOT NULL | AUTO_INCREMENT | 내부용 고유 ID (Primary Key) |
 | `teacher_id` | BIGINT | NOT NULL | - | 교사 ID (FK: teachers.teacher_id) |
+| `student_id` | BIGINT | NOT NULL | - | 학생 ID (FK: students.student_id) |
 | `lesson_date` | DATE | NOT NULL | - | 날짜 |
-| `start_time` | TIME | NOT NULL | - | 시작 시간 |
-| `end_time` | TIME | NOT NULL | - | 종료 시간 |
-| `student_id` | BIGINT | NULL | - | 학생 ID (FK: students.student_id) |
-| `schedule_type` | ENUM('lesson','available','vacation','personal') | NOT NULL | - | 일정 유형 |
-| `title` | VARCHAR(100) | NULL | - | 제목 |
+| `start_time` | VARCHAR(5) | NOT NULL | - | 시작 시간 (HH:MM) |
+| `end_time` | VARCHAR(5) | NOT NULL | - | 종료 시간 (HH:MM) |
+| `subject_id` | INT | NOT NULL | - | 과목 ID (FK: subjects.id) |
 | `notes` | TEXT | NULL | - | 비고 |
-| `color` | VARCHAR(7) | NOT NULL | '#3788D8' | 표시 색상 |
+| `status` | VARCHAR(20) | NOT NULL | 'confirmed' | 일정 상태 |
+| `cancelled_at` | DATETIME | NULL | - | 취소 일시 |
+| `cancelled_by` | BIGINT | NULL | - | 취소한 사용자 ID |
+| `cancel_reason` | TEXT | NULL | - | 취소 사유 |
 | `created_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 생성일시 |
 | `updated_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 수정일시 |
 
 ### 제약 및 인덱스
 - **PK**: `schedule_id`
 - **UNIQUE**: `uniq_teacher_date_time (teacher_id, lesson_date, start_time)`
-- **INDEX**: `idx_teacher (teacher_id)`, `idx_date (lesson_date)`, `idx_student (student_id)`
+- **INDEX**: `idx_teacher (teacher_id)`, `idx_date (lesson_date)`, `idx_student (student_id)`, `ix_schedules_subject_id (subject_id)`
 
 ---
 
@@ -92,12 +129,14 @@
 | 컬럼명 | 타입 | NULL | 기본값 | 설명 |
 |--------|------|------|--------|------|
 | `teacher_id` | BIGINT | NOT NULL | - | 교사 ID (FK: teachers.teacher_id, PK) |
-| `subject` | VARCHAR(50) | NOT NULL | - | 과목명 (PK) |
-| `hourly_rate` | INT | NULL | - | 과목별 시급 (NULL이면 기본 시급) |
+| `subject_id` | INT | NOT NULL | - | 과목 ID (FK: subjects.id, PK) |
+| `price_per_hour` | INT | NOT NULL | - | 시간당 수업료 |
+| `is_active` | BOOLEAN | NOT NULL | true | 사용 여부 |
 
 ### 제약 조건
-- **Primary Key**: (`teacher_id`, `subject`) - 복합 키
+- **Primary Key**: (`teacher_id`, `subject_id`) - 복합 키
 - **Foreign Key**: `teacher_id` → `teachers.teacher_id`
+- **Foreign Key**: `subject_id` → `subjects.id`
 
 ---
 

@@ -42,6 +42,14 @@ def _diff_snapshots(before: dict | None, after: dict | None) -> dict:
     return diff
 
 
+def _extract_teacher_id(before: dict | None, after: dict | None) -> int | None:
+    if after is not None and after.get("teacher_id") is not None:
+        return after.get("teacher_id")
+    if before is not None and before.get("teacher_id") is not None:
+        return before.get("teacher_id")
+    return None
+
+
 def _build_history_entry(
     student_id: int,
     change_type: StudentHistoryChangeType,
@@ -59,6 +67,7 @@ def _build_history_entry(
         payload["diff"] = diff
     return StudentHistory(
         student_id=student_id,
+        teacher_id=_extract_teacher_id(before, after),
         change_type=change_type.value,
         payload=payload or {"note": "no changes"},
     )
@@ -97,6 +106,7 @@ async def create_student(payload: StudentCreate, session: AsyncSession = Depends
 @router.get("", response_model=StudentListResp)
 async def list_students(
     q: str | None = Query(None, description="이름 부분검색"),
+    teacher_id: int | None = Query(None, description="담당 교사 ID"),
     orderBy: str = Query("created_at"),
     order: str = Query("desc"),
     page: int = Query(1, ge=1),
@@ -116,6 +126,10 @@ async def list_students(
 
     base = select(Student)
     cnt = select(func.count()).select_from(Student)
+
+    if teacher_id is not None:
+        base = base.where(Student.teacher_id == teacher_id)
+        cnt = cnt.where(Student.teacher_id == teacher_id)
 
     if q:
         # 암호화된 필드는 직접 검색 불가, 해시 필드로 정확 일치 검색

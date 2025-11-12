@@ -7,6 +7,7 @@ class StudentBase(BaseModel):
     name: str
     phone: str
     parent_phone: Optional[str] = None
+    teacher_id: Optional[int] = None
     school: Optional[str] = None
     grade: Optional[str] = None
     subject: Optional[str] = None
@@ -25,6 +26,7 @@ class StudentUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     parent_phone: Optional[str] = None
+    teacher_id: Optional[int] = None
     school: Optional[str] = None
     grade: Optional[str] = None
     subject: Optional[str] = None
