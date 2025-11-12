@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../widgets/section_title.dart';
 import 'add_student_screen.dart';
+import '../theme/tokens.dart';
 
 enum TabKey { all, today, lowAttendance }
 
@@ -26,7 +27,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
       phone: "010-1234-5678",
       sessions: 24,
       completedSessions: 22,
-      color: const Color(0xFF3B82F6),
+      color: AppColors.primary,
       nextClass: "11월 7일 10:00",
       attendanceRate: 92,
       isAdult: false, // 미성년자
@@ -38,7 +39,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
       phone: "010-2345-6789",
       sessions: 18,
       completedSessions: 18,
-      color: const Color(0xFF10B981),
+      color: AppColors.success,
       nextClass: "11월 7일 14:00",
       attendanceRate: 100,
       isAdult: false, // 미성년자
@@ -50,7 +51,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
       phone: "010-3456-7890",
       sessions: 20,
       completedSessions: 18,
-      color: const Color(0xFF9333EA),
+      color: AppColors.primary,
       nextClass: "11월 7일 16:00",
       attendanceRate: 90,
       isAdult: false, // 미성년자
@@ -61,7 +62,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
       phone: "010-9999-9999",
       sessions: 12,
       completedSessions: 10,
-      color: const Color(0xFFF59E0B),
+      color: AppColors.warning,
       nextClass: "11월 8일 19:00",
       attendanceRate: 83,
       isAdult: true, // 성인 (학년 없음)
@@ -182,16 +183,16 @@ class _StudentsScreenState extends State<StudentsScreen> {
 
           // Content
           SliverPadding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(Gaps.screen),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // 탭
                 _buildTabs(theme, colorScheme),
-                const SizedBox(height: 16),
+                SizedBox(height: Gaps.card),
 
                 // 검색
                 _buildSearchBar(theme, colorScheme),
-                const SizedBox(height: 20),
+                SizedBox(height: Gaps.screen),
 
                 // 학생 리스트
                 if (filteredStudents.isEmpty)
@@ -199,7 +200,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                 else
                   ...filteredStudents
                       .map((student) => Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
+                            padding: EdgeInsets.only(bottom: Gaps.card - 2),
                             child: _buildStudentCard(
                               student,
                               theme,
@@ -219,7 +220,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
   Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: EdgeInsets.all(Gaps.screen * 2),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -253,11 +254,11 @@ class _StudentsScreenState extends State<StudentsScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.textPrimary.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -310,12 +311,12 @@ class _StudentsScreenState extends State<StudentsScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(Radii.chip),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isActive ? colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            color: isActive ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(Radii.chip),
           ),
           child: Center(
             child: Text(
@@ -323,7 +324,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
               style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: isActive
-                    ? Colors.white
+                    ? AppColors.surface
                     : colorScheme.onSurfaceVariant,
               ),
             ),
@@ -336,11 +337,11 @@ class _StudentsScreenState extends State<StudentsScreen> {
   Widget _buildSearchBar(ThemeData theme, ColorScheme colorScheme) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.textPrimary.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -352,9 +353,9 @@ class _StudentsScreenState extends State<StudentsScreen> {
           hintText: '학생 이름 검색...',
           prefixIcon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: Gaps.screen,
+            vertical: Gaps.card,
           ),
         ),
       ),
@@ -367,29 +368,29 @@ class _StudentsScreenState extends State<StudentsScreen> {
     ColorScheme colorScheme,
   ) {
     final barColor = student.attendanceRate >= 95
-        ? const Color(0xFF10B981)
+        ? AppColors.success
         : student.attendanceRate >= 85
-            ? const Color(0xFF2563EB)
-            : const Color(0xFFF97316);
+            ? AppColors.primary
+            : AppColors.warning;
 
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFE7F0FF),
-            Color(0xFFDCE8FF),
+            AppColors.primaryLight,
+            AppColors.primaryLight.withValues(alpha: 0.8),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(Radii.card + 6),
         border: Border.all(
-          color: Colors.blue.withValues(alpha: 0.15),
+          color: AppColors.primary.withValues(alpha: 0.15),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.12),
+            color: AppColors.primary.withValues(alpha: 0.12),
             blurRadius: 18,
             offset: const Offset(0, 14),
           ),
@@ -404,9 +405,9 @@ class _StudentsScreenState extends State<StudentsScreen> {
             });
             _showStudentDetailModal(context, student, theme, colorScheme);
           },
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(Radii.card + 6),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(Gaps.cardPad),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -419,7 +420,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                       height: 56,
                       decoration: BoxDecoration(
                         color: student.color,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(Radii.chip + 4),
                         boxShadow: [
                           BoxShadow(
                             color: student.color.withValues(alpha: 0.3),
@@ -431,15 +432,15 @@ class _StudentsScreenState extends State<StudentsScreen> {
                       child: Center(
                         child: Text(
                           student.name[0],
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: AppColors.surface,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: Gaps.card),
                     // 학생 정보
                     Expanded(
                       child: Column(
@@ -459,7 +460,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                                 Icon(
                                   Icons.emoji_events_rounded,
                                   size: 20,
-                                  color: Colors.amber[700],
+                                  color: AppColors.warning,
                                 ),
                               ],
                             ],
@@ -489,8 +490,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
 
                 // 과목
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: Gaps.row - 2,
+                  runSpacing: Gaps.row - 2,
                   children: student.subjects
                       .map((subject) => Container(
                             padding: const EdgeInsets.symmetric(
@@ -498,8 +499,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              borderRadius: BorderRadius.circular(12),
+                              color: AppColors.surface.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(Radii.chip),
                             ),
                             child: Text(
                               subject,
@@ -511,14 +512,14 @@ class _StudentsScreenState extends State<StudentsScreen> {
                           ))
                       .toList(),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: Gaps.screen),
 
                 // 출석률 및 다음 수업
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(Gaps.card),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(18),
+                    color: AppColors.surface.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(Radii.card - 2),
                   ),
                   child: Column(
                     children: [
@@ -553,7 +554,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                       ),
                       const SizedBox(height: 12),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(Radii.icon),
                         child: LinearProgressIndicator(
                           value: student.attendanceRate / 100,
                           backgroundColor: barColor.withValues(alpha: 0.2),
@@ -664,9 +665,9 @@ class _StudentDetailModal extends StatelessWidget {
                     children: [
                       IconButton(
                         onPressed: onClose,
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: Icon(Icons.close, color: AppColors.surface),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.2),
+                          backgroundColor: AppColors.surface.withOpacity(0.2),
                         ),
                       ),
                     ],
@@ -675,13 +676,13 @@ class _StudentDetailModal extends StatelessWidget {
                   // 프로필
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundColor: AppColors.surface.withOpacity(0.2),
                     child: Text(
                       student.name[0],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.surface,
                       ),
                     ),
                   ),
@@ -690,7 +691,7 @@ class _StudentDetailModal extends StatelessWidget {
                     student.name,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppColors.surface,
                     ),
                   ),
                   if (student.isAdult == false && student.grade != null) ...[
@@ -698,7 +699,7 @@ class _StudentDetailModal extends StatelessWidget {
                     Text(
                       student.grade!,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
+                        color: AppColors.surface.withOpacity(0.9),
                       ),
                     ),
                   ] else if (student.isAdult) ...[
@@ -706,7 +707,7 @@ class _StudentDetailModal extends StatelessWidget {
                     Text(
                       '성인',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
+                        color: AppColors.surface.withOpacity(0.9),
                       ),
                     ),
                   ],
@@ -718,8 +719,8 @@ class _StudentDetailModal extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppColors.surface.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(Radii.chip),
                           ),
                           child: Column(
                             children: [
@@ -727,14 +728,14 @@ class _StudentDetailModal extends StatelessWidget {
                                 '${student.sessions}',
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: AppColors.surface,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '총 수업',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: AppColors.surface.withOpacity(0.8),
                                 ),
                               ),
                             ],
@@ -746,8 +747,8 @@ class _StudentDetailModal extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppColors.surface.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(Radii.chip),
                           ),
                           child: Column(
                             children: [
@@ -755,14 +756,14 @@ class _StudentDetailModal extends StatelessWidget {
                                 '${student.attendanceRate}%',
                                 style: theme.textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: AppColors.surface,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '출석률',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: AppColors.surface.withOpacity(0.8),
                                 ),
                               ),
                             ],
@@ -779,7 +780,7 @@ class _StudentDetailModal extends StatelessWidget {
             Expanded(
               child: ListView(
                 controller: scrollController,
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(Gaps.cardPad + 4),
                 children: [
                   // 전화번호
                   Row(

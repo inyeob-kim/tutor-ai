@@ -4,6 +4,7 @@ import '../models/lesson.dart';
 import '../models/student.dart';
 import '../services/settings_service.dart';
 import '../theme/scroll_physics.dart';
+import '../theme/tokens.dart';
 import 'add_schedule_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
@@ -33,7 +34,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       phone: "010-1234-5678",
       sessions: 24,
       completedSessions: 22,
-      color: const Color(0xFF3B82F6),
+      color: AppColors.primary,
       nextClass: "11월 7일 10:00",
       attendanceRate: 92,
       isAdult: false,
@@ -45,7 +46,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       phone: "010-2345-6789",
       sessions: 18,
       completedSessions: 18,
-      color: const Color(0xFF10B981),
+      color: AppColors.success,
       nextClass: "11월 7일 14:00",
       attendanceRate: 100,
       isAdult: false,
@@ -57,7 +58,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       phone: "010-3456-7890",
       sessions: 20,
       completedSessions: 18,
-      color: const Color(0xFF9333EA),
+      color: AppColors.primary,
       nextClass: "11월 7일 16:00",
       attendanceRate: 90,
       isAdult: false,
@@ -69,7 +70,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       phone: "010-4567-8901",
       sessions: 16,
       completedSessions: 14,
-      color: const Color(0xFFF59E0B),
+      color: AppColors.warning,
       nextClass: "11월 7일 19:00",
       attendanceRate: 88,
       isAdult: false,
@@ -81,7 +82,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       phone: "010-5678-9012",
       sessions: 30,
       completedSessions: 28,
-      color: const Color(0xFFEC4899),
+      color: AppColors.primary,
       nextClass: "11월 7일 20:00",
       attendanceRate: 93,
       isAdult: false,
@@ -92,7 +93,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       phone: "010-6789-0123",
       sessions: 12,
       completedSessions: 10,
-      color: const Color(0xFF06B6D4),
+      color: AppColors.primary,
       nextClass: "11월 7일 21:00",
       attendanceRate: 83,
       isAdult: true,
@@ -460,7 +461,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('화면을 열 수 없습니다: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -486,7 +487,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+              foregroundColor: AppColors.error,
             ),
             child: const Text('삭제'),
           ),
@@ -503,7 +504,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('수업이 취소되었습니다.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -522,10 +523,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           // 월 선택 및 날짜 선택 스크롤 뷰
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: AppColors.textPrimary.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -545,7 +546,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    padding: EdgeInsets.fromLTRB(Gaps.screen, Gaps.card, Gaps.screen, Gaps.cardPad + 4),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -567,7 +568,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: Gaps.card),
                         // 주말 제외 옵션이 켜져 있고 선택된 날짜가 주말이면 메시지 표시
                         Builder(
                           builder: (context) {
@@ -576,7 +577,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               if (weekday == 6 || weekday == 7) {
                                 return Center(
                                   child: Padding(
-                                    padding: const EdgeInsets.all(40),
+                                    padding: EdgeInsets.all(Gaps.screen * 2),
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
@@ -607,18 +608,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               }
                             }
                             // 평일이거나 주말 제외 옵션이 꺼져 있으면 시간대 표시
-                            return Column(
-                              children: [
-                                for (final hour in _timeSlots)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 14),
-                                    child: _buildScheduleCard(hour, theme, colorScheme),
-                                  ),
-                              ],
-                            );
+                              return Column(
+                                children: [
+                                  for (final hour in _timeSlots)
+                                    Padding(
+                                      padding: EdgeInsets.only(bottom: Gaps.card - 2),
+                                      child: _buildScheduleCard(hour, theme, colorScheme),
+                                    ),
+                                ],
+                              );
                           },
                         ),
-                        const SizedBox(height: 40),
+                        SizedBox(height: Gaps.screen * 2),
                       ],
                     ),
                   ),
@@ -687,7 +688,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         (_viewMonth.year == today.year && _viewMonth.month < today.month + 2);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -723,7 +724,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(Radii.chip),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -845,7 +846,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               controller: _dateScrollController,
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: Gaps.card),
               itemCount: dates.length,
               itemBuilder: (context, index) {
                 final date = dates[index];
@@ -872,15 +873,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     });
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    margin: EdgeInsets.only(right: Gaps.row),
+                    padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? colorScheme.primary
+                          ? AppColors.primary
                           : isToday
                               ? colorScheme.primaryContainer
                               : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(Radii.chip + 4),
                       border: isSelected
                           ? null
                           : Border.all(
@@ -896,7 +897,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: isSelected
-                                ? Colors.white
+                                ? AppColors.surface
                                 : isToday
                                     ? colorScheme.onPrimaryContainer
                                     : colorScheme.onSurface,
@@ -907,7 +908,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           _formatKoreanDate(date).split('(')[1].replaceAll(')', ''), // 요일만
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: isSelected
-                                ? Colors.white.withValues(alpha: 0.9)
+                                ? AppColors.surface.withValues(alpha: 0.9)
                                 : isToday
                                     ? colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
                                     : colorScheme.onSurfaceVariant,
@@ -939,34 +940,34 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       final actualEndTimeStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
       
       final accentColor = isDone
-          ? const Color(0xFF10B981)
-          : colorScheme.primary;
+          ? AppColors.success
+          : AppColors.primary;
 
       // 등록된 수업 카드는 스와이프 제스처 없이 일반 Container로 표시
       return Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFFE7F0FF),
-              Color(0xFFDCE8FF),
+              AppColors.primaryLight,
+              AppColors.primaryLight.withValues(alpha: 0.8),
             ],
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(Radii.card + 6),
           border: Border.all(
-            color: Colors.blue.withValues(alpha: 0.15),
+            color: AppColors.primary.withValues(alpha: 0.15),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withValues(alpha: 0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               blurRadius: 18,
               offset: const Offset(0, 14),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(Gaps.cardPad),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -981,17 +982,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       width: 26,
                       height: 26,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(Radii.icon - 2),
                         color: isDone 
                             ? accentColor 
-                            : Colors.white.withValues(alpha: 0.9),
+                            : AppColors.surface.withValues(alpha: 0.9),
                         border: Border.all(
                           color: accentColor,
                           width: 2,
                         ),
                       ),
                       child: isDone
-                          ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                          ? Icon(Icons.check_rounded, size: 16, color: AppColors.surface)
                           : null,
                     ),
                   ),
@@ -1004,7 +1005,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: accentColor.withValues(alpha: isDone ? 0.08 : 0.15),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(Radii.chip + 2),
                           ),
                           child: Text(
                             '$timeStr - $actualEndTimeStr',
@@ -1046,7 +1047,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         padding: const EdgeInsets.all(8.0),
                         child: Icon(
                           Icons.remove_rounded,
-                          color: Colors.red,
+                          color: AppColors.error,
                           size: 24,
                         ),
                       ),
@@ -1058,10 +1059,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               const SizedBox(height: 18),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(18),
+                  color: AppColors.surface.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(Radii.card - 2),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: 12),
                 child: Row(
                   children: [
                     Icon(Icons.person_outline_rounded, size: 18, color: accentColor),
@@ -1124,28 +1125,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           },
           background: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(Radii.card + 6),
               border: Border.all(
-                color: Colors.green.withValues(alpha: 0.5),
+                color: AppColors.success.withValues(alpha: 0.5),
                 width: 2,
                 style: BorderStyle.solid,
               ),
             ),
             alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 20),
+            padding: EdgeInsets.only(left: Gaps.screen),
             child: Row(
               children: [
                 Icon(
                   Icons.check_circle_rounded,
-                  color: Colors.green,
+                  color: AppColors.success,
                   size: 32,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: Gaps.row),
                 Text(
                   '활성화',
                   style: theme.textTheme.labelLarge?.copyWith(
-                    color: Colors.green,
+                    color: AppColors.success,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1156,9 +1157,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ignoring: true, // 클릭 비활성화
             child: DottedBorder(
               borderType: BorderType.RRect,
-              radius: const Radius.circular(24),
+              radius: Radius.circular(Radii.card + 6),
               padding: EdgeInsets.zero,
-              color: Colors.red.withValues(alpha: 0.4),
+              color: AppColors.error.withValues(alpha: 0.4),
               strokeWidth: 3,
               dashPattern: const [10, 5],
               child: Container(
@@ -1166,29 +1167,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   minHeight: 80,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(24),
+                  color: AppColors.textMuted.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(Radii.card + 6),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: Gaps.cardPad + 4),
                 child: Row(
                   children: [
                     Icon(
                       Icons.block_rounded,
-                      color: Colors.red.withValues(alpha: 0.6),
+                      color: AppColors.error.withValues(alpha: 0.6),
                       size: 28,
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: Gaps.card),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(Radii.chip + 2),
                       ),
                       child: Text(
                         '$timeStr - $endTimeStr (불가)',
                         style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Colors.red.withValues(alpha: 0.7),
+                          color: AppColors.error.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
@@ -1214,30 +1215,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         },
         background: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(Radii.card + 6),
             border: Border.all(
-              color: Colors.red.withValues(alpha: 0.5),
+              color: AppColors.error.withValues(alpha: 0.5),
               width: 3,
               style: BorderStyle.solid,
             ),
           ),
           alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
+          padding: EdgeInsets.only(right: Gaps.screen),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
                 '비활성화',
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: Colors.red,
+                  color: AppColors.error,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: Gaps.row),
               Icon(
                 Icons.block_rounded,
-                color: Colors.red,
+                color: AppColors.error,
                 size: 32,
               ),
             ],
@@ -1253,10 +1254,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 onTap: isNowDisabled ? null : () => _goNewLesson(hour),
                 child: DottedBorder(
                   borderType: BorderType.RRect,
-                  radius: const Radius.circular(24),
+                  radius: Radius.circular(Radii.card + 6),
                   padding: EdgeInsets.zero,
                   color: isNowDisabled
-                      ? Colors.red.withValues(alpha: 0.4)
+                      ? AppColors.error.withValues(alpha: 0.4)
                       : colorScheme.outlineVariant.withValues(alpha: 0.6),
                   strokeWidth: 3,
                   dashPattern: const [10, 5],
@@ -1266,37 +1267,37 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isNowDisabled
-                          ? Colors.grey.withValues(alpha: 0.15)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                          ? AppColors.textMuted.withValues(alpha: 0.15)
+                          : AppColors.surface,
+                      borderRadius: BorderRadius.circular(Radii.card + 6),
                       boxShadow: isNowDisabled
                           ? []
                           : [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.02),
+                                color: AppColors.textPrimary.withValues(alpha: 0.02),
                                 blurRadius: 12,
                                 offset: const Offset(0, 8),
                               ),
                             ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: Gaps.cardPad + 4),
                     child: Row(
                       children: [
                         Icon(
                           isNowDisabled ? Icons.block_rounded : Icons.add,
                           color: isNowDisabled
-                              ? Colors.red.withValues(alpha: 0.6)
+                              ? AppColors.error.withValues(alpha: 0.6)
                               : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                           size: 28,
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: Gaps.card),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: isNowDisabled
-                                ? Colors.red.withValues(alpha: 0.1)
+                                ? AppColors.error.withValues(alpha: 0.1)
                                 : colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(Radii.chip + 2),
                           ),
                           child: Text(
                             isNowDisabled
@@ -1305,7 +1306,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             style: theme.textTheme.labelMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: isNowDisabled
-                                  ? Colors.red.withValues(alpha: 0.7)
+                                  ? AppColors.error.withValues(alpha: 0.7)
                                   : colorScheme.onSurfaceVariant,
                             ),
                           ),
@@ -1338,7 +1339,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         onTap: isDimmed ? null : onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(
+          padding: EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 8,
           ),
@@ -1348,11 +1349,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 : Colors.transparent,
             border: Border.all(
               color: isSelected
-                  ? colorScheme.primary
+                  ? AppColors.primary
                   : colorScheme.outlineVariant.withValues(alpha: 0.5),
               width: isSelected ? 1.5 : 1,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(Radii.chip),
           ),
           child: Text(
             label,

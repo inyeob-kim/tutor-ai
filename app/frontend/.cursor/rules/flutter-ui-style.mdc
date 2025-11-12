@@ -1,0 +1,19 @@
+---
+description: Enforce UI Style Guide (Flutter Toss Style)
+alwaysApply: true
+globs:
+  - "**/*.dart"
+---
+
+# Rules for Cursor AI (to follow automatically)
+
+- 모든 UI 코드에서 **Color(0x...) 직접 사용 금지**
+- 반드시 `theme/tokens.dart` 또는 `Theme.of(context)` 를 사용하여 색상 지정
+- Card: radius 16–20, padding 16–20, elevation 0–1
+- Chip: PrimaryLight background, Primary text, radius 12, padding 10h / 6v
+- BottomNav: Primary active, TextMuted inactive, icon 24, label 11–12
+- Typography: Pretendard / Noto Sans KR 사용 (TextStyle 직접 하드코딩 금지)
+- Spacing: screen 16–20, card gap 12–16, row gap 8–12
+
+# Additional Enforcement
+- Cursor가 UI 위젯을 생성하거나 수정할 때 반드시 Design Tokens 기반으로 코드 생성.

@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/api_service.dart';
 import '../theme/scroll_physics.dart';
+import '../theme/tokens.dart';
 
 class AiAssistantScreen extends StatefulWidget {
   const AiAssistantScreen({super.key});
@@ -64,9 +65,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
     if (!status.isGranted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('마이크 권한이 필요합니다.'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -82,9 +83,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
         if (!result.isGranted) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text('마이크 권한이 필요합니다.'),
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.error,
               ),
             );
           }
@@ -119,9 +120,9 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('마이크 권한이 없습니다.'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -288,7 +289,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const TossScrollPhysics(),
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(Gaps.cardPad + 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -296,13 +297,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
               Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(Radii.card + 2),
                   side: BorderSide(
                     color: colorScheme.outline.withOpacity(0.1),
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(Gaps.cardPad),
                   child: Column(
                     children: [
                       Icon(
@@ -310,14 +311,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                         size: 48,
                         color: colorScheme.primary,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: Gaps.row),
                       Text(
                         '음성으로 말씀해주세요',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: Gaps.row - 2),
                       Text(
                         '예: "김민수 학생 내일 오후 2시 수업 등록해줘"',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -330,7 +331,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                 ),
               ),
               
-              const SizedBox(height: 40),
+              SizedBox(height: Gaps.screen * 2),
               
               // 녹음 버튼
               Center(
@@ -347,12 +348,12 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: _isRecording
-                                ? Colors.red
+                                ? AppColors.error
                                 : colorScheme.primary,
                             boxShadow: [
                               BoxShadow(
                                 color: (_isRecording
-                                        ? Colors.red
+                                        ? AppColors.error
                                         : colorScheme.primary)
                                     .withOpacity(0.3),
                                 blurRadius: 20,
@@ -363,7 +364,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                           child: Icon(
                             _isRecording ? Icons.stop : Icons.mic,
                             size: 48,
-                            color: Colors.white,
+                            color: AppColors.surface,
                           ),
                         ),
                       ),
@@ -372,7 +373,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                 ),
               ),
               
-              const SizedBox(height: 24),
+              SizedBox(height: Gaps.cardPad + 4),
               
               // 녹음 시간 표시
               if (_isRecording)
@@ -381,18 +382,18 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                     _formatDuration(_recordingDuration),
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.red,
+                      color: AppColors.error,
                     ),
                   ),
                 ),
               
               // 처리 중 표시
               if (_isProcessing) ...[
-                const SizedBox(height: 24),
-                const Center(
+                SizedBox(height: Gaps.cardPad + 4),
+                Center(
                   child: CircularProgressIndicator(),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: Gaps.row),
                 Center(
                   child: Text(
                     '처리 중...',
@@ -405,18 +406,18 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
               
               // AI 응답 텍스트
               if (_aiResponseText != null) ...[
-                const SizedBox(height: 32),
+                SizedBox(height: Gaps.card + 16),
                 Card(
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(Radii.card + 2),
                     side: BorderSide(
                       color: colorScheme.primary.withOpacity(0.2),
                     ),
                   ),
                   color: colorScheme.primaryContainer,
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: EdgeInsets.all(Gaps.cardPad),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -427,7 +428,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                               color: colorScheme.primary,
                               size: 20,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: Gaps.row - 2),
                             Text(
                               'AI 응답',
                               style: theme.textTheme.labelLarge?.copyWith(
@@ -437,7 +438,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: Gaps.row),
                         Text(
                           _aiResponseText!,
                           style: theme.textTheme.bodyLarge?.copyWith(
@@ -445,25 +446,25 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                           ),
                         ),
                         if (_responseAudioPath != null && !_isPlaying) ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: Gaps.card),
                           OutlinedButton.icon(
                             onPressed: _playResponseAudio,
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('다시 듣기'),
+                            icon: Icon(Icons.play_arrow),
+                            label: Text('다시 듣기'),
                           ),
                         ],
                         if (_isPlaying) ...[
-                          const SizedBox(height: 16),
+                          SizedBox(height: Gaps.card),
                           Row(
                             children: [
-                              const SizedBox(
-                                width: 16,
-                                height: 16,
+                              SizedBox(
+                                width: Gaps.card,
+                                height: Gaps.card,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: Gaps.row - 2),
                               Text(
                                 '재생 중...',
                                 style: theme.textTheme.bodySmall?.copyWith(
@@ -481,24 +482,24 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
               
               // 에러 메시지
               if (_errorMessage != null) ...[
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
                 Card(
                   elevation: 0,
-                  color: Colors.red.withOpacity(0.1),
+                  color: AppColors.error.withOpacity(0.1),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(Radii.chip + 4),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(Gaps.card),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.red),
-                        const SizedBox(width: 12),
+                        Icon(Icons.error_outline, color: AppColors.error),
+                        SizedBox(width: Gaps.row),
                         Expanded(
                           child: Text(
                             _errorMessage!,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.red,
+                              color: AppColors.error,
                             ),
                           ),
                         ),
@@ -508,7 +509,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
                 ),
               ],
               
-              const SizedBox(height: 40),
+              SizedBox(height: Gaps.screen * 2),
             ],
           ),
         ),

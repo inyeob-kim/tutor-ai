@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
+import '../theme/tokens.dart';
 
 class BookingRequestScreen extends StatefulWidget {
   final String? studentId; // 선택적으로 학생 ID를 받을 수 있음
@@ -90,17 +91,17 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
     // 클립보드에 복사
     await Clipboard.setData(ClipboardData(text: message));
     
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('링크가 클립보드에 복사되었습니다'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      
-      // 공유 다이얼로그 표시
-      _showShareDialog(message);
-    }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('링크가 클립보드에 복사되었습니다'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        
+        // 공유 다이얼로그 표시
+        _showShareDialog(message);
+      }
   }
 
   void _showShareDialog(String message) {
@@ -110,9 +111,9 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.card + 2)),
         ),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(Gaps.cardPad + 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -122,19 +123,19 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(Gaps.card),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(Radii.chip),
               ),
               child: SelectableText(
                 message,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
             Row(
               children: [
                 Expanded(
@@ -143,33 +144,33 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
                       Navigator.of(context).pop();
                       // TODO: 카카오톡 공유 구현
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('카카오톡 공유 기능은 준비 중입니다')),
+                        SnackBar(content: Text('카카오톡 공유 기능은 준비 중입니다')),
                       );
                     },
-                    child: const Text('카카오톡'),
+                    child: Text('카카오톡'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: Gaps.row),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
                       // TODO: 문자 메시지 공유 구현
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('문자 메시지 공유 기능은 준비 중입니다')),
+                        SnackBar(content: Text('문자 메시지 공유 기능은 준비 중입니다')),
                       );
                     },
-                    child: const Text('문자'),
+                    child: Text('문자'),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('닫기'),
+                child: Text('닫기'),
               ),
             ),
           ],
@@ -196,7 +197,7 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(Gaps.screen),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -208,12 +209,12 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: Gaps.row),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(Radii.chip + 4),
                   border: Border.all(
                     color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                   ),
@@ -235,7 +236,7 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: Gaps.cardPad + 4),
             ],
 
             // 날짜 선택
@@ -245,14 +246,14 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             GestureDetector(
               onTap: _selectDate,
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(Gaps.cardPad),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(Radii.chip + 4),
                   border: Border.all(
                     color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                   ),
@@ -260,32 +261,32 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.calendar_today_rounded, color: colorScheme.primary),
-                    const SizedBox(width: 12),
+                    SizedBox(width: Gaps.row),
                     Text(
                       _formatKoreanDate(_selectedDate),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     Icon(Icons.chevron_right_rounded, color: colorScheme.onSurfaceVariant),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
 
             // 안내 메시지
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(Gaps.card),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(Radii.chip),
               ),
               child: Row(
                 children: [
                   Icon(Icons.info_outline_rounded, color: colorScheme.primary, size: 20),
-                  const SizedBox(width: 12),
+                  SizedBox(width: Gaps.row),
                   Expanded(
                     child: Text(
                       '학생에게 링크를 보내면 학생이 직접 시간대를 선택해서 예약할 수 있습니다.',
@@ -297,30 +298,29 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
 
             // 링크 생성 및 공유 버튼
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _shareLink,
-                icon: const Icon(Icons.share_rounded),
-                label: const Text(
+                icon: Icon(Icons.share_rounded),
+                label: Text(
                   '예약 링크 생성 및 공유',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: Gaps.card),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(Radii.chip),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -328,18 +328,18 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
                   final link = _generateBookingLink();
                   Clipboard.setData(ClipboardData(text: link));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text('링크가 클립보드에 복사되었습니다'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.success,
                     ),
                   );
                 },
-                icon: const Icon(Icons.copy_rounded),
-                label: const Text('링크만 복사'),
+                icon: Icon(Icons.copy_rounded),
+                label: Text('링크만 복사'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: Gaps.card),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(Radii.chip),
                   ),
                 ),
               ),

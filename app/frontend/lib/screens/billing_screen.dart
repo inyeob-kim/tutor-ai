@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
+import '../theme/tokens.dart';
 
 enum BillingStatus { paid, unpaid, pending }
 enum BillingFilter { all, unpaid, paid, thisMonth }
@@ -24,7 +25,7 @@ class _BillingScreenState extends State<BillingScreen> {
       'date': '2024-11-01',
       'dueDate': '2024-11-05',
       'status': BillingStatus.paid,
-      'color': const Color(0xFF3B82F6),
+      'color': AppColors.primary,
     },
     {
       'id': '2',
@@ -34,7 +35,7 @@ class _BillingScreenState extends State<BillingScreen> {
       'date': '2024-11-03',
       'dueDate': '2024-11-07',
       'status': BillingStatus.unpaid,
-      'color': const Color(0xFF10B981),
+      'color': AppColors.success,
     },
     {
       'id': '3',
@@ -44,7 +45,7 @@ class _BillingScreenState extends State<BillingScreen> {
       'date': '2024-11-05',
       'dueDate': '2024-11-10',
       'status': BillingStatus.pending,
-      'color': const Color(0xFF9333EA),
+      'color': AppColors.primary,
     },
     {
       'id': '4',
@@ -54,7 +55,7 @@ class _BillingScreenState extends State<BillingScreen> {
       'date': '2024-10-28',
       'dueDate': '2024-11-02',
       'status': BillingStatus.paid,
-      'color': const Color(0xFFF59E0B),
+      'color': AppColors.warning,
     },
   ];
 
@@ -172,20 +173,20 @@ class _BillingScreenState extends State<BillingScreen> {
 
           // Content
           SliverPadding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(Gaps.screen),
             sliver: SliverList(
               delegate: SliverChildListDelegate(
                 [
                 // 필터 탭
                 _buildFilterTabs(theme, colorScheme),
-                const SizedBox(height: 20),
+                SizedBox(height: Gaps.screen),
 
                 // 청구 리스트
                 if (filteredBillings.isEmpty)
                   _buildEmptyState(theme, colorScheme)
                 else
                   ...filteredBillings.map((billing) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
+                        padding: EdgeInsets.only(bottom: Gaps.card - 2),
                         child: _buildBillingCard(
                           billing,
                           theme,
@@ -193,7 +194,7 @@ class _BillingScreenState extends State<BillingScreen> {
                         ),
                       )),
 
-                const SizedBox(height: 40),
+                SizedBox(height: Gaps.screen * 2),
               ],
                 addAutomaticKeepAlives: false,
                 addRepaintBoundaries: true,
@@ -208,7 +209,7 @@ class _BillingScreenState extends State<BillingScreen> {
   Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: EdgeInsets.all(Gaps.screen * 2),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -242,11 +243,11 @@ class _BillingScreenState extends State<BillingScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.textPrimary.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -309,12 +310,12 @@ class _BillingScreenState extends State<BillingScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(Radii.chip),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isActive ? colorScheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            color: isActive ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(Radii.chip),
           ),
           child: Center(
             child: Text(
@@ -322,7 +323,7 @@ class _BillingScreenState extends State<BillingScreen> {
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: isActive
-                    ? Colors.white
+                    ? AppColors.surface
                     : colorScheme.onSurfaceVariant,
               ),
             ),
@@ -347,17 +348,17 @@ class _BillingScreenState extends State<BillingScreen> {
 
     switch (status) {
       case BillingStatus.paid:
-        statusColor = const Color(0xFF10B981);
+        statusColor = AppColors.success;
         statusText = '납부 완료';
         statusIcon = Icons.check_circle_rounded;
         break;
       case BillingStatus.unpaid:
-        statusColor = const Color(0xFFF97316);
+        statusColor = AppColors.warning;
         statusText = '미납';
         statusIcon = Icons.warning_rounded;
         break;
       case BillingStatus.pending:
-        statusColor = const Color(0xFF2563EB);
+        statusColor = AppColors.primary;
         statusText = '대기중';
         statusIcon = Icons.schedule_rounded;
         break;
@@ -365,22 +366,22 @@ class _BillingScreenState extends State<BillingScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFE7F0FF),
-            Color(0xFFDCE8FF),
+            AppColors.primaryLight,
+            AppColors.primaryLight.withValues(alpha: 0.8),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(Radii.card + 6),
         border: Border.all(
-          color: Colors.blue.withValues(alpha: 0.15),
+          color: AppColors.primary.withValues(alpha: 0.15),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.12),
+            color: AppColors.primary.withValues(alpha: 0.12),
             blurRadius: 18,
             offset: const Offset(0, 14),
           ),
@@ -392,9 +393,9 @@ class _BillingScreenState extends State<BillingScreen> {
           onTap: () {
             // TODO: 청구 상세 페이지
           },
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(Radii.card + 6),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(Gaps.cardPad),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -424,13 +425,13 @@ class _BillingScreenState extends State<BillingScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(Radii.chip),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -453,12 +454,12 @@ class _BillingScreenState extends State<BillingScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: Gaps.screen),
                 Divider(
                   height: 1,
                   color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: Gaps.screen),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

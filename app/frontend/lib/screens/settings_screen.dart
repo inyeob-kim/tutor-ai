@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
+import '../theme/tokens.dart';
 import '../services/settings_service.dart';
 import 'teacher_subjects_screen.dart';
 
@@ -99,17 +100,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Content
           SliverPadding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(Gaps.card),
             sliver: SliverList(
               delegate: SliverChildListDelegate(
                 [
                 // 프로필 섹션
                 _buildProfileSection(theme, colorScheme),
-                const SizedBox(height: 16),
+                SizedBox(height: Gaps.card),
 
                 // 알림 설정
                 _buildSectionTitle('알림 설정', theme, colorScheme),
-                const SizedBox(height: 12),
+                SizedBox(height: Gaps.row),
                 _buildSettingsCard(
                   theme: theme,
                   colorScheme: colorScheme,
@@ -137,11 +138,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
 
                 // 수업 설정
                 _buildSectionTitle('수업 설정', theme, colorScheme),
-                const SizedBox(height: 12),
+                SizedBox(height: Gaps.row),
                 _buildSettingsCard(
                   theme: theme,
                   colorScheme: colorScheme,
@@ -197,11 +198,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
 
                 // 앱 설정
                 _buildSectionTitle('앱 설정', theme, colorScheme),
-                const SizedBox(height: 12),
+                SizedBox(height: Gaps.row),
                 _buildSettingsCard(
                   theme: theme,
                   colorScheme: colorScheme,
@@ -241,11 +242,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
 
                 // 데이터 관리
                 _buildSectionTitle('데이터 관리', theme, colorScheme),
-                const SizedBox(height: 12),
+                SizedBox(height: Gaps.row),
                 _buildSettingsCard(
                   theme: theme,
                   colorScheme: colorScheme,
@@ -278,18 +279,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       icon: Icons.delete_outline_rounded,
                       title: '데이터 삭제',
                       subtitle: '모든 데이터를 삭제합니다',
-                      titleColor: const Color(0xFFEF4444),
+                      titleColor: AppColors.error,
                       onTap: () {
                         // TODO: 데이터 삭제 확인
                       },
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
 
                 // 정보
                 _buildSectionTitle('정보', theme, colorScheme),
-                const SizedBox(height: 12),
+                SizedBox(height: Gaps.row),
                 _buildSettingsCard(
                   theme: theme,
                   colorScheme: colorScheme,
@@ -334,7 +335,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
 
                 // 로그아웃
                 Padding(
@@ -344,19 +345,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // TODO: 로그아웃
                     },
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: colorScheme.error),
+                      padding: EdgeInsets.symmetric(vertical: Gaps.card),
+                      side: BorderSide(color: AppColors.error),
                     ),
                     child: Text(
                       '로그아웃',
                       style: TextStyle(
-                        color: colorScheme.error,
+                        color: AppColors.error,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 100),
+                SizedBox(height: Gaps.screen * 5),
               ],
                 addAutomaticKeepAlives: false,
                 addRepaintBoundaries: true,
@@ -372,7 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         side: BorderSide(
           color: colorScheme.outline.withOpacity(0.1),
         ),
@@ -381,24 +382,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: () {
           // TODO: 프로필 편집
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(Gaps.cardPad),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 32,
-                backgroundColor: colorScheme.primary,
+                backgroundColor: AppColors.primary,
                 child: Text(
                   '선',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.surface,
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: Gaps.card),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,7 +457,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         side: BorderSide(
           color: colorScheme.outline.withOpacity(0.1),
         ),
@@ -579,13 +580,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           return Container(
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.card + 2)),
             ),
             padding: EdgeInsets.only(
-              left: 24,
-              right: 24,
-              top: 24,
-              bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+              left: Gaps.cardPad + 4,
+              right: Gaps.cardPad + 4,
+              top: Gaps.cardPad + 4,
+              bottom: Gaps.cardPad + 4 + MediaQuery.of(context).viewInsets.bottom,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -596,12 +597,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
                 // 선택된 시간 강조 표시를 위한 컨테이너
                 Container(
                   height: 200,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(Radii.chip + 4),
                   ),
                   child: Stack(
                     children: [
@@ -611,7 +612,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           height: 50,
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(Radii.chip),
                             border: Border.all(
                               color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                               width: 2,
@@ -661,13 +662,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
                 // 선택된 시간 표시
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: 12),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(Radii.chip),
                   ),
                   child: Text(
                     '${selectedHour.toString().padLeft(2, '0')}:00',
@@ -677,7 +678,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: Gaps.cardPad + 4),
                 ElevatedButton(
                   onPressed: () {
                     onChanged(selectedHour);
@@ -686,7 +687,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(Radii.chip),
                     ),
                   ),
                   child: const Text('확인'),

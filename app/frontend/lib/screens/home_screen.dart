@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
+import '../theme/tokens.dart';
 
 enum ScheduleStatus { completed, current, upcoming }
 
@@ -89,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding: EdgeInsets.fromLTRB(Gaps.screen, 8, Gaps.screen, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -105,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(Radii.chip),
                       ),
                       child: Text(
                         '$todayLessonCount개',
@@ -116,10 +117,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: Gaps.card),
                   for (final item in schedule)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
+                      padding: EdgeInsets.only(bottom: Gaps.card - 2),
                       child: _buildScheduleCard(item, theme, colorScheme),
                     ),
                   const SizedBox(height: 24),
@@ -128,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: '빠른 실행',
                     subtitle: '자주 사용하는 기능을 빠르게 실행해요',
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: Gaps.card),
                   _buildQuickActions(theme, colorScheme),
                   const SizedBox(height: 40),
                 ],
@@ -141,11 +142,11 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           Navigator.of(context).pushNamed('/ai-assistant');
         },
-        backgroundColor: colorScheme.primary,
-        icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
-        label: const Text(
+        backgroundColor: AppColors.primary,
+        icon: Icon(Icons.auto_awesome_rounded, color: AppColors.surface),
+        label: Text(
           'AI 어시스턴트',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -177,11 +178,11 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(Radii.card),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: AppColors.textPrimary.withValues(alpha: 0.06),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -189,13 +190,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Row(
             children: [
-              Icon(Icons.notifications_none_rounded, color: colorScheme.primary),
+              Icon(Icons.notifications_none_rounded, color: AppColors.primary),
               const SizedBox(width: 6),
               Text(
                 '알림',
                 style: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
+                  color: AppColors.primary,
                 ),
               ),
             ],
@@ -209,10 +210,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic> get _weatherInfo {
     // 실제로는 API에서 가져오지만, 데모용으로 랜덤 선택
     final weatherTypes = [
-      {'icon': Icons.wb_sunny_rounded, 'text': '맑음', 'temp': '22°', 'color': const Color(0xFFFFB84D)},
-      {'icon': Icons.cloud_rounded, 'text': '흐림', 'temp': '18°', 'color': const Color(0xFF94A3B8)},
-      {'icon': Icons.wb_cloudy_rounded, 'text': '구름 많음', 'temp': '20°', 'color': const Color(0xFFCBD5E1)},
-      {'icon': Icons.water_drop_rounded, 'text': '비', 'temp': '15°', 'color': const Color(0xFF60A5FA)},
+      {'icon': Icons.wb_sunny_rounded, 'text': '맑음', 'temp': '22°', 'color': AppColors.warning},
+      {'icon': Icons.cloud_rounded, 'text': '흐림', 'temp': '18°', 'color': AppColors.textMuted},
+      {'icon': Icons.wb_cloudy_rounded, 'text': '구름 많음', 'temp': '20°', 'color': AppColors.textSecondary},
+      {'icon': Icons.water_drop_rounded, 'text': '비', 'temp': '15°', 'color': AppColors.primary},
     ];
     // 날짜 기반으로 선택 (같은 날에는 같은 날씨)
     final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
@@ -249,24 +250,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFE7F0FF),
-            Color(0xFFDCE8FF),
+            AppColors.primaryLight,
+            AppColors.primaryLight.withValues(alpha: 0.8),
           ],
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(Radii.card + 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.12),
+            color: AppColors.primary.withValues(alpha: 0.12),
             blurRadius: 32,
             offset: const Offset(0, 18),
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+      padding: EdgeInsets.fromLTRB(Gaps.cardPad + 4, 28, Gaps.cardPad + 4, Gaps.cardPad + 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -276,8 +277,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(14),
+                  color: AppColors.surface.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(Radii.icon),
                 ),
                 child: Icon(
                   weather['icon'] as IconData,
@@ -310,8 +311,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.surface.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(Radii.chip + 4),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -319,14 +320,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     Icon(
                       Icons.calendar_today_rounded,
                       size: 18,
-                      color: colorScheme.primary,
+                      color: AppColors.primary,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '오늘 $todayLessonCount개',
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: colorScheme.primary,
+                        color: AppColors.primary,
                       ),
                     ),
                   ],
@@ -396,26 +397,26 @@ class _HomeScreenState extends State<HomeScreen> {
     final isCompleted = item.status == ScheduleStatus.completed;
     final isCurrent = item.status == ScheduleStatus.current;
     final accentColor = isCurrent
-        ? colorScheme.primary
+        ? AppColors.primary
         : isCompleted
-            ? const Color(0xFF10B981)
+            ? AppColors.success
             : colorScheme.outlineVariant;
 
     return GestureDetector(
       onTap: () => toggleComplete(item.id),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(Radii.card + 6),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: AppColors.textPrimary.withValues(alpha: 0.03),
               blurRadius: 18,
               offset: const Offset(0, 14),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(Gaps.cardPad),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -428,18 +429,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 26,
                   height: 26,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: isCompleted ? accentColor : Colors.white,
+                    borderRadius: BorderRadius.circular(Radii.icon - 2),
+                    color: isCompleted ? accentColor : AppColors.surface,
                     border: Border.all(
                       color: accentColor,
                       width: 2,
                     ),
                   ),
                   child: isCompleted
-                      ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                      ? Icon(Icons.check_rounded, size: 16, color: AppColors.surface)
                       : null,
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: Gaps.card),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: accentColor.withValues(alpha: isCurrent ? 0.15 : 0.08),
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(Radii.chip + 2),
                             ),
                             child: Text(
                               '${item.time} - ${item.endTime}',
@@ -494,14 +495,14 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 18),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FB),
-                  borderRadius: BorderRadius.circular(18),
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(Radii.card - 2),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: 12),
                 child: Row(
                   children: [
                     Icon(Icons.chat_bubble_outline_rounded, size: 18, color: accentColor),
-                    const SizedBox(width: 12),
+                    SizedBox(width: Gaps.row),
                     Expanded(
                       child: Text(
                         '오늘 수업 메모 작성하기',
@@ -528,24 +529,24 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.edit_calendar_rounded,
         title: '수업 등록',
         subtitle: '새 과외 일정 만들기',
-        background: const Color(0xFFE9F2FF),
-        iconColor: const Color(0xFF2563EB),
+        background: AppColors.primaryLight,
+        iconColor: AppColors.primary,
         route: '/schedules/add',
       ),
       (
         icon: Icons.link_rounded,
         title: '예약 요청',
         subtitle: '학생에게 링크 보내기',
-        background: const Color(0xFFFFF4E6),
-        iconColor: const Color(0xFFF59E0B),
+        background: AppColors.warning.withValues(alpha: 0.1),
+        iconColor: AppColors.warning,
         route: '/booking-request',
       ),
       (
         icon: Icons.play_circle_fill_rounded,
         title: 'AI 어시스턴트',
         subtitle: '음성으로 관리',
-        background: const Color(0xFFF3E8FF),
-        iconColor: const Color(0xFF9333EA),
+        background: AppColors.primaryLight.withValues(alpha: 0.8),
+        iconColor: AppColors.primary,
         route: '/ai-assistant',
       ),
     ];
@@ -556,14 +557,14 @@ class _HomeScreenState extends State<HomeScreen> {
         final item = entry.value;
         return Expanded(
           child: Container(
-            margin: EdgeInsets.only(right: index < items.length - 1 ? 12 : 0),
-            padding: const EdgeInsets.all(20),
+            margin: EdgeInsets.only(right: index < items.length - 1 ? Gaps.row : 0),
+            padding: EdgeInsets.all(Gaps.cardPad),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(Radii.card + 4),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
+                  color: AppColors.textPrimary.withValues(alpha: 0.03),
                   blurRadius: 18,
                   offset: const Offset(0, 12),
                 ),
@@ -573,7 +574,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.of(context).pushNamed(item.route);
               },
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(Radii.card + 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -582,11 +583,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 48,
                     decoration: BoxDecoration(
                       color: item.background,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(Radii.chip + 4),
                     ),
                     child: Icon(item.icon, color: item.iconColor),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: Gaps.card),
                   Text(
                     item.title,
                     style: theme.textTheme.titleMedium?.copyWith(

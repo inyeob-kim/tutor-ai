@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
+import '../theme/tokens.dart';
 
 class TeacherSubjectsScreen extends StatefulWidget {
   final List<String>? initialSubjects;
@@ -96,9 +97,9 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
     // TODO: API로 서버에 저장
     Navigator.of(context).pop(_selectedSubjects);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('가르치는 과목이 저장되었습니다.'),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.success,
       ),
     );
   }
@@ -129,19 +130,19 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
       ),
       body: ListView(
         physics: const TossScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(Gaps.card),
         children: [
           // 안내 문구
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(Radii.chip + 4),
               side: BorderSide(
                 color: colorScheme.outline.withOpacity(0.1),
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(Gaps.card),
               child: Row(
                 children: [
                   Icon(
@@ -149,7 +150,7 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
                     color: colorScheme.primary,
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: Gaps.row),
                   Expanded(
                     child: Text(
                       '가르칠 수 있는 과목을 선택하세요. 학생 등록 시 이 과목들 중에서 선택할 수 있습니다.',
@@ -162,7 +163,7 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: Gaps.cardPad + 4),
 
           // 선택된 과목 섹션
           Text(
@@ -172,18 +173,18 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: Gaps.row),
           if (_selectedSubjects.isEmpty)
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(Radii.chip + 4),
                 side: BorderSide(
                   color: colorScheme.outline.withOpacity(0.1),
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(Gaps.cardPad + 4),
                 child: Center(
                   child: Text(
                     '선택된 과목이 없습니다',
@@ -196,8 +197,8 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
             )
           else
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: Gaps.row - 2,
+              runSpacing: Gaps.row - 2,
               children: _selectedSubjects.map((subject) {
                 return Chip(
                   label: Text(subject),
@@ -215,7 +216,7 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
                 );
               }).toList(),
             ),
-          const SizedBox(height: 32),
+          SizedBox(height: Gaps.card + 16),
 
           // 사용 가능한 과목 섹션
           Text(
@@ -225,11 +226,11 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: Gaps.row),
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(Radii.chip + 4),
               side: BorderSide(
                 color: colorScheme.outline.withOpacity(0.1),
               ),
@@ -241,9 +242,9 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
                   return InkWell(
                     onTap: () => _toggleSubject(subject),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: Gaps.card,
+                        vertical: Gaps.card,
                       ),
                       decoration: BoxDecoration(
                         border: Border(
@@ -263,7 +264,7 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
                                 ? colorScheme.primary
                                 : colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: Gaps.row),
                           Expanded(
                             child: Text(
                               subject,
@@ -285,7 +286,7 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: Gaps.cardPad + 4),
 
           // 커스텀 과목 추가
           Text(
@@ -295,17 +296,17 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: Gaps.row),
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(Radii.chip + 4),
               side: BorderSide(
                 color: colorScheme.outline.withOpacity(0.1),
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(Gaps.card),
               child: Row(
                 children: [
                   Expanded(
@@ -314,24 +315,24 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
                       decoration: InputDecoration(
                         hintText: '과목 이름 입력',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(Radii.chip),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: Gaps.card,
                           vertical: 12,
                         ),
                       ),
                       onSubmitted: (_) => _addCustomSubject(),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: Gaps.row - 2),
                   FilledButton.icon(
                     onPressed: _addCustomSubject,
-                    icon: const Icon(Icons.add, size: 20),
-                    label: const Text('추가'),
+                    icon: Icon(Icons.add, size: 20),
+                    label: Text('추가'),
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: Gaps.card,
                         vertical: 12,
                       ),
                     ),
@@ -340,7 +341,7 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: Gaps.card + 16),
         ],
       ),
     );

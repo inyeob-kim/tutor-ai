@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../theme/scroll_physics.dart';
+import '../theme/tokens.dart';
 
 class AddStudentScreen extends StatefulWidget {
   const AddStudentScreen({super.key});
@@ -97,9 +98,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('학생이 성공적으로 등록되었습니다.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.of(context).pop(true);
@@ -109,7 +110,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('등록 실패: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -136,12 +137,12 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         key: _formKey,
         child: ListView(
           physics: const TossScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(Gaps.card),
           cacheExtent: 500,
           children: [
             // 필수 정보 섹션
             _buildSectionTitle('필수 정보', theme, colorScheme),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             _buildTextField(
               controller: _nameController,
               label: '이름',
@@ -151,7 +152,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               theme: theme,
               colorScheme: colorScheme,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: Gaps.card),
             _buildTextField(
               controller: _phoneController,
               label: '전화번호',
@@ -162,16 +163,16 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               theme: theme,
               colorScheme: colorScheme,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
 
             // 추가 정보 섹션
             _buildSectionTitle('추가 정보', theme, colorScheme),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             // 성인 여부 토글
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(Radii.chip + 4),
                 side: BorderSide(
                   color: colorScheme.outline.withOpacity(0.1),
                 ),
@@ -195,7 +196,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
             ),
             // 성인이 아닐 경우에만 보호자 전화번호, 학교, 학년 필드 표시
             if (!_isAdult) ...[
-              const SizedBox(height: 16),
+              SizedBox(height: Gaps.card),
               _buildTextField(
                 controller: _parentPhoneController,
                 label: '보호자 전화번호',
@@ -205,7 +206,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 theme: theme,
                 colorScheme: colorScheme,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: Gaps.card),
               _buildTextField(
                 controller: _schoolController,
                 label: '학교',
@@ -214,7 +215,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 theme: theme,
                 colorScheme: colorScheme,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: Gaps.card),
               _buildDropdownField(
                 label: '학년',
                 value: _gradeController.text.isEmpty ? null : _gradeController.text,
@@ -225,7 +226,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 colorScheme: colorScheme,
               ),
             ],
-            const SizedBox(height: 16),
+            SizedBox(height: Gaps.card),
             _buildTextField(
               controller: _subjectController,
               label: '과목',
@@ -234,7 +235,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               theme: theme,
               colorScheme: colorScheme,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: Gaps.card),
             _buildDateField(
               label: '시작일',
               value: _startDate,
@@ -243,7 +244,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               theme: theme,
               colorScheme: colorScheme,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: Gaps.card),
             _buildTextField(
               controller: _hourlyRateController,
               label: '시간당 수강료',
@@ -253,7 +254,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               theme: theme,
               colorScheme: colorScheme,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: Gaps.card),
             _buildTextField(
               controller: _notesController,
               label: '메모',
@@ -263,13 +264,13 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               theme: theme,
               colorScheme: colorScheme,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
 
             // 활성 상태
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(Radii.chip + 4),
                 side: BorderSide(
                   color: colorScheme.outline.withOpacity(0.1),
                 ),
@@ -281,25 +282,25 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 onChanged: (value) => setState(() => _isActive = value),
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: Gaps.cardPad + 12),
 
             // 등록 버튼
             FilledButton(
               onPressed: _isLoading ? null : _submit,
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: colorScheme.primary,
+                padding: EdgeInsets.symmetric(vertical: Gaps.card),
+                backgroundColor: AppColors.primary,
               ),
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
                       ),
                     )
-                  : const Text(
+                  : Text(
                       '학생 등록',
                       style: TextStyle(
                         fontSize: 16,
@@ -307,7 +308,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                       ),
                     ),
             ),
-            const SizedBox(height: 100),
+            SizedBox(height: Gaps.screen * 5),
           ],
         ),
       ),
@@ -342,7 +343,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         side: BorderSide(
           color: colorScheme.outline.withOpacity(0.1),
         ),
@@ -354,9 +355,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         decoration: InputDecoration(
           labelText: label + (required ? ' *' : ''),
           hintText: hint,
-          prefixIcon: Icon(icon, color: colorScheme.primary),
+          prefixIcon: Icon(icon, color: AppColors.primary),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
+          contentPadding: EdgeInsets.all(Gaps.card),
         ),
         validator: required
             ? (value) {
@@ -382,7 +383,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         side: BorderSide(
           color: colorScheme.outline.withOpacity(0.1),
         ),
@@ -391,9 +392,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         value: value,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: colorScheme.primary),
+          prefixIcon: Icon(icon, color: AppColors.primary),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
+          contentPadding: EdgeInsets.all(Gaps.card),
         ),
         items: [
           const DropdownMenuItem<String>(value: null, child: Text('선택 안함')),
@@ -418,20 +419,20 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         side: BorderSide(
           color: colorScheme.outline.withOpacity(0.1),
         ),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
-            prefixIcon: Icon(icon, color: colorScheme.primary),
+            prefixIcon: Icon(icon, color: AppColors.primary),
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.all(16),
+            contentPadding: EdgeInsets.all(Gaps.card),
             suffixIcon: const Icon(Icons.chevron_right),
           ),
           child: Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import '../routes/app_routes.dart';
+import '../theme/tokens.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -37,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _loadAnimation() async {
     try {
-      await rootBundle.load('assets/animations/clockLottieAnimation.json');
+      await rootBundle.load('assets/images/temp_logo.png');
       if (mounted) {
         setState(() {
           _hasAnimation = true;
@@ -98,11 +99,10 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                 ),
               ),
-              const SizedBox(height: 28),
-              const SizedBox(height: 24),
+              SizedBox(height: Gaps.cardPad + 8),
               SizedBox(
-                width: 28,
-                height: 28,
+                width: Gaps.cardPad + 8,
+                height: Gaps.cardPad + 8,
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
                   color: colors.primary,

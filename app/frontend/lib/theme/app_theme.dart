@@ -1,56 +1,161 @@
 import 'package:flutter/material.dart';
-import 'app_typography.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'tokens.dart';
 
-class AppTheme {
-  const AppTheme._();
+ThemeData buildLightTheme() {
+  final base = ThemeData(useMaterial3: true, brightness: Brightness.light);
 
-  static ThemeData light() {
-    const seed = Color(0xFF2563EB);
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      surface: Colors.white,
-      primary: seed,
-    );
-    final textTheme = AppTypography.textTheme(colorScheme);
+  final colorScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary: AppColors.primary,
+    onPrimary: Colors.white,
+    primaryContainer: AppColors.primaryLight,
+    onPrimaryContainer: AppColors.primaryDark,
+    secondary: AppColors.primaryDark,
+    onSecondary: Colors.white,
+    secondaryContainer: AppColors.primaryLight,
+    onSecondaryContainer: AppColors.primary,
+    surface: AppColors.surface,
+    onSurface: AppColors.textPrimary,
+    background: AppColors.background,
+    onBackground: AppColors.textPrimary,
+    error: AppColors.error,
+    onError: Colors.white,
+    // Material3 필수 값들
+    surfaceContainerHighest: AppColors.surface,
+    surfaceContainerHigh: AppColors.surface,
+    surfaceContainer: AppColors.surface,
+    surfaceContainerLow: AppColors.surface,
+    surfaceContainerLowest: AppColors.surface,
+    surfaceBright: AppColors.surface,
+    surfaceDim: AppColors.surface,
+    outline: AppColors.divider,
+    outlineVariant: AppColors.divider,
+    tertiary: AppColors.success,
+    onTertiary: Colors.white,
+    scrim: Colors.black.withOpacity(0.4),
+    shadow: Colors.black.withOpacity(0.06),
+    inversePrimary: AppColors.primaryDark,
+    inverseSurface: AppColors.textPrimary,
+    onInverseSurface: AppColors.surface,
+  );
 
-    return ThemeData(
-      colorScheme: colorScheme,
-      useMaterial3: true,
-      textTheme: textTheme,
-      scaffoldBackgroundColor: const Color(0xFFF5F7FB),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleTextStyle: textTheme.titleLarge,
+  final textTheme = GoogleFonts.notoSansTextTheme().apply(
+    bodyColor: AppColors.textPrimary,
+    displayColor: AppColors.textPrimary,
+  );
+
+  return base.copyWith(
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: AppColors.background,
+    dividerColor: AppColors.divider,
+    textTheme: textTheme.copyWith(
+      // H1 대체
+      titleLarge: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      // H2 대체
+      headlineSmall:
+          textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+      // Body
+      bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: 16),
+      bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: 16),
+      // Caption
+      labelSmall: textTheme.labelSmall?.copyWith(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textSecondary,
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        labelTextStyle: WidgetStateProperty.all(textTheme.labelMedium),
-        backgroundColor: Colors.white.withValues(alpha: 0.92),
-        indicatorColor: seed.withValues(alpha: 0.12),
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      foregroundColor: AppColors.textPrimary,
+      titleTextStyle: textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
       ),
-      cardTheme: CardThemeData(
-        color: Colors.white,
-        surfaceTintColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+      surfaceTintColor: Colors.transparent,
+    ),
+    cardTheme: CardTheme(
+      color: AppColors.surface,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.card),
       ),
-      dividerColor: colorScheme.outlineVariant.withValues(alpha: 0.2),
-      splashFactory: InkSparkle.splashFactory,
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: seed,
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: AppColors.surface,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.textMuted,
+      elevation: 0,
+      showUnselectedLabels: true,
+      type: BottomNavigationBarType.fixed,
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: AppColors.primaryLight,
+      labelStyle: const TextStyle(
+        color: AppColors.primary,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.chip),
+      ),
+      side: BorderSide.none,
+      selectedColor: AppColors.primaryLight,
+      secondarySelectedColor: AppColors.primaryLight,
+      disabledColor: AppColors.divider,
+      shadowColor: Colors.transparent,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.surface,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 12,
+      ),
+      hintStyle: TextStyle(color: AppColors.textMuted),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.divider),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 0,
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
-      // 전역 스크롤 물리학 설정 (기본값으로 사용)
-      scrollbarTheme: ScrollbarThemeData(
-        thickness: MaterialStateProperty.all(4.0),
-        radius: const Radius.circular(4),
-      ),
-    );
-  }
+    ),
+    iconTheme: const IconThemeData(color: AppColors.textSecondary),
+    // Divider, ListTile, etc. 기본 톤 맞춤
+    listTileTheme: ListTileThemeData(
+      iconColor: AppColors.textSecondary,
+      textColor: AppColors.textPrimary,
+      contentPadding: const EdgeInsets.symmetric(horizontal: Gaps.screen),
+      dense: true,
+    ),
+  );
 }

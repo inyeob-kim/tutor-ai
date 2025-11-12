@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../theme/scroll_physics.dart';
+import '../theme/tokens.dart';
 
 class AddScheduleScreen extends StatefulWidget {
   final DateTime? initialDate;
@@ -169,10 +170,10 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
 
   Future<void> _submit() async {
     if (_selectedTimeRange['start'] == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
           content: Text('시작 시간을 선택해주세요'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -180,9 +181,9 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
 
     if (_selectedStudentId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('학생을 선택해주세요'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -204,9 +205,9 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('일정이 성공적으로 등록되었습니다.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.of(context).pop(true);
@@ -216,7 +217,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('등록 실패: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -243,28 +244,28 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
         key: _formKey,
         child: ListView(
           physics: const TossScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(Gaps.card),
           children: [
             // 날짜 선택
             _buildSectionTitle('날짜 선택', theme, colorScheme),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(Radii.chip + 4),
                 side: BorderSide(
                   color: colorScheme.outline.withOpacity(0.1),
                 ),
               ),
               child: InkWell(
                 onTap: () => _selectDate(context),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(Radii.chip + 4),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(Gaps.card),
                   child: Row(
                     children: [
                       Icon(Icons.calendar_today_outlined, color: colorScheme.primary),
-                      const SizedBox(width: 12),
+                      SizedBox(width: Gaps.row),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,7 +277,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                                 color: colorScheme.onSurface,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: Gaps.row - 6),
                             Text(
                               '날짜 변경',
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -292,47 +293,47 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
 
             // 시간 선택 (타임슬롯)
             _buildSectionTitle('시간 선택', theme, colorScheme),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(Radii.chip + 4),
                 side: BorderSide(
                   color: colorScheme.outline.withOpacity(0.1),
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(Gaps.card),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (_selectedTimeRange['start'] != null)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
+                        padding: EdgeInsets.only(bottom: Gaps.card),
                         child: Row(
                           children: [
                             Icon(Icons.access_time_rounded, 
-                                size: 18, color: colorScheme.primary),
-                            const SizedBox(width: 8),
+                                size: 18, color: AppColors.primary),
+                            SizedBox(width: Gaps.row - 2),
                             Text(
                               _selectedTimeRange['end'] != null
                                   ? '${_selectedTimeRange['start']} - ${_selectedTimeRange['end']}'
                                   : '${_selectedTimeRange['start']}부터 선택 중...',
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: colorScheme.primary,
+                                color: AppColors.primary,
                               ),
                             ),
                           ],
                         ),
                       ),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: Gaps.row - 2,
+                      runSpacing: Gaps.row - 2,
                       children: _timeSlots.map((timeSlot) {
                         final isSelected = _isTimeSlotSelected(timeSlot);
                         final isStart = _isTimeSlotStart(timeSlot);
@@ -340,22 +341,22 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                         
                         return InkWell(
                           onTap: () => _selectTimeSlot(timeSlot),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(Radii.icon),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: Gaps.row,
+                              vertical: Gaps.row - 2,
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? (isStart || isEnd
-                                      ? colorScheme.primary
+                                      ? AppColors.primary
                                       : colorScheme.primaryContainer)
                                   : colorScheme.surface,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(Radii.chip),
                               border: Border.all(
                                 color: isSelected
-                                    ? colorScheme.primary
+                                    ? AppColors.primary
                                     : colorScheme.outline.withOpacity(0.2),
                                 width: isSelected ? 2 : 1,
                               ),
@@ -368,7 +369,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                                     : FontWeight.normal,
                                 color: isSelected
                                     ? (isStart || isEnd
-                                        ? colorScheme.onPrimary
+                                        ? AppColors.surface
                                         : colorScheme.onPrimaryContainer)
                                     : colorScheme.onSurface,
                               ),
@@ -377,7 +378,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: Gaps.row - 2),
                     Text(
                       '시작 시간을 선택한 후 종료 시간을 선택하세요',
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -388,27 +389,27 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
 
             // 학생 선택
             _buildSectionTitle('학생 선택', theme, colorScheme),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(Radii.chip + 4),
                 side: BorderSide(
                   color: colorScheme.outline.withOpacity(0.1),
                 ),
               ),
               child: _isLoadingStudents
-                  ? const Padding(
-                      padding: EdgeInsets.all(24),
+                  ? Padding(
+                      padding: EdgeInsets.all(Gaps.cardPad + 4),
                       child: Center(child: CircularProgressIndicator()),
                     )
                   : _students.isEmpty
                       ? Padding(
-                          padding: const EdgeInsets.all(24),
+                          padding: EdgeInsets.all(Gaps.cardPad + 4),
                           child: Center(
                             child: Text(
                               '등록된 학생이 없습니다',
@@ -434,7 +435,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                                 });
                               },
                               child: Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: EdgeInsets.all(Gaps.card),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? colorScheme.primaryContainer
@@ -448,21 +449,21 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                                 child: Row(
                                   children: [
                                     CircleAvatar(
-                                      radius: 20,
+                                      radius: Gaps.screen,
                                       backgroundColor: isSelected
-                                          ? colorScheme.primary
+                                          ? AppColors.primary
                                           : colorScheme.surfaceContainerHighest,
                                       child: Text(
                                         (student['name']?.toString() ?? '?')[0],
                                         style: TextStyle(
                                           color: isSelected
-                                              ? colorScheme.onPrimary
+                                              ? AppColors.surface
                                               : colorScheme.onSurface,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
+                                    SizedBox(width: Gaps.row),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,7 +496,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                                     if (isSelected)
                                       Icon(
                                         Icons.check_circle_rounded,
-                                        color: colorScheme.primary,
+                                        color: AppColors.primary,
                                       ),
                                   ],
                                 ),
@@ -504,7 +505,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                           }).toList(),
                         ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: Gaps.cardPad + 4),
 
             // 과목 선택 (학생 선택 후)
             if (_selectedStudentId != null && _students.isNotEmpty)
@@ -518,20 +519,20 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                   if (subjects != null && subjects is List && subjects.isNotEmpty) {
                     return [
                       _buildSectionTitle('과목 선택', theme, colorScheme),
-                      const SizedBox(height: 12),
+                      SizedBox(height: Gaps.row),
                       Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(Radii.chip + 4),
                           side: BorderSide(
                             color: colorScheme.outline.withOpacity(0.1),
                           ),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(Gaps.card),
                           child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: Gaps.row - 2,
+                            runSpacing: Gaps.row - 2,
                             children: subjects
                                 .map<Widget>((subject) {
                               final subjectStr = subject.toString();
@@ -540,20 +541,20 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                                 onTap: () {
                                   setState(() => _selectedSubject = subjectStr);
                                 },
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(Radii.chip),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 10,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: Gaps.card,
+                                    vertical: Gaps.row,
                                   ),
                                   decoration: BoxDecoration(
                                     color: isSelected
                                         ? colorScheme.primaryContainer
                                         : colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(Radii.chip),
                                     border: Border.all(
                                       color: isSelected
-                                          ? colorScheme.primary
+                                          ? AppColors.primary
                                           : colorScheme.outline.withOpacity(0.2),
                                     ),
                                   ),
@@ -574,7 +575,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: Gaps.cardPad + 4),
                     ];
                   }
                 } catch (e) {
@@ -585,11 +586,11 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
 
             // 메모
             _buildSectionTitle('메모 (선택사항)', theme, colorScheme),
-            const SizedBox(height: 12),
+            SizedBox(height: Gaps.row),
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(Radii.chip + 4),
                 side: BorderSide(
                   color: colorScheme.outline.withOpacity(0.1),
                 ),
@@ -600,37 +601,36 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                 decoration: InputDecoration(
                   hintText: '메모를 입력하세요',
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(16),
+                  contentPadding: EdgeInsets.all(Gaps.card),
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: Gaps.cardPad + 12),
 
             // 등록 버튼
             FilledButton(
               onPressed: _isLoading ? null : _submit,
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: colorScheme.primary,
+                padding: EdgeInsets.symmetric(vertical: Gaps.card),
+                backgroundColor: AppColors.primary,
               ),
               child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
+                  ? SizedBox(
+                      height: Gaps.screen,
+                      width: Gaps.screen,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
                       ),
                     )
-                  : const Text(
+                  : Text(
                       '일정 등록',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
             ),
-            const SizedBox(height: 100),
+            SizedBox(height: Gaps.screen * 5),
           ],
         ),
       ),
