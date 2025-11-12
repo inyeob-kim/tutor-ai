@@ -4,6 +4,13 @@ import 'package:lottie/lottie.dart';
 import '../routes/app_routes.dart';
 import '../theme/tokens.dart';
 
+/// 스플래시 화면에서 사용할 애셋 타입
+enum _SplashAssetType {
+  animation, // Lottie 애니메이션
+  image,     // 정적 이미지
+  fallback,  // 기본 아이콘
+}
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -13,10 +20,17 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
+  // ===== 설정 가능한 경로 (나중에 쉽게 변경 가능) =====
+  static const String _animationPath = 'assets/animations';
+  // static const String _animationPath = 'assets/animations/clockLottieAnimation.json';
+  static const String _imagePath = 'assets/images/temp_logo.png';
+  // ==============================================
+
   late final AnimationController _controller;
-  late final Animation<double> _fadeIn;
   late final AnimationController _lottieController;
-  bool _hasAnimation = false;
+  late final Animation<double> _fadeIn;
+  
+  _SplashAssetType _assetType = _SplashAssetType.fallback;
 
   @override
   void initState() {
@@ -28,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen>
     _lottieController = AnimationController(vsync: this);
     _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
-    _loadAnimation();
+    _loadAsset();
 
     Future.delayed(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
@@ -36,16 +50,39 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
-  Future<void> _loadAnimation() async {
+  /// 애셋 로드 (애니메이션 우선, 없으면 이미지, 둘 다 없으면 fallback)
+  Future<void> _loadAsset() async {
+    // 1. 애니메이션 파일 확인
     try {
-      await rootBundle.load('assets/images/temp_logo.png');
+      await rootBundle.load(_animationPath);
       if (mounted) {
         setState(() {
-          _hasAnimation = true;
+          _assetType = _SplashAssetType.animation;
         });
+        return;
       }
     } catch (_) {
-      // Keep fallback UI if asset missing or invalid
+      // 애니메이션 파일이 없으면 계속 진행
+    }
+
+    // 2. 이미지 파일 확인
+    try {
+      await rootBundle.load(_imagePath);
+      if (mounted) {
+        setState(() {
+          _assetType = _SplashAssetType.image;
+        });
+        return;
+      }
+    } catch (_) {
+      // 이미지 파일도 없으면 fallback 사용
+    }
+
+    // 3. 둘 다 없으면 fallback (이미 기본값)
+    if (mounted) {
+      setState(() {
+        _assetType = _SplashAssetType.fallback;
+      });
     }
   }
 
@@ -74,29 +111,7 @@ class _SplashScreenState extends State<SplashScreen>
                 height: 220,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  child: _hasAnimation
-                      ? Lottie.asset(
-                          'assets/animations/clockLottieAnimation.json',
-                          key: const ValueKey('splash-animation'),
-                          controller: _lottieController,
-                          onLoaded: (composition) {
-                            _lottieController
-                              ..duration = composition.duration * 1.6
-                              ..repeat();
-                          },
-                        )
-                      : Container(
-                          key: const ValueKey('fallback-icon'),
-                          decoration: BoxDecoration(
-                            color: colors.primaryContainer,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 72,
-                            color: colors.onPrimaryContainer,
-                          ),
-                        ),
+                  child: _buildSplashContent(colors),
                 ),
               ),
               SizedBox(height: Gaps.cardPad + 8),
@@ -113,5 +128,43 @@ class _SplashScreenState extends State<SplashScreen>
         ),
       ),
     );
+  }
+
+  /// 애셋 타입에 따라 적절한 위젯 반환
+  Widget _buildSplashContent(ColorScheme colors) {
+    switch (_assetType) {
+      case _SplashAssetType.animation:
+        return Lottie.asset(
+          _animationPath,
+          key: const ValueKey('splash-animation'),
+          controller: _lottieController,
+          fit: BoxFit.contain,
+          onLoaded: (composition) {
+            _lottieController
+              ..duration = composition.duration * 1.6
+              ..repeat();
+          },
+        );
+      case _SplashAssetType.image:
+        return Image.asset(
+          _imagePath,
+          key: const ValueKey('splash-image'),
+          fit: BoxFit.contain,
+        );
+      case _SplashAssetType.fallback:
+      default:
+        return Container(
+          key: const ValueKey('fallback-icon'),
+          decoration: BoxDecoration(
+            color: colors.primaryContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.auto_awesome_rounded,
+            size: 72,
+            color: colors.onPrimaryContainer,
+          ),
+        );
+    }
   }
 }
