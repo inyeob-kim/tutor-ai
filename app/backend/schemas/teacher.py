@@ -14,6 +14,7 @@ class TeacherBase(BaseModel):
     phone: str
     provider: Provider
     oauth_id: str
+    subject_id: Optional[int] = None
     email: Optional[str] = None
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
@@ -43,6 +44,7 @@ class TeacherCreate(TeacherBase):
 class TeacherUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
+    subject_id: Optional[int] = None
     email: Optional[str] = None
     bank_name: Optional[str] = None
     account_number: Optional[str] = None
