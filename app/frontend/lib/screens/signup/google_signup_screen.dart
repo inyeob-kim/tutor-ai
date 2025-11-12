@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../../theme/tokens.dart';
-import '../../routes/app_routes.dart';
-import '../../services/api_service.dart';
 
 class GoogleSignupScreen extends StatefulWidget {
   const GoogleSignupScreen({super.key});
@@ -19,45 +17,27 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Firebase Auth를 사용한 구글 로그인
-      final GoogleSignIn googleSignIn = GoogleSignIn();
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-
-      if (googleUser == null) {
-        // 사용자가 로그인을 취소한 경우
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+      // Firebase Auth만 사용한 구글 로그인 (People API 불필요)
+      // 웹에서는 signInWithRedirect를 사용합니다
+      if (kIsWeb) {
+        print('Google 로그인 시작...');
+        print('현재 URL: ${Uri.base}');
+        
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        print('GoogleAuthProvider 생성 완료');
+        
+        await FirebaseAuth.instance.signInWithRedirect(googleProvider);
+        print('signInWithRedirect 호출 완료 - 리다이렉트 예정');
+        
+        // signInWithRedirect는 페이지를 리다이렉트하므로 여기서는 반환
+        // 리다이렉트 후 main.dart에서 getRedirectResult로 처리합니다
         return;
-      }
-
-      // Google Sign-In 인증 정보 가져오기
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // Firebase Auth로 인증
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      
-      // Firebase에서 idToken 가져오기
-      final String? idToken = await userCredential.user?.getIdToken();
-
-      if (idToken == null) {
-        throw Exception('구글 로그인 토큰을 가져올 수 없습니다');
-      }
-
-      // 백엔드 API로 로그인 (Firebase idToken 사용)
-      await ApiService.googleLogin(idToken);
-
-      if (mounted) {
-        setState(() => _isLoading = false);
-        // 구글 로그인 성공 후 과목 선택 화면으로 이동
-        Navigator.of(context).pushReplacementNamed(AppRoutes.signupSubject);
+      } else {
+        // 모바일 플랫폼에서는 기존 방식 사용
+        throw UnsupportedError('모바일 플랫폼은 아직 지원되지 않습니다');
       }
     } catch (e) {
+      print('Google 로그인 에러: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,17 +128,10 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
                             ),
                           ),
                         )
-                      : Image.asset(
-                          'assets/icons/google.png',
-                          width: 24,
-                          height: 24,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              Icons.g_mobiledata_rounded,
-                              size: 24,
-                              color: AppColors.textPrimary,
-                            );
-                          },
+                      : Icon(
+                          Icons.g_mobiledata_rounded,
+                          size: 24,
+                          color: AppColors.textPrimary,
                         ),
                   label: Text(
                     _isLoading ? '로그인 중...' : '구글로 시작하기',

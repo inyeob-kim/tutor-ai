@@ -167,17 +167,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         date.month == _selectedDate.month &&
         date.day == _selectedDate.day);
     
-    if (selectedIndex != -1) {
+    if (selectedIndex != -1 && _dateScrollController.hasClients) {
       // 각 날짜 카드의 대략적인 너비 (카드 + 마진) 약 80px
       const itemWidth = 80.0;
-      final screenWidth = _dateScrollController.position.viewportDimension;
-      final scrollPosition = (selectedIndex * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
-      
-      _dateScrollController.animateTo(
-        scrollPosition.clamp(0.0, _dateScrollController.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      final position = _dateScrollController.position;
+      if (position.hasViewportDimension) {
+        final screenWidth = position.viewportDimension;
+        final scrollPosition = (selectedIndex * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
+        
+        _dateScrollController.animateTo(
+          scrollPosition.clamp(0.0, position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     }
   }
 

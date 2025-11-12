@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../routes/app_routes.dart';
 import '../theme/tokens.dart';
 
@@ -54,15 +55,31 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       final isSignedUp = prefs.getBool('is_signed_up') ?? false;
+      
+      // Firebase Auth 사용자 상태 확인
+      final auth = FirebaseAuth.instance;
+      
+      // getRedirectResult는 main.dart에서 이미 호출되었으므로 여기서는 currentUser만 확인
+      // 리다이렉트 후 사용자는 자동으로 currentUser에 설정됨
+      final currentUser = auth.currentUser;
+      print('현재 사용자 상태: ${currentUser?.email ?? "없음"}, isSignedUp: $isSignedUp');
 
       if (isSignedUp) {
         // 이미 회원가입 완료 → 메인 화면으로
+        print('회원가입 완료 → 메인 화면으로 이동');
         Navigator.of(context).pushReplacementNamed(AppRoutes.mainNavigation);
+      } else if (currentUser != null) {
+        // Firebase Auth에 사용자가 있지만 회원가입이 완료되지 않음
+        // → 과목 선택 화면으로 이동 (회원가입 플로우 계속)
+        print('로그인 완료, 회원가입 미완료 → 과목 선택 화면으로 이동');
+        Navigator.of(context).pushReplacementNamed(AppRoutes.signupSubject);
       } else {
-        // 회원가입 안됨 → 구글 로그인 화면으로
+        // 로그인 안됨 → 구글 로그인 화면으로
+        print('로그인 안됨 → 구글 로그인 화면으로 이동');
         Navigator.of(context).pushReplacementNamed(AppRoutes.googleSignup);
       }
     } catch (e) {
+      print('회원가입 상태 확인 중 오류: $e');
       // 에러 발생 시 구글 로그인 화면으로 이동
       if (mounted) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.googleSignup);
