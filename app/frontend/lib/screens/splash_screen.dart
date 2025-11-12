@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../routes/app_routes.dart';
 import '../theme/tokens.dart';
 
@@ -21,8 +22,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   // ===== 설정 가능한 경로 (나중에 쉽게 변경 가능) =====
-  static const String _animationPath = 'assets/animations';
-  // static const String _animationPath = 'assets/animations/clockLottieAnimation.json';
+  static const String _animationPath = 'assets/animations/clockLottieAnimation.json';
   static const String _imagePath = 'assets/images/temp_logo.png';
   // ==============================================
 
@@ -43,11 +43,31 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
     _loadAsset();
+    _checkSignupStatus();
+  }
 
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(AppRoutes.mainNavigation);
-    });
+  /// 회원가입 여부 확인 후 적절한 화면으로 이동
+  Future<void> _checkSignupStatus() async {
+    await Future.delayed(const Duration(milliseconds: 1400));
+    if (!mounted) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isSignedUp = prefs.getBool('is_signed_up') ?? false;
+
+      if (isSignedUp) {
+        // 이미 회원가입 완료 → 메인 화면으로
+        Navigator.of(context).pushReplacementNamed(AppRoutes.mainNavigation);
+      } else {
+        // 회원가입 안됨 → 구글 로그인 화면으로
+        Navigator.of(context).pushReplacementNamed(AppRoutes.googleSignup);
+      }
+    } catch (e) {
+      // 에러 발생 시 구글 로그인 화면으로 이동
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.googleSignup);
+      }
+    }
   }
 
   /// 애셋 로드 (애니메이션 우선, 없으면 이미지, 둘 다 없으면 fallback)
@@ -152,7 +172,6 @@ class _SplashScreenState extends State<SplashScreen>
           fit: BoxFit.contain,
         );
       case _SplashAssetType.fallback:
-      default:
         return Container(
           key: const ValueKey('fallback-icon'),
           decoration: BoxDecoration(

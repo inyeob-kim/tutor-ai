@@ -9,9 +9,11 @@ import '../screens/add_student_screen.dart';
 import '../screens/add_schedule_screen.dart';
 import '../screens/ai_assistant_screen.dart';
 import '../screens/booking_request_screen.dart';
+import '../screens/signup/google_signup_screen.dart';
 import '../screens/signup/subject_selection_screen.dart';
 import '../screens/signup/name_input_screen.dart';
 import '../screens/signup/phone_input_screen.dart';
+import '../screens/signup/signup_complete_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -25,9 +27,11 @@ class AppRoutes {
   static const String addSchedule = '/schedules/add';
   static const String aiAssistant = '/ai-assistant';
   static const String bookingRequest = '/booking-request';
+  static const String googleSignup = '/signup/google';
   static const String signupSubject = '/signup/subject';
   static const String signupName = '/signup/name';
   static const String signupPhone = '/signup/phone';
+  static const String signupComplete = '/signup/complete';
 
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
     final routeName = routeSettings.name ?? splash;
@@ -84,6 +88,11 @@ class AppRoutes {
                 builder: (_) => const BookingRequestScreen(),
                 settings: routeSettings,
               );
+            case googleSignup:
+              return MaterialPageRoute(
+                builder: (_) => const GoogleSignupScreen(),
+                settings: routeSettings,
+              );
             case signupSubject:
               return MaterialPageRoute(
                 builder: (_) => const SubjectSelectionScreen(),
@@ -97,6 +106,11 @@ class AppRoutes {
             case signupPhone:
               return MaterialPageRoute(
                 builder: (_) => const PhoneInputScreen(),
+                settings: routeSettings,
+              );
+            case signupComplete:
+              return MaterialPageRoute(
+                builder: (_) => const SignupCompleteScreen(),
                 settings: routeSettings,
               );
             default:

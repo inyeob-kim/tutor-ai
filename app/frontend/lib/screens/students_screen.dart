@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../widgets/section_title.dart';
 import 'add_student_screen.dart';
+import 'edit_student_screen.dart';
 import '../theme/tokens.dart';
 
 enum TabKey { all, today, lowAttendance }
@@ -123,33 +124,18 @@ class _StudentsScreenState extends State<StudentsScreen> {
         slivers: [
           // AppBar
           SliverAppBar(
-            expandedHeight: 100,
-            floating: false,
             pinned: true,
+            floating: false,
             backgroundColor: colorScheme.surface,
             elevation: 0,
             automaticallyImplyLeading: false,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '학생 관리',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '학생을 관리하고 확인하세요',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+            toolbarHeight: 64,
+            title: Text(
+              '학생 관리',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
               ),
             ),
             actions: [
@@ -255,12 +241,12 @@ class _StudentsScreenState extends State<StudentsScreen> {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        borderRadius: BorderRadius.circular(Radii.chip),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: AppColors.textPrimary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -338,12 +324,12 @@ class _StudentsScreenState extends State<StudentsScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        borderRadius: BorderRadius.circular(Radii.chip),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: AppColors.textPrimary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -367,32 +353,20 @@ class _StudentsScreenState extends State<StudentsScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
-    final barColor = student.attendanceRate >= 95
-        ? AppColors.success
-        : student.attendanceRate >= 85
-            ? AppColors.primary
-            : AppColors.warning;
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primaryLight,
-            AppColors.primaryLight.withValues(alpha: 0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(Radii.card + 6),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(Radii.card),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.15),
-          width: 1.5,
+          color: AppColors.divider,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            blurRadius: 18,
-            offset: const Offset(0, 14),
+            color: AppColors.textPrimary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -512,84 +486,26 @@ class _StudentsScreenState extends State<StudentsScreen> {
                           ))
                       .toList(),
                 ),
-                SizedBox(height: Gaps.screen),
-
-                // 출석률 및 다음 수업
-                Container(
-                  padding: EdgeInsets.all(Gaps.card),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(Radii.card - 2),
-                  ),
-                  child: Column(
+                if (student.nextClass.isNotEmpty) ...[
+                  SizedBox(height: Gaps.screen),
+                  Row(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.trending_up_rounded,
-                                size: 18,
-                                color: barColor,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '출석률',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '${student.attendanceRate}%',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: barColor,
-                            ),
-                          ),
-                        ],
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 18,
+                        color: colorScheme.primary,
                       ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(Radii.icon),
-                        child: LinearProgressIndicator(
-                          value: student.attendanceRate / 100,
-                          backgroundColor: barColor.withValues(alpha: 0.2),
-                          valueColor: AlwaysStoppedAnimation<Color>(barColor),
-                          minHeight: 8,
+                      const SizedBox(width: 8),
+                      Text(
+                        '다음 수업: ${student.nextClass}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (student.nextClass.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Divider(
-                          height: 1,
-                          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_rounded,
-                              size: 18,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '다음 수업: ${student.nextClass}',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurface,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -821,6 +737,12 @@ class _StudentDetailModal extends StatelessWidget {
                   ),
                   const Divider(height: 32),
 
+                  // 출석률 상세
+                  SectionTitle(title: '출석률'),
+                  const SizedBox(height: 12),
+                  _buildAttendanceDetail(context, theme, colorScheme),
+                  const SizedBox(height: 32),
+
                   // 수강 과목
                   SectionTitle(title: '수강 과목'),
                   const SizedBox(height: 12),
@@ -842,8 +764,17 @@ class _StudentDetailModal extends StatelessWidget {
 
                   // 수정 버튼
                   FilledButton.icon(
-                    onPressed: () {
-                      // TODO: 학생 정보 수정
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditStudentScreen(student: student),
+                        ),
+                      );
+                      if (result == true) {
+                        Navigator.of(context).pop();
+                        // TODO: 목록 새로고침
+                      }
                     },
                     icon: const Icon(Icons.edit_rounded),
                     label: const Text('학생 정보 수정'),
@@ -856,6 +787,92 @@ class _StudentDetailModal extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAttendanceDetail(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final barColor = student.attendanceRate >= 95
+        ? AppColors.success
+        : student.attendanceRate >= 85
+            ? AppColors.primary
+            : AppColors.warning;
+
+    return Container(
+      padding: EdgeInsets.all(Gaps.cardPad),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(Radii.card),
+        border: Border.all(
+          color: barColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.trending_up_rounded,
+                    size: 20,
+                    color: barColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '출석률',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${student.attendanceRate}%',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: barColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(Radii.icon),
+            child: LinearProgressIndicator(
+              value: student.attendanceRate / 100,
+              backgroundColor: barColor.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+              minHeight: 10,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '완료된 수업: ${student.completedSessions}회',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                '전체 수업: ${student.sessions}회',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

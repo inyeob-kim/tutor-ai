@@ -3,7 +3,6 @@ import 'home_screen.dart';
 import 'schedule_screen.dart';
 import 'students_screen.dart';
 import 'billing_screen.dart';
-import 'stats_screen.dart';
 import 'settings_screen.dart';
 import '../theme/tokens.dart';
 
@@ -19,10 +18,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    ScheduleScreen(),
     StudentsScreen(),
+    ScheduleScreen(),
     BillingScreen(),
-    StatsScreen(),
     SettingsScreen(),
   ];
 
@@ -34,7 +32,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final scaffoldColor = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
@@ -64,24 +61,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 label: '홈',
               ),
               NavigationDestination(
-                icon: Icon(Icons.event_note_outlined, size: 28),
-                selectedIcon: Icon(Icons.event_note_rounded, size: 28, color: AppColors.primary),
-                label: '스케줄',
-              ),
-              NavigationDestination(
                 icon: Icon(Icons.person_outline_rounded, size: 28),
                 selectedIcon: Icon(Icons.person_rounded, size: 28, color: AppColors.primary),
                 label: '학생',
               ),
               NavigationDestination(
+                icon: Icon(Icons.event_note_outlined, size: 28),
+                selectedIcon: Icon(Icons.event_note_rounded, size: 28, color: AppColors.primary),
+                label: '스케줄',
+              ),
+              NavigationDestination(
                 icon: Icon(Icons.receipt_long_outlined, size: 28),
                 selectedIcon: Icon(Icons.receipt_long_rounded, size: 28, color: AppColors.primary),
                 label: '청구',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.bar_chart_outlined, size: 28),
-                selectedIcon: Icon(Icons.bar_chart_rounded, size: 28, color: AppColors.primary),
-                label: '통계',
               ),
               NavigationDestination(
                 icon: Icon(Icons.tune_outlined, size: 28),

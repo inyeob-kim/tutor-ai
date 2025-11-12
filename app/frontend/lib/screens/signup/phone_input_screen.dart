@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/tokens.dart';
-import '../../services/api_service.dart';
+import '../../routes/app_routes.dart';
 
 class PhoneInputScreen extends StatefulWidget {
   const PhoneInputScreen({super.key});
@@ -13,6 +14,7 @@ class PhoneInputScreen extends StatefulWidget {
 class _PhoneInputScreenState extends State<PhoneInputScreen> {
   final _phoneController = TextEditingController();
   final _focusNode = FocusNode();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -69,163 +71,148 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
           onPressed: () => Navigator.of(context).pop(),
           color: AppColors.textPrimary,
         ),
+        title: Text(
+          '전화번호 입력',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
       ),
       body: SafeArea(
-            child: Column(
-              children: [
-                // 헤더 섹션
-                Padding(
-                  padding: EdgeInsets.fromLTRB(Gaps.screen, Gaps.card, Gaps.screen, Gaps.cardPad),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '전화번호를 입력해주세요 📱',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          height: 1.3,
-                        ),
-                      ),
-                      SizedBox(height: Gaps.row),
-                      Text(
-                        '연락이 가능한 번호를 입력해주세요',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+        child: Column(
+          children: [
+            const Spacer(),
 
-                // 입력 필드
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: Gaps.screen),
-                  child: TextField(
-                    controller: _phoneController,
-                    focusNode: _focusNode,
-                    autofocus: true,
-                    keyboardType: TextInputType.phone, // 전화번호 패드 자동 표시
-                    textInputAction: TextInputAction.done,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(13), // 010-1234-5678 형식
-                    ],
-                    onChanged: (value) {
-                      final formatted = _formatPhoneNumber(value);
-                      if (formatted != value) {
-                        _phoneController.value = TextEditingValue(
-                          text: formatted,
-                          selection: TextSelection.collapsed(
-                            offset: formatted.length,
-                          ),
-                        );
-                      }
-                      if (mounted) setState(() {});
-                    },
-                    onSubmitted: (_) {
-                      if (_isValid && !_isLoading) {
-                        _handleSignup(context, subjects, name);
-                      }
-                    },
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                      letterSpacing: 1.2,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: '010-1234-5678',
-                      hintStyle: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.textMuted,
-                        letterSpacing: 1.2,
+            // 입력 필드 (가운데 정렬)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: Gaps.screen),
+              child: TextField(
+                controller: _phoneController,
+                focusNode: _focusNode,
+                autofocus: true,
+                keyboardType: TextInputType.phone, // 전화번호 패드 자동 표시
+                textInputAction: TextInputAction.done,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(13), // 010-1234-5678 형식
+                ],
+                onChanged: (value) {
+                  final formatted = _formatPhoneNumber(value);
+                  if (formatted != value) {
+                    _phoneController.value = TextEditingValue(
+                      text: formatted,
+                      selection: TextSelection.collapsed(
+                        offset: formatted.length,
                       ),
-                      filled: true,
-                      fillColor: AppColors.surface,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(Radii.card),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(Radii.card),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(Radii.card),
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: EdgeInsets.all(Gaps.cardPad),
-                      prefixIcon: Padding(
-                        padding: EdgeInsets.only(left: Gaps.cardPad),
-                        child: Icon(
-                          Icons.phone_rounded,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      prefixIconConstraints: const BoxConstraints(
-                        minWidth: 56,
-                        minHeight: 56,
-                      ),
+                    );
+                  }
+                  if (mounted) setState(() {});
+                },
+                onSubmitted: (_) {
+                  if (_isValid && !_isLoading) {
+                    _handleSignup(context, subjects, name);
+                  }
+                },
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 1.2,
+                ),
+                decoration: InputDecoration(
+                  hintText: '010-1234-5678',
+                  hintStyle: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textMuted,
+                    letterSpacing: 1.2,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(Radii.card),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(Radii.card),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(Radii.card),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 2,
                     ),
                   ),
-                ),
-
-                const Spacer(),
-
-                // 하단 버튼
-                Container(
-                  padding: EdgeInsets.all(Gaps.screen),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.textPrimary.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: SafeArea(
-                    child: FilledButton(
-                      onPressed: (_isValid && !_isLoading)
-                          ? () => _handleSignup(context, subjects, name)
-                          : null,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.surface,
-                        minimumSize: const Size(double.infinity, 56),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(Radii.card),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isLoading
-                          ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.surface,
-                                ),
-                              ),
-                            )
-                          : Text(
-                              '완료',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.surface,
-                              ),
-                            ),
+                  contentPadding: EdgeInsets.all(Gaps.cardPad),
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.only(left: Gaps.cardPad),
+                    child: Icon(
+                      Icons.phone_rounded,
+                      color: AppColors.textSecondary,
                     ),
                   ),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 56,
+                    minHeight: 56,
+                  ),
                 ),
-              ],
+              ),
             ),
-          );
+
+            const Spacer(),
+
+            // 하단 버튼
+            Container(
+              padding: EdgeInsets.all(Gaps.screen),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.textPrimary.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: FilledButton(
+                  onPressed: (_isValid && !_isLoading)
+                      ? () => _handleSignup(context, subjects, name)
+                      : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.surface,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Radii.card),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.surface,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          '완료',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.surface,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _handleSignup(
@@ -251,6 +238,10 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
       // 성공 시 (시뮬레이션)
       await Future.delayed(const Duration(seconds: 1));
 
+      // 회원가입 완료 플래그 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_signed_up', true);
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -258,16 +249,8 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
       }
 
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/main',
-          (route) => false,
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('회원가입이 완료되었습니다! 🎉'),
-            backgroundColor: AppColors.success,
-          ),
-        );
+        // 회원가입 완료 화면으로 이동
+        Navigator.of(context).pushReplacementNamed(AppRoutes.signupComplete);
       }
     } catch (e) {
       if (mounted) {

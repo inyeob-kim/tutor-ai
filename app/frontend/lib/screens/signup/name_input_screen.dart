@@ -45,36 +45,20 @@ class _NameInputScreenState extends State<NameInputScreen> {
           onPressed: () => Navigator.of(context).pop(),
           color: AppColors.textPrimary,
         ),
+        title: Text(
+          '이름 입력',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // 헤더 섹션
-            Padding(
-              padding: EdgeInsets.fromLTRB(Gaps.screen, Gaps.card, Gaps.screen, Gaps.cardPad),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '이름을 입력해주세요 ✏️',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      height: 1.3,
-                    ),
-                  ),
-                  SizedBox(height: Gaps.row),
-                  Text(
-                    '학생들이 부를 이름이에요',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const Spacer(),
 
-            // 입력 필드
+            // 입력 필드 (가운데 정렬)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: Gaps.screen),
               child: TextField(

@@ -355,7 +355,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         decoration: InputDecoration(
           labelText: label + (required ? ' *' : ''),
           hintText: hint,
-          prefixIcon: Icon(icon, color: AppColors.primary),
+          prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.card),
         ),
@@ -392,7 +392,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         value: value,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: AppColors.primary),
+          prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.card),
         ),
@@ -430,7 +430,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
-            prefixIcon: Icon(icon, color: AppColors.primary),
+            prefixIcon: Icon(icon, color: AppColors.textSecondary),
             border: InputBorder.none,
             contentPadding: EdgeInsets.all(Gaps.card),
             suffixIcon: const Icon(Icons.chevron_right),

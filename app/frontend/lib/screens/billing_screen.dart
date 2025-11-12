@@ -120,35 +120,18 @@ class _BillingScreenState extends State<BillingScreen> {
         slivers: [
           // AppBar
           SliverAppBar(
-            expandedHeight: 100,
-            floating: false,
             pinned: true,
+            floating: false,
             backgroundColor: colorScheme.surface,
             elevation: 0,
             automaticallyImplyLeading: false,
-            snap: false,
-            forceElevated: false,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '청구 관리',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '청구를 관리하고 확인하세요',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+            toolbarHeight: 64,
+            title: Text(
+              '청구 관리',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
               ),
             ),
             actions: [
@@ -244,12 +227,12 @@ class _BillingScreenState extends State<BillingScreen> {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        borderRadius: BorderRadius.circular(Radii.chip),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: AppColors.textPrimary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -366,24 +349,17 @@ class _BillingScreenState extends State<BillingScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primaryLight,
-            AppColors.primaryLight.withValues(alpha: 0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(Radii.card + 6),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(Radii.card),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.15),
-          width: 1.5,
+          color: AppColors.divider,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            blurRadius: 18,
-            offset: const Offset(0, 14),
+            color: AppColors.textPrimary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -503,6 +479,33 @@ class _BillingScreenState extends State<BillingScreen> {
                     ),
                   ],
                 ),
+                // 미납인 경우 청구발송 버튼
+                if (status == BillingStatus.unpaid) ...[
+                  SizedBox(height: Gaps.screen),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        // TODO: 카톡/문자로 청구 발송 기능
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${billing['student']}님에게 청구를 발송합니다.'),
+                            backgroundColor: AppColors.primary,
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.send_rounded, size: 18),
+                      label: Text('청구 발송'),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: Gaps.card),
+                        side: BorderSide(color: AppColors.primary, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(Radii.chip),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

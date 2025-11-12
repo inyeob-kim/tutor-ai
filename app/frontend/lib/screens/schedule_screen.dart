@@ -6,6 +6,7 @@ import '../services/settings_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import 'add_schedule_screen.dart';
+import 'add_recurring_schedule_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -520,13 +521,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
-          // 월 선택 및 날짜 선택 스크롤 뷰
+          // 고정 AppBar
           Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.textPrimary.withValues(alpha: 0.05),
+                  color: AppColors.textPrimary.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -534,8 +535,64 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
             child: Column(
               children: [
-                _buildMonthSelector(theme, colorScheme),
-                _buildDateScrollSelector(theme, colorScheme),
+                // AppBar
+                SizedBox(
+                  height: 64,
+                  child: AppBar(
+                    backgroundColor: AppColors.surface,
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    title: Text(
+                      '수업 스케줄',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    actions: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: Gaps.screen),
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AddRecurringScheduleScreen(),
+                              ),
+                            );
+                            if (result == true) {
+                              setState(() {
+                                // 목록 새로고침
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.repeat_rounded, size: 18),
+                          label: const Text('반복 등록'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 월 선택 및 날짜 선택 스크롤 뷰
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                  ),
+                  child: Column(
+                    children: [
+                      _buildMonthSelector(theme, colorScheme),
+                      _buildDateScrollSelector(theme, colorScheme),
+                      SizedBox(height: Gaps.screen),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -550,25 +607,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSectionHeader(
-                          context,
-                          title: '수업 스케줄',
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              '${_filteredLessons.length}개',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: Gaps.card),
                         // 주말 제외 옵션이 켜져 있고 선택된 날짜가 주말이면 메시지 표시
                         Builder(
                           builder: (context) {
@@ -633,44 +671,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
 
-  Widget _buildSectionHeader(
-    BuildContext context, {
-    required String title,
-    String? subtitle,
-    Widget? trailing,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Row(
-      crossAxisAlignment: subtitle != null ? CrossAxisAlignment.end : CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (trailing != null) trailing,
-      ],
-    );
-  }
 
   String _formatKoreanDate(DateTime date) {
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
@@ -954,18 +954,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               AppColors.primaryLight.withValues(alpha: 0.8),
             ],
           ),
-          borderRadius: BorderRadius.circular(Radii.card + 6),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            width: 1.5,
+        borderRadius: BorderRadius.circular(Radii.card),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              blurRadius: 18,
-              offset: const Offset(0, 14),
-            ),
-          ],
+        ],
         ),
         padding: EdgeInsets.all(Gaps.cardPad),
         child: Column(

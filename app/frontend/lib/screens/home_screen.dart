@@ -88,15 +88,62 @@ class _HomeScreenState extends State<HomeScreen> {
       body: CustomScrollView(
         physics: const TossScrollPhysics(),
         slivers: [
+          // 고정 AppBar
+          SliverAppBar(
+            pinned: true,
+            floating: false,
+            backgroundColor: colorScheme.surface,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            toolbarHeight: 64,
+            title: Text(
+              '과외 진행 현황',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: Gaps.screen),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(Radii.chip),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textPrimary.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notifications_none_rounded, color: AppColors.primary, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        '알림',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(Gaps.screen, 8, Gaps.screen, 24),
+              padding: EdgeInsets.fromLTRB(Gaps.screen, Gaps.card, Gaps.screen, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
-                  _buildTopBar(theme, colorScheme),
-                  const SizedBox(height: 18),
                   _buildHeroCard(theme, colorScheme),
                   const SizedBox(height: 32),
                   _buildSectionHeader(
@@ -143,68 +190,22 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.of(context).pushNamed('/ai-assistant');
         },
         backgroundColor: AppColors.primary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.chip),
+        ),
         icon: Icon(Icons.auto_awesome_rounded, color: AppColors.surface),
         label: Text(
           'AI 어시스턴트',
-          style: TextStyle(color: AppColors.surface, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: AppColors.surface,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTopBar(ThemeData theme, ColorScheme colorScheme) {
-    return Row(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '할 일',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '과외 진행 현황',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(Radii.card),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.textPrimary.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.notifications_none_rounded, color: AppColors.primary),
-              const SizedBox(width: 6),
-              Text(
-                '알림',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
   // 날씨 정보 (데모 데이터)
   Map<String, dynamic> get _weatherInfo {
@@ -258,12 +259,12 @@ class _HomeScreenState extends State<HomeScreen> {
             AppColors.primaryLight.withValues(alpha: 0.8),
           ],
         ),
-        borderRadius: BorderRadius.circular(Radii.card + 2),
+        borderRadius: BorderRadius.circular(Radii.card),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            blurRadius: 32,
-            offset: const Offset(0, 18),
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -340,6 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             dailyMessage,
             style: theme.textTheme.titleLarge?.copyWith(
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: colorScheme.onSurface,
               height: 1.4,
@@ -368,6 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 title,
                 style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: colorScheme.onSurface,
                 ),
@@ -407,12 +410,12 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(Radii.card + 6),
+          borderRadius: BorderRadius.circular(Radii.card),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.03),
-              blurRadius: 18,
-              offset: const Offset(0, 14),
+              color: AppColors.textPrimary.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -493,27 +496,42 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             if (item.status != ScheduleStatus.completed) ...[
               const SizedBox(height: 18),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(Radii.card - 2),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: 12),
-                child: Row(
-                  children: [
-                    Icon(Icons.chat_bubble_outline_rounded, size: 18, color: accentColor),
-                    SizedBox(width: Gaps.row),
-                    Expanded(
-                      child: Text(
-                        '오늘 수업 메모 작성하기',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: accentColor,
-                        ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    // TODO: 수업 메모 작성 화면으로 이동
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${item.student}님의 수업 메모 작성'),
+                        backgroundColor: AppColors.primary,
                       ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(Radii.card - 2),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(Radii.card - 2),
                     ),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 14, color: accentColor),
-                  ],
+                    padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: 12),
+                    child: Row(
+                      children: [
+                        Icon(Icons.chat_bubble_outline_rounded, size: 18, color: accentColor),
+                        SizedBox(width: Gaps.row),
+                        Expanded(
+                          child: Text(
+                            '오늘 수업 메모 작성하기',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: accentColor,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded, size: 14, color: accentColor),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -561,12 +579,12 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: EdgeInsets.all(Gaps.cardPad),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(Radii.card + 4),
+              borderRadius: BorderRadius.circular(Radii.card),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.textPrimary.withValues(alpha: 0.03),
-                  blurRadius: 18,
-                  offset: const Offset(0, 12),
+                  color: AppColors.textPrimary.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),

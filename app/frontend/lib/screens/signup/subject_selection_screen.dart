@@ -11,24 +11,49 @@ class SubjectSelectionScreen extends StatefulWidget {
 
 class _SubjectSelectionScreenState extends State<SubjectSelectionScreen> {
   final Set<String> _selectedSubjects = {};
+  String _selectedCategory = '국어/문학';
 
-  final List<Map<String, dynamic>> _subjects = [
-    {'name': '수학', 'icon': Icons.calculate_rounded, 'color': AppColors.primary},
-    {'name': '영어', 'icon': Icons.translate_rounded, 'color': AppColors.warning},
-    {'name': '국어', 'icon': Icons.menu_book_rounded, 'color': AppColors.success},
-    {'name': '과학', 'icon': Icons.science_rounded, 'color': AppColors.error},
-    {'name': '사회', 'icon': Icons.public_rounded, 'color': AppColors.primaryDark},
-    {'name': '한국사', 'icon': Icons.history_rounded, 'color': AppColors.warning},
-    {'name': '물리', 'icon': Icons.speed_rounded, 'color': AppColors.primary},
-    {'name': '화학', 'icon': Icons.science_outlined, 'color': AppColors.success},
-    {'name': '생물', 'icon': Icons.eco_rounded, 'color': AppColors.success},
-    {'name': '지구과학', 'icon': Icons.terrain_rounded, 'color': AppColors.primaryDark},
-    {'name': '음악', 'icon': Icons.music_note_rounded, 'color': AppColors.warning},
-    {'name': '미술', 'icon': Icons.palette_rounded, 'color': AppColors.error},
-    {'name': '체육', 'icon': Icons.sports_soccer_rounded, 'color': AppColors.success},
-    {'name': '컴퓨터', 'icon': Icons.computer_rounded, 'color': AppColors.primary},
-    {'name': '논술', 'icon': Icons.edit_note_rounded, 'color': AppColors.primaryDark},
-  ];
+  final Map<String, List<Map<String, dynamic>>> _subjectsByCategory = {
+    '국어/문학': [
+      {'name': '국어', 'icon': Icons.menu_book_rounded, 'color': AppColors.success},
+      {'name': '문학', 'icon': Icons.book_rounded, 'color': AppColors.success},
+      {'name': '논술', 'icon': Icons.edit_note_rounded, 'color': AppColors.primaryDark},
+    ],
+    '수학': [
+      {'name': '수학', 'icon': Icons.calculate_rounded, 'color': AppColors.primary},
+    ],
+    '외국어': [
+      {'name': '영어', 'icon': Icons.translate_rounded, 'color': AppColors.warning},
+      {'name': '중국어', 'icon': Icons.language_rounded, 'color': AppColors.warning},
+      {'name': '일본어', 'icon': Icons.translate_rounded, 'color': AppColors.warning},
+      {'name': '스페인어', 'icon': Icons.language_rounded, 'color': AppColors.warning},
+      {'name': '프랑스어', 'icon': Icons.language_rounded, 'color': AppColors.warning},
+    ],
+    '과학': [
+      {'name': '과학', 'icon': Icons.science_rounded, 'color': AppColors.error},
+      {'name': '물리', 'icon': Icons.speed_rounded, 'color': AppColors.primary},
+      {'name': '화학', 'icon': Icons.science_outlined, 'color': AppColors.success},
+      {'name': '생물', 'icon': Icons.eco_rounded, 'color': AppColors.success},
+      {'name': '지구과학', 'icon': Icons.terrain_rounded, 'color': AppColors.primaryDark},
+    ],
+    '사회/역사': [
+      {'name': '사회', 'icon': Icons.public_rounded, 'color': AppColors.primaryDark},
+      {'name': '한국사', 'icon': Icons.history_rounded, 'color': AppColors.warning},
+      {'name': '세계사', 'icon': Icons.public_rounded, 'color': AppColors.primaryDark},
+      {'name': '지리', 'icon': Icons.map_rounded, 'color': AppColors.primaryDark},
+    ],
+    '예체능': [
+      {'name': '음악', 'icon': Icons.music_note_rounded, 'color': AppColors.warning},
+      {'name': '미술', 'icon': Icons.palette_rounded, 'color': AppColors.error},
+      {'name': '체육', 'icon': Icons.sports_soccer_rounded, 'color': AppColors.success},
+    ],
+    '기타': [
+      {'name': '컴퓨터', 'icon': Icons.computer_rounded, 'color': AppColors.primary},
+      {'name': '코딩', 'icon': Icons.code_rounded, 'color': AppColors.primary},
+    ],
+  };
+
+  List<Map<String, dynamic>> get _currentSubjects => _subjectsByCategory[_selectedCategory] ?? [];
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +99,49 @@ class _SubjectSelectionScreenState extends State<SubjectSelectionScreen> {
               ),
             ),
 
+            // 카테고리 선택 탭
+            Container(
+              height: 50,
+              margin: EdgeInsets.symmetric(horizontal: Gaps.screen),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _subjectsByCategory.keys.length,
+                itemBuilder: (context, index) {
+                  final category = _subjectsByCategory.keys.elementAt(index);
+                  final isSelected = _selectedCategory == category;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedCategory = category;
+                      });
+                    },
+                    child: Container(
+                      margin: EdgeInsets.only(right: Gaps.row),
+                      padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: Gaps.row),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primaryLight : AppColors.surface,
+                        borderRadius: BorderRadius.circular(Radii.chip),
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary : AppColors.divider,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          category,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: Gaps.card),
+
             // 과목 선택 그리드
             Expanded(
               child: CustomScrollView(
@@ -90,7 +158,7 @@ class _SubjectSelectionScreenState extends State<SubjectSelectionScreen> {
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          final subject = _subjects[index];
+                          final subject = _currentSubjects[index];
                           final isSelected = _selectedSubjects.contains(subject['name']);
 
                           return GestureDetector(
@@ -164,7 +232,7 @@ class _SubjectSelectionScreenState extends State<SubjectSelectionScreen> {
                             ),
                           );
                         },
-                        childCount: _subjects.length,
+                        childCount: _currentSubjects.length,
                         addAutomaticKeepAlives: false,
                         addRepaintBoundaries: true,
                       ),

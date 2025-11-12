@@ -65,35 +65,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         slivers: [
           // AppBar
           SliverAppBar(
-            expandedHeight: 100,
-            floating: false,
             pinned: true,
+            floating: false,
             backgroundColor: colorScheme.surface,
             elevation: 0,
             automaticallyImplyLeading: false,
-            snap: false,
-            forceElevated: false,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '설정',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '앱 설정 및 계정 관리',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+            toolbarHeight: 64,
+            title: Text(
+              '설정',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
               ),
             ),
           ),
@@ -373,7 +356,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        borderRadius: BorderRadius.circular(Radii.card),
         side: BorderSide(
           color: colorScheme.outline.withOpacity(0.1),
         ),
@@ -457,7 +440,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        borderRadius: BorderRadius.circular(Radii.card),
         side: BorderSide(
           color: colorScheme.outline.withOpacity(0.1),
         ),
