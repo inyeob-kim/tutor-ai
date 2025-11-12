@@ -14,7 +14,7 @@ class ScheduleBase(BaseModel):
     lesson_date: date
     start_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
     end_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
-    subject_id: int
+    subject_id: str
     notes: Optional[str] = None
     status: ScheduleStatus = "confirmed"
     cancelled_at: Optional[datetime] = None
@@ -30,7 +30,7 @@ class ScheduleUpdate(BaseModel):
     lesson_date: Optional[date] = None
     start_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
     end_time: Optional[str] = Field(None, pattern=r"^\d{2}:\d{2}$")
-    subject_id: Optional[int] = None
+    subject_id: Optional[str] = None
     notes: Optional[str] = None
     status: Optional[ScheduleStatus] = None
     cancelled_at: Optional[datetime] = None
@@ -50,3 +50,5 @@ class ScheduleListResp(BaseModel):
     page: int
     pageSize: int
     items: list[ScheduleOut]
+from __future__ import annotations
+

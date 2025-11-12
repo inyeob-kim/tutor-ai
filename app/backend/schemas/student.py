@@ -10,7 +10,7 @@ class StudentBase(BaseModel):
     teacher_id: Optional[int] = None
     school: Optional[str] = None
     grade: Optional[str] = None
-    subject_id: Optional[int] = None
+    subject_id: Optional[str] = None
     start_date: Optional[date] = None
     lesson_day: Optional[str] = None
     lesson_time: Optional[str] = None
@@ -29,7 +29,7 @@ class StudentUpdate(BaseModel):
     teacher_id: Optional[int] = None
     school: Optional[str] = None
     grade: Optional[str] = None
-    subject_id: Optional[int] = None
+    subject_id: Optional[str] = None
     start_date: Optional[date] = None
     lesson_day: Optional[str] = None
     lesson_time: Optional[str] = None

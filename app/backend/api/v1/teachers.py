@@ -11,7 +11,7 @@ router = APIRouter(prefix="/teachers", tags=["teachers"])
 @router.get("/list")
 async def list_teachers(
     q: str | None = Query(None),
-    subject_id: int | None = Query(None),
+    subject_id: str | None = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_session),
