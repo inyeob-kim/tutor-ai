@@ -29,7 +29,7 @@ async def list_students(
         "teacher_id": s.teacher_id,
         "school": s.school,
         "grade": s.grade,
-        "subject": s.subject,
+        "subject_id": s.subject_id,
         "start_date": s.start_date,
         "lesson_day": s.lesson_day,
         "lesson_time": s.lesson_time,
