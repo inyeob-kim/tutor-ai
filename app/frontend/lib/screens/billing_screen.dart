@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import 'add_billing_screen.dart';
 
 enum BillingStatus { paid, unpaid, pending }
 enum BillingFilter { all, unpaid, paid, thisMonth }
@@ -138,8 +139,18 @@ class _BillingScreenState extends State<BillingScreen> {
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: 청구 추가 페이지로 이동
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddBillingScreen(),
+                      ),
+                    );
+                    if (result == true) {
+                      setState(() {
+                        // 목록 새로고침
+                      });
+                    }
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('청구 추가'),

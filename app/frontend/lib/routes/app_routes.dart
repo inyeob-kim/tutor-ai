@@ -14,6 +14,7 @@ import '../screens/signup/subject_selection_screen.dart';
 import '../screens/signup/name_input_screen.dart';
 import '../screens/signup/phone_input_screen.dart';
 import '../screens/signup/signup_complete_screen.dart';
+import '../screens/add_billing_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -25,6 +26,7 @@ class AppRoutes {
   static const String settings = '/settings';
         static const String addStudent = '/students/add';
   static const String addSchedule = '/schedules/add';
+  static const String addBilling = '/billing/add';
   static const String aiAssistant = '/ai-assistant';
   static const String bookingRequest = '/booking-request';
   static const String googleSignup = '/signup/google';
@@ -76,6 +78,11 @@ class AppRoutes {
             case addSchedule:
               return MaterialPageRoute(
                 builder: (_) => const AddScheduleScreen(),
+                settings: routeSettings,
+              );
+            case addBilling:
+              return MaterialPageRoute(
+                builder: (_) => const AddBillingScreen(),
                 settings: routeSettings,
               );
             case aiAssistant:

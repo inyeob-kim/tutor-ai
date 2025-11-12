@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../theme/tokens.dart';
 import '../../routes/app_routes.dart';
+import '../../services/api_service.dart';
 
 class GoogleSignupScreen extends StatefulWidget {
   const GoogleSignupScreen({super.key});
@@ -16,18 +19,38 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: 구글 로그인 연동 (현재는 시뮬레이션)
-      // final googleSignIn = GoogleSignIn();
-      // final account = await googleSignIn.signIn();
-      // if (account == null) {
-      //   setState(() => _isLoading = false);
-      //   return;
-      // }
-      // final idToken = await account.authentication.then((auth) => auth.idToken);
-      // await ApiService.googleLogin(idToken);
+      // Firebase Auth를 사용한 구글 로그인
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
-      // 시뮬레이션: 1초 대기
-      await Future.delayed(const Duration(seconds: 1));
+      if (googleUser == null) {
+        // 사용자가 로그인을 취소한 경우
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+
+      // Google Sign-In 인증 정보 가져오기
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Firebase Auth로 인증
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      
+      // Firebase에서 idToken 가져오기
+      final String? idToken = await userCredential.user?.getIdToken();
+
+      if (idToken == null) {
+        throw Exception('구글 로그인 토큰을 가져올 수 없습니다');
+      }
+
+      // 백엔드 API로 로그인 (Firebase idToken 사용)
+      await ApiService.googleLogin(idToken);
 
       if (mounted) {
         setState(() => _isLoading = false);

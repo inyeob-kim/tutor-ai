@@ -123,5 +123,44 @@ class ApiService {
       throw Exception('Error processing audio: $e');
     }
   }
+
+  static Future<Map<String, dynamic>> createBilling(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/invoices'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to create billing: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error creating billing: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> googleLogin(String idToken) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/v1/auth/social-login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'provider': 'google',
+          'id_token': idToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to login: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error during google login: $e');
+    }
+  }
 }
 

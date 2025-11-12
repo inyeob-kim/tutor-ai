@@ -4,68 +4,37 @@ import '../services/api_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 
-class AddScheduleScreen extends StatefulWidget {
-  final DateTime? initialDate;
-  final String? initialTimeSlot;
-
-  const AddScheduleScreen({
-    super.key,
-    this.initialDate,
-    this.initialTimeSlot,
-  });
+class AddBillingScreen extends StatefulWidget {
+  const AddBillingScreen({super.key});
 
   @override
-  State<AddScheduleScreen> createState() => _AddScheduleScreenState();
+  State<AddBillingScreen> createState() => _AddBillingScreenState();
 }
 
-class _AddScheduleScreenState extends State<AddScheduleScreen> {
+class _AddBillingScreenState extends State<AddBillingScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
   final _notesController = TextEditingController();
 
-  late DateTime _selectedDate;
   int? _selectedStudentId;
   String? _selectedSubject;
+  DateTime? _billingDate;
+  DateTime? _dueDate;
   bool _isLoading = false;
-  List<Map<String, dynamic>> _students = [];
   bool _isLoadingStudents = false;
-
-  // 타임슬롯 정의 (30분 단위)
-  final List<String> _timeSlots = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-    '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-    '18:00', '18:30', '19:00', '19:30', '20:00', '20:30',
-    '21:00', '21:30', '22:00',
-  ];
-
-  Map<String, String?> _selectedTimeRange = {
-    'start': null,
-    'end': null,
-  };
+  List<Map<String, dynamic>> _students = [];
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.initialDate ?? DateTime.now();
-    
-    // initialDate가 전달되면 해당 시간을 미리 선택
-    if (widget.initialDate != null) {
-      final hour = widget.initialDate!.hour;
-      final minute = widget.initialDate!.minute;
-      // 가장 가까운 30분 단위로 반올림
-      final roundedMinute = minute < 30 ? 0 : 30;
-      final timeStr = '${hour.toString().padLeft(2, '0')}:${roundedMinute.toString().padLeft(2, '0')}';
-      
-      if (_timeSlots.contains(timeStr)) {
-        _selectedTimeRange['start'] = timeStr;
-      }
-    }
-    
+    _billingDate = DateTime.now();
+    _dueDate = DateTime.now().add(const Duration(days: 7));
     _loadStudents();
   }
 
   @override
   void dispose() {
+    _amountController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -97,92 +66,63 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
             'name': '박서준',
             'subjects': ['과학', '수학'],
           },
+          {
+            'id': 4,
+            'name': '최유진',
+            'subjects': ['영어'],
+          },
+          {
+            'id': 5,
+            'name': '정다은',
+            'subjects': ['국어', '영어'],
+          },
         ];
         _isLoadingStudents = false;
       });
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
+  Future<void> _selectBillingDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: _billingDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
     );
     if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-        // 날짜 변경 시 시간 범위 초기화
-        _selectedTimeRange = {'start': null, 'end': null};
-      });
+      setState(() => _billingDate = picked);
     }
   }
 
-  void _selectTimeSlot(String timeSlot) {
-    setState(() {
-      if (_selectedTimeRange['start'] == null) {
-        // 시작 시간 선택
-        _selectedTimeRange['start'] = timeSlot;
-        _selectedTimeRange['end'] = null;
-      } else if (_selectedTimeRange['end'] == null) {
-        // 종료 시간 선택
-        final startTime = _selectedTimeRange['start']!;
-        final startIndex = _timeSlots.indexOf(startTime);
-        final selectedIndex = _timeSlots.indexOf(timeSlot);
-        
-        if (selectedIndex > startIndex) {
-          // 종료 시간이 시작 시간보다 뒤면 설정
-          _selectedTimeRange['end'] = timeSlot;
-        } else {
-          // 종료 시간이 시작 시간보다 앞이면 시작 시간 재설정
-          _selectedTimeRange['start'] = timeSlot;
-          _selectedTimeRange['end'] = null;
-        }
-      } else {
-        // 새로운 시작 시간 선택
-        _selectedTimeRange['start'] = timeSlot;
-        _selectedTimeRange['end'] = null;
-      }
-    });
-  }
-
-  bool _isTimeSlotSelected(String timeSlot) {
-    if (_selectedTimeRange['start'] == null) return false;
-    if (_selectedTimeRange['end'] == null) {
-      return _selectedTimeRange['start'] == timeSlot;
+  Future<void> _selectDueDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 7)),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null) {
+      setState(() => _dueDate = picked);
     }
-    
-    final startIndex = _timeSlots.indexOf(_selectedTimeRange['start']!);
-    final endIndex = _timeSlots.indexOf(_selectedTimeRange['end']!);
-    final slotIndex = _timeSlots.indexOf(timeSlot);
-    
-    return slotIndex >= startIndex && slotIndex <= endIndex;
-  }
-
-  bool _isTimeSlotStart(String timeSlot) {
-    return _selectedTimeRange['start'] == timeSlot;
-  }
-
-  bool _isTimeSlotEnd(String timeSlot) {
-    return _selectedTimeRange['end'] == timeSlot;
   }
 
   Future<void> _submit() async {
-    if (_selectedTimeRange['start'] == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedStudentId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('시작 시간을 선택해주세요'),
+          content: const Text('학생을 선택해주세요'),
           backgroundColor: AppColors.error,
         ),
       );
       return;
     }
 
-    if (_selectedStudentId == null) {
+    if (_amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('학생을 선택해주세요'),
+          content: const Text('청구 금액을 입력해주세요'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -192,21 +132,26 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final amount = int.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
+      if (amount <= 0) {
+        throw Exception('청구 금액은 0보다 커야 합니다');
+      }
+
       final data = <String, dynamic>{
         'student_id': _selectedStudentId,
-        'lesson_date': DateFormat('yyyy-MM-dd').format(_selectedDate),
-        'start_time': _selectedTimeRange['start'],
-        'end_time': _selectedTimeRange['end'] ?? _selectedTimeRange['start'],
+        'amount': amount,
+        'date': DateFormat('yyyy-MM-dd').format(_billingDate!),
+        'due_date': DateFormat('yyyy-MM-dd').format(_dueDate!),
         if (_selectedSubject != null) 'subject': _selectedSubject,
         if (_notesController.text.isNotEmpty) 'notes': _notesController.text.trim(),
       };
 
-      await ApiService.createSchedule(data);
+      await ApiService.createBilling(data);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('일정이 성공적으로 등록되었습니다.'),
+            content: const Text('청구가 성공적으로 등록되었습니다.'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -236,7 +181,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerHighest,
       appBar: AppBar(
-        title: const Text('일정 추가'),
+        title: const Text('청구 추가'),
         backgroundColor: colorScheme.surface,
         elevation: 0,
       ),
@@ -246,151 +191,10 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
           physics: const TossScrollPhysics(),
           padding: EdgeInsets.all(Gaps.card),
           children: [
-            // 날짜 선택
-            _buildSectionTitle('날짜 선택', theme, colorScheme),
+            // 필수 정보 섹션
+            _buildSectionTitle('필수 정보', theme, colorScheme),
             SizedBox(height: Gaps.row),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(Radii.chip + 4),
-                side: BorderSide(
-                  color: colorScheme.outline.withOpacity(0.1),
-                ),
-              ),
-              child: InkWell(
-                onTap: () => _selectDate(context),
-                borderRadius: BorderRadius.circular(Radii.chip + 4),
-                child: Padding(
-                  padding: EdgeInsets.all(Gaps.card),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_today_outlined, color: colorScheme.primary),
-                      SizedBox(width: Gaps.row),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                            ),
-                            SizedBox(height: Gaps.row - 6),
-                            Text(
-                              '날짜 변경',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: Gaps.cardPad + 4),
-
-            // 시간 선택 (타임슬롯)
-            _buildSectionTitle('시간 선택', theme, colorScheme),
-            SizedBox(height: Gaps.row),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(Radii.chip + 4),
-                side: BorderSide(
-                  color: colorScheme.outline.withOpacity(0.1),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(Gaps.card),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (_selectedTimeRange['start'] != null)
-                      Padding(
-                        padding: EdgeInsets.only(bottom: Gaps.card),
-                        child: Row(
-                          children: [
-                            Icon(Icons.access_time_rounded, 
-                                size: 18, color: AppColors.primary),
-                            SizedBox(width: Gaps.row - 2),
-                            Text(
-                              _selectedTimeRange['end'] != null
-                                  ? '${_selectedTimeRange['start']} - ${_selectedTimeRange['end']}'
-                                  : '${_selectedTimeRange['start']}부터 선택 중...',
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    Wrap(
-                      spacing: Gaps.row - 2,
-                      runSpacing: Gaps.row - 2,
-                      children: _timeSlots.map((timeSlot) {
-                        final isSelected = _isTimeSlotSelected(timeSlot);
-                        final isStart = _isTimeSlotStart(timeSlot);
-                        final isEnd = _isTimeSlotEnd(timeSlot);
-                        
-                        return InkWell(
-                          onTap: () => _selectTimeSlot(timeSlot),
-                          borderRadius: BorderRadius.circular(Radii.icon),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: Gaps.row,
-                              vertical: Gaps.row - 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? (isStart || isEnd
-                                      ? AppColors.primary
-                                      : colorScheme.primaryContainer)
-                                  : colorScheme.surface,
-                              borderRadius: BorderRadius.circular(Radii.chip),
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : colorScheme.outline.withOpacity(0.2),
-                                width: isSelected ? 2 : 1,
-                              ),
-                            ),
-                            child: Text(
-                              timeSlot,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: isStart || isEnd
-                                    ? FontWeight.w700
-                                    : FontWeight.normal,
-                                color: isSelected
-                                    ? (isStart || isEnd
-                                        ? AppColors.surface
-                                        : colorScheme.onPrimaryContainer)
-                                    : colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    SizedBox(height: Gaps.row - 2),
-                    Text(
-                      '시작 시간을 선택한 후 종료 시간을 선택하세요',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: Gaps.cardPad + 4),
-
+            
             // 학생 선택
             _buildSectionTitle('학생 선택', theme, colorScheme),
             SizedBox(height: Gaps.row),
@@ -405,7 +209,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
               child: _isLoadingStudents
                   ? Padding(
                       padding: EdgeInsets.all(Gaps.cardPad + 4),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: const Center(child: CircularProgressIndicator()),
                     )
                   : _students.isEmpty
                       ? Padding(
@@ -584,26 +388,56 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                 return <Widget>[];
               }(),
 
+            // 청구 금액
+            _buildSectionTitle('청구 금액', theme, colorScheme),
+            SizedBox(height: Gaps.row),
+            _buildTextField(
+              controller: _amountController,
+              label: '금액',
+              hint: '예: 200000',
+              icon: Icons.attach_money_outlined,
+              keyboardType: TextInputType.number,
+              required: true,
+              theme: theme,
+              colorScheme: colorScheme,
+            ),
+            SizedBox(height: Gaps.cardPad + 4),
+
+            // 청구 날짜
+            _buildSectionTitle('청구 날짜', theme, colorScheme),
+            SizedBox(height: Gaps.row),
+            _buildDateField(
+              label: '청구일',
+              value: _billingDate,
+              icon: Icons.calendar_today_outlined,
+              onTap: () => _selectBillingDate(context),
+              theme: theme,
+              colorScheme: colorScheme,
+            ),
+            SizedBox(height: Gaps.card),
+
+            // 마감일
+            _buildDateField(
+              label: '마감일',
+              value: _dueDate,
+              icon: Icons.event_outlined,
+              onTap: () => _selectDueDate(context),
+              theme: theme,
+              colorScheme: colorScheme,
+            ),
+            SizedBox(height: Gaps.cardPad + 4),
+
             // 메모
             _buildSectionTitle('메모 (선택사항)', theme, colorScheme),
             SizedBox(height: Gaps.row),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(Radii.chip + 4),
-                side: BorderSide(
-                  color: colorScheme.outline.withOpacity(0.1),
-                ),
-              ),
-              child: TextField(
-                controller: _notesController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: '메모를 입력하세요',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(Gaps.card),
-                ),
-              ),
+            _buildTextField(
+              controller: _notesController,
+              label: '메모',
+              hint: '추가 메모를 입력하세요',
+              icon: Icons.note_outlined,
+              maxLines: 3,
+              theme: theme,
+              colorScheme: colorScheme,
             ),
             SizedBox(height: Gaps.cardPad + 12),
 
@@ -625,7 +459,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                       ),
                     )
                   : Text(
-                      '일정 등록',
+                      '청구 등록',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.surface,
@@ -652,4 +486,87 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
       ),
     );
   }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    bool required = false,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        side: BorderSide(
+          color: colorScheme.outline.withOpacity(0.1),
+        ),
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label + (required ? ' *' : ''),
+          hintText: hint,
+          prefixIcon: Icon(icon, color: AppColors.textSecondary),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(Gaps.card),
+        ),
+        validator: required
+            ? (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '$label을(를) 입력해주세요';
+                }
+                return null;
+              }
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildDateField({
+    required String label,
+    required DateTime? value,
+    required IconData icon,
+    required VoidCallback onTap,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        side: BorderSide(
+          color: colorScheme.outline.withOpacity(0.1),
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon, color: AppColors.textSecondary),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.all(Gaps.card),
+            suffixIcon: const Icon(Icons.chevron_right),
+          ),
+          child: Text(
+            value != null ? DateFormat('yyyy-MM-dd').format(value) : '날짜 선택',
+            style: TextStyle(
+              color: value != null
+                  ? colorScheme.onSurface
+                  : colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+
