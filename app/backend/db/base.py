@@ -2,7 +2,17 @@
 from sqlalchemy import Column, Integer, DateTime, func
 from app.backend.db.base_class import Base
 # 여기에 모든 모델 import
-from app.backend.db.models import Student, Teacher, Schedule, TeacherSubject, StudentSubject, Invoice, InvoiceItem  # noqa: F401
+from app.backend.db.models import (
+    Category,
+    Subject,
+    Student,
+    Teacher,
+    Schedule,
+    TeacherSubject,
+    StudentSubject,
+    Invoice,
+    InvoiceItem,
+)  # noqa: F401
 
 
 class BaseModel:

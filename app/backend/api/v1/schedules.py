@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from sqlalchemy import select, and_
-from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, date, time
-from pydantic import BaseModel
+from __future__ import annotations
+
+from datetime import datetime, timedelta, date, time
 from typing import Optional
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...db.database import get_session
 from ...db.models import Schedule
@@ -12,15 +15,26 @@ router = APIRouter(prefix="/schedules", tags=["schedules"])
 
 
 class ScheduleCreate(BaseModel):
-    teacher_id: int
-    lesson_date: str  # YYYY-MM-DD
-    start_time: str  # HH:MM
-    end_time: str  # HH:MM
-    schedule_type: str = "lesson"
-    student_id: Optional[int] = None
-    title: Optional[str] = None
+    teacher_id: int = Field(..., description="교사 ID")
+    student_id: int = Field(..., description="학생 ID")
+    subject_id: int = Field(..., description="과목 ID")
+    lesson_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    start_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
+    end_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
+    status: str = Field(default="confirmed")
     notes: Optional[str] = None
-    color: str = "#3788D8"
+    cancelled_at: Optional[str] = Field(None, description="ISO 포맷")
+    cancelled_by: Optional[int] = None
+    cancel_reason: Optional[str] = None
+
+
+def _parse_time_window(payload: ScheduleCreate) -> tuple[date, time, time]:
+    lesson_date = datetime.strptime(payload.lesson_date, "%Y-%m-%d").date()
+    start_time = datetime.strptime(payload.start_time, "%H:%M").time()
+    end_time = datetime.strptime(payload.end_time, "%H:%M").time()
+    if start_time >= end_time:
+        raise HTTPException(status_code=400, detail="End time must be after start time")
+    return lesson_date, start_time, end_time
 
 
 @router.post("", status_code=201)
@@ -28,59 +42,68 @@ async def create_schedule(
     payload: ScheduleCreate,
     db: AsyncSession = Depends(get_session),
 ):
-    # 날짜와 시간 파싱
-    lesson_date = datetime.strptime(payload.lesson_date, "%Y-%m-%d").date()
-    start_time = datetime.strptime(payload.start_time, "%H:%M").time()
-    end_time = datetime.strptime(payload.end_time, "%H:%M").time()
-    
-    # 시간 검증
-    if start_time >= end_time:
-        raise HTTPException(status_code=400, detail="End time must be after start time")
-    
+    lesson_date, start_time_obj, end_time_obj = _parse_time_window(payload)
+    start_time_str = start_time_obj.strftime("%H:%M")
+    end_time_str = end_time_obj.strftime("%H:%M")
+
     # 충돌 확인
-    from sqlalchemy import func
-    conflict_count = (await db.execute(
-        select(func.count()).select_from(Schedule).where(
-            and_(
-                Schedule.teacher_id == payload.teacher_id,
-                Schedule.lesson_date == lesson_date,
-                Schedule.start_time < end_time,
-                Schedule.end_time > start_time,
+    conflict_count = (
+        await db.execute(
+            select(func.count())
+            .select_from(Schedule)
+            .where(
+                and_(
+                    Schedule.teacher_id == payload.teacher_id,
+                    Schedule.lesson_date == lesson_date,
+                    Schedule.start_time < end_time_str,
+                    Schedule.end_time > start_time_str,
+                )
             )
         )
-    )).scalar_one()
-    
+    ).scalar_one()
+
     if conflict_count > 0:
         raise HTTPException(status_code=409, detail="Schedule conflict detected")
-    
-    # 스케줄 생성
+
+    if payload.cancelled_at:
+        try:
+            cancelled_at = datetime.fromisoformat(payload.cancelled_at)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid cancelled_at format, expected ISO format")
+    else:
+        cancelled_at = None
+
     schedule = Schedule(
         teacher_id=payload.teacher_id,
-        lesson_date=lesson_date,
-        start_time=start_time,
-        end_time=end_time,
         student_id=payload.student_id,
-        schedule_type=payload.schedule_type,
-        title=payload.title,
+        subject_id=payload.subject_id,
+        lesson_date=lesson_date,
+        start_time=start_time_str,
+        end_time=end_time_str,
         notes=payload.notes,
-        color=payload.color,
+        status=payload.status,
+        cancelled_at=cancelled_at,
+        cancelled_by=payload.cancelled_by,
+        cancel_reason=payload.cancel_reason,
     )
-    
+
     db.add(schedule)
     await db.commit()
     await db.refresh(schedule)
-    
+
     return {
         "schedule_id": schedule.schedule_id,
         "teacher_id": schedule.teacher_id,
+        "student_id": schedule.student_id,
+        "subject_id": schedule.subject_id,
         "lesson_date": schedule.lesson_date,
         "start_time": schedule.start_time,
         "end_time": schedule.end_time,
-        "student_id": schedule.student_id,
-        "schedule_type": schedule.schedule_type,
-        "title": schedule.title,
+        "status": schedule.status,
         "notes": schedule.notes,
-        "color": schedule.color,
+        "cancelled_at": schedule.cancelled_at,
+        "cancelled_by": schedule.cancelled_by,
+        "cancel_reason": schedule.cancel_reason,
         "created_at": schedule.created_at,
         "updated_at": schedule.updated_at,
     }
@@ -89,6 +112,9 @@ async def create_schedule(
 @router.get("/list")
 async def list_schedules(
     teacher_id: int | None = Query(None),
+    student_id: int | None = Query(None),
+    subject_id: int | None = Query(None),
+    status: str | None = Query(None),
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
     page: int = Query(1, ge=1),
@@ -96,12 +122,27 @@ async def list_schedules(
     db: AsyncSession = Depends(get_session),
 ):
     stmt = select(Schedule)
-    if teacher_id:
+    if teacher_id is not None:
         stmt = stmt.where(Schedule.teacher_id == teacher_id)
+    if student_id is not None:
+        stmt = stmt.where(Schedule.student_id == student_id)
+    if subject_id is not None:
+        stmt = stmt.where(Schedule.subject_id == subject_id)
+    if status:
+        stmt = stmt.where(Schedule.status == status)
     if date_from:
-        stmt = stmt.where(Schedule.lesson_date >= date_from)
+        try:
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from format, expected YYYY-MM-DD")
+        stmt = stmt.where(Schedule.lesson_date >= date_from_obj)
     if date_to:
-        stmt = stmt.where(Schedule.lesson_date <= date_to)
+        try:
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to format, expected YYYY-MM-DD")
+        stmt = stmt.where(Schedule.lesson_date <= date_to_obj)
+
     stmt = stmt.order_by(Schedule.lesson_date.desc(), Schedule.start_time.desc()).limit(size).offset((page - 1) * size)
     rows = (await db.execute(stmt)).scalars().all()
     return {
@@ -109,14 +150,16 @@ async def list_schedules(
             {
                 "schedule_id": s.schedule_id,
                 "teacher_id": s.teacher_id,
+                "student_id": s.student_id,
+                "subject_id": s.subject_id,
                 "lesson_date": s.lesson_date,
                 "start_time": s.start_time,
                 "end_time": s.end_time,
-                "student_id": s.student_id,
-                "schedule_type": s.schedule_type,
-                "title": s.title,
+                "status": s.status,
                 "notes": s.notes,
-                "color": s.color,
+                "cancelled_at": s.cancelled_at,
+                "cancelled_by": s.cancelled_by,
+                "cancel_reason": s.cancel_reason,
                 "created_at": s.created_at,
                 "updated_at": s.updated_at,
             }
@@ -135,14 +178,16 @@ async def get_schedule(schedule_id: int, db: AsyncSession = Depends(get_session)
     return {
         "schedule_id": s.schedule_id,
         "teacher_id": s.teacher_id,
+        "student_id": s.student_id,
+        "subject_id": s.subject_id,
         "lesson_date": s.lesson_date,
         "start_time": s.start_time,
         "end_time": s.end_time,
-        "student_id": s.student_id,
-        "schedule_type": s.schedule_type,
-        "title": s.title,
+        "status": s.status,
         "notes": s.notes,
-        "color": s.color,
+        "cancelled_at": s.cancelled_at,
+        "cancelled_by": s.cancelled_by,
+        "cancel_reason": s.cancel_reason,
         "created_at": s.created_at,
         "updated_at": s.updated_at,
     }
@@ -156,69 +201,85 @@ async def check_conflict(
     end_time: str = Body(...),
     db: AsyncSession = Depends(get_session),
 ):
-    from sqlalchemy import func
     lesson_date_obj = datetime.strptime(lesson_date, "%Y-%m-%d").date()
     start_time_obj = datetime.strptime(start_time, "%H:%M").time()
     end_time_obj = datetime.strptime(end_time, "%H:%M").time()
-    
-    count = (await db.execute(
-        select(func.count()).select_from(Schedule).where(
-            and_(
-                Schedule.teacher_id == teacher_id,
-                Schedule.lesson_date == lesson_date_obj,
-                Schedule.start_time < end_time_obj,
-                Schedule.end_time > start_time_obj,
+    start_time_str = start_time_obj.strftime("%H:%M")
+    end_time_str = end_time_obj.strftime("%H:%M")
+
+    count = (
+        await db.execute(
+            select(func.count()).select_from(Schedule).where(
+                and_(
+                    Schedule.teacher_id == teacher_id,
+                    Schedule.lesson_date == lesson_date_obj,
+                    Schedule.start_time < end_time_str,
+                    Schedule.end_time > start_time_str,
+                )
             )
         )
-    )).scalar_one()
+    ).scalar_one()
     return {"conflict": count > 0, "count": count}
 
 
 @router.post("/bulk-generate")
 async def bulk_generate(
     teacher_id: int,
+    student_id: int,
+    subject_id: int,
     weekday: int,
     start_time: str,
     end_time: str,
     date_from: str,
     date_to: str,
-    schedule_type: str = "lesson",
-    title: str | None = None,
-    color: str = "#3788D8",
+    status: str = "confirmed",
+    notes: str | None = None,
     db: AsyncSession = Depends(get_session),
 ):
-    from datetime import datetime, timedelta
     def parse_date(s: str):
         return datetime.strptime(s, "%Y-%m-%d").date()
+
     def parse_time(s: str):
         return datetime.strptime(s, "%H:%M").time()
+
     df = parse_date(date_from)
     dt = parse_date(date_to)
     st = parse_time(start_time)
     et = parse_time(end_time)
+    st_str = st.strftime("%H:%M")
+    et_str = et.strftime("%H:%M")
+
     cur = df
     while cur.weekday() != weekday:
         cur = cur + timedelta(days=1)
+
     created = 0
     while cur <= dt:
-        exists = (await db.execute(
-            select(func.count()).select_from(Schedule).where(
-                (Schedule.teacher_id == teacher_id) &
-                (Schedule.lesson_date == cur) &
-                (Schedule.start_time < et) &
-                (Schedule.end_time > st)
+        exists = (
+            await db.execute(
+                select(func.count())
+                .select_from(Schedule)
+                .where(
+                    (Schedule.teacher_id == teacher_id)
+                    & (Schedule.lesson_date == cur)
+                    & (Schedule.start_time < et_str)
+                    & (Schedule.end_time > st_str)
+                )
             )
-        )).scalar_one()
+        ).scalar_one()
         if not exists:
-            db.add(Schedule(
-                teacher_id=teacher_id,
-                lesson_date=cur,
-                start_time=st,
-                end_time=et,
-                schedule_type=schedule_type,
-                title=title,
-                color=color,
-            ))
+            db.add(
+                Schedule(
+                    teacher_id=teacher_id,
+                    student_id=student_id,
+                    subject_id=subject_id,
+                    lesson_date=cur,
+                    start_time=st_str,
+                    end_time=et_str,
+                    status=status,
+                    notes=notes,
+                )
+            )
             created += 1
         cur = cur + timedelta(days=7)
     await db.commit()

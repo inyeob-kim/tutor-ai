@@ -2,7 +2,18 @@
 from __future__ import annotations
 from datetime import datetime, date
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Integer, BigInteger, DateTime, Date, Text, Boolean, func, UniqueConstraint
+from sqlalchemy import (
+    String,
+    Integer,
+    BigInteger,
+    DateTime,
+    Date,
+    Text,
+    Boolean,
+    func,
+    UniqueConstraint,
+    ForeignKey,
+)
 from app.backend.db.base_class import Base
 from app.backend.db.types import EncryptedString, HashedString
 from app.backend.db.mixins import setup_hash_fields
@@ -19,6 +30,9 @@ class Student(Base):
     name_hash: Mapped[str] = mapped_column(HashedString, nullable=False, index=True)
     phone_hash: Mapped[str] = mapped_column(HashedString, nullable=False, index=True)
     
+    teacher_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("teachers.teacher_id"), nullable=True, index=True
+    )
     school: Mapped[str | None] = mapped_column(String(100), nullable=True)
     grade: Mapped[str | None] = mapped_column(String(20), nullable=True)
     subject: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -38,7 +52,7 @@ class Student(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint('name_hash', 'phone_hash', name='uniq_name_phone'),
+        UniqueConstraint("name_hash", "phone_hash", name="uniq_name_phone"),
     )
 
 # 해시 필드 자동 업데이트 이벤트 리스너 등록

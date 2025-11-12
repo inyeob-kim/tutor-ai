@@ -5,8 +5,9 @@ from pydantic import BaseModel, ConfigDict
 
 class TeacherSubjectBase(BaseModel):
     teacher_id: int
-    subject: str
-    hourly_rate: int | None = None
+    subject_id: int
+    price_per_hour: int
+    is_active: bool = True
 
 
 class TeacherSubjectCreate(TeacherSubjectBase):
@@ -14,7 +15,8 @@ class TeacherSubjectCreate(TeacherSubjectBase):
 
 
 class TeacherSubjectUpdate(BaseModel):
-    hourly_rate: int | None = None
+    price_per_hour: int | None = None
+    is_active: bool | None = None
 
 
 class TeacherSubjectOut(TeacherSubjectBase):
