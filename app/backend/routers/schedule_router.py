@@ -42,7 +42,7 @@ async def create_schedule(payload: ScheduleCreate, session: AsyncSession = Depen
 async def list_schedules(
     teacher_id: int | None = Query(None),
     student_id: int | None = Query(None),
-    subject_id: int | None = Query(None),
+    subject_id: str | None = Query(None),
     status: str | None = Query(None),
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
@@ -144,7 +144,7 @@ async def check_conflict(
 async def bulk_generate(
     teacher_id: int,
     student_id: int,
-    subject_id: int,
+    subject_id: str,
     weekday: int,  # 0=Mon ... 6=Sun
     start_time: str,
     end_time: str,

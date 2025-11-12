@@ -11,7 +11,7 @@
 | `teacher_id` | BIGINT | NULL | - | 담당 교사 ID (FK: teachers.teacher_id) |
 | `school` | VARCHAR(100) | NULL | - | 학교/학년 |
 | `grade` | VARCHAR(20) | NULL | - | 학년 (예: 고1, 중3, 초6) |
-| `subject_id` | INT | NULL | - | 대표 과목 ID (FK: subjects.id) |
+| `subject_id` | VARCHAR(50) | NULL | - | 대표 과목 ID |
 | `start_date` | DATE | NULL | - | 과외 시작일 |
 | `lesson_day` | VARCHAR(50) | NULL | - | 수업 요일 (월수금, 토일 등) |
 | `lesson_time` | VARCHAR(50) | NULL | - | 수업 시간 (19:00~21:00 등) |
@@ -38,7 +38,7 @@
 | `teacher_id` | BIGINT | NOT NULL | AUTO_INCREMENT | 내부용 고유 ID (Primary Key) |
 | `name` | VARCHAR(50) | NOT NULL | - | 본명 |
 | `phone` | VARCHAR(20) | NOT NULL | - | 연락처 |
-| `subject_id` | INT | NULL | - | 대표 과목 ID (FK: subjects.id) |
+| `subject_id` | VARCHAR(50) | NULL | - | 대표 과목 ID |
 | `email` | VARCHAR(100) | NULL | - | 이메일 |
 | `bank_name` | VARCHAR(50) | NULL | - | 입금받을 은행 |
 | `account_number` | VARCHAR(30) | NULL | - | 계좌번호 |
@@ -107,7 +107,7 @@
 | `lesson_date` | DATE | NOT NULL | - | 날짜 |
 | `start_time` | VARCHAR(5) | NOT NULL | - | 시작 시간 (HH:MM) |
 | `end_time` | VARCHAR(5) | NOT NULL | - | 종료 시간 (HH:MM) |
-| `subject_id` | INT | NOT NULL | - | 과목 ID (FK: subjects.id) |
+| `subject_id` | VARCHAR(50) | NOT NULL | - | 과목 ID |
 | `notes` | TEXT | NULL | - | 비고 |
 | `status` | VARCHAR(20) | NOT NULL | 'confirmed' | 일정 상태 |
 | `cancelled_at` | DATETIME | NULL | - | 취소 일시 |

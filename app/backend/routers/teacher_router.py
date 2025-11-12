@@ -97,7 +97,7 @@ async def create_teacher(payload: TeacherCreate, session: AsyncSession = Depends
 @router.get("", response_model=TeacherListResp)
 async def list_teachers(
     q: str | None = Query(None, description="이름 또는 전화번호 검색"),
-    subject_id: int | None = Query(None, description="담당 과목 ID"),
+    subject_id: str | None = Query(None, description="담당 과목 ID"),
     orderBy: str = Query("created_at"),
     order: str = Query("desc"),
     page: int = Query(1, ge=1),

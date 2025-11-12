@@ -17,7 +17,7 @@ router = APIRouter(prefix="/schedules", tags=["schedules"])
 class ScheduleCreate(BaseModel):
     teacher_id: int = Field(..., description="교사 ID")
     student_id: int = Field(..., description="학생 ID")
-    subject_id: int = Field(..., description="과목 ID")
+    subject_id: str = Field(..., description="과목 ID")
     lesson_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
     start_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
     end_time: str = Field(..., pattern=r"^\d{2}:\d{2}$")
@@ -113,7 +113,7 @@ async def create_schedule(
 async def list_schedules(
     teacher_id: int | None = Query(None),
     student_id: int | None = Query(None),
-    subject_id: int | None = Query(None),
+    subject_id: str | None = Query(None),
     status: str | None = Query(None),
     date_from: str | None = Query(None),
     date_to: str | None = Query(None),
@@ -226,7 +226,7 @@ async def check_conflict(
 async def bulk_generate(
     teacher_id: int,
     student_id: int,
-    subject_id: int,
+    subject_id: str,
     weekday: int,
     start_time: str,
     end_time: str,

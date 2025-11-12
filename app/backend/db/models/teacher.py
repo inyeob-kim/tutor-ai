@@ -10,7 +10,6 @@ from sqlalchemy import (
     Text,
     func,
     UniqueConstraint,
-    ForeignKey,
 )
 
 from app.backend.db.base_class import Base
@@ -33,9 +32,7 @@ class Teacher(Base):
     phone_hash: Mapped[str] = mapped_column(HashedString, nullable=False, index=True)
     email_hash: Mapped[str | None] = mapped_column(HashedString, nullable=True, index=True)
     
-    subject_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("subjects.id"), nullable=True, index=True
-    )
+    subject_id: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     tax_type: Mapped[str | None] = mapped_column(teacher_tax_type, nullable=True)
     hourly_rate_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     hourly_rate_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
