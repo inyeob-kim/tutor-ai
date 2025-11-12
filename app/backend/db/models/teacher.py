@@ -23,7 +23,7 @@ class Teacher(Base):
     phone_hash: Mapped[str] = mapped_column(HashedString, nullable=False, index=True)
     email_hash: Mapped[str | None] = mapped_column(HashedString, nullable=True, index=True)
     
-    tax_type: Mapped[str] = mapped_column(teacher_tax_type, nullable=False, server_default="사업소득")
+    tax_type: Mapped[str | None] = mapped_column(teacher_tax_type, nullable=True)
     hourly_rate_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     hourly_rate_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
     available_days: Mapped[str | None] = mapped_column(String(100), nullable=True)

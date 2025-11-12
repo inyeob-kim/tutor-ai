@@ -17,6 +17,7 @@
 | `hourly_rate` | INT | NULL | - | 시급 |
 | `notes` | TEXT | NULL | - | 특이사항, 약점, 목표 등 |
 | `is_active` | TINYINT(1) | NOT NULL | 1 | 현재 수업 중 여부 |
+| `is_adult` | BOOLEAN | NOT NULL | false | 성인 여부 (true: 성인, false: 미성년자) |
 | `created_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 생성일시 |
 | `updated_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 수정일시 |
 

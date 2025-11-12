@@ -6,13 +6,14 @@
 import os
 import io
 from openai import OpenAI
-from core.config import settings
+from app.backend.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
-# OpenAI 클라이언트 초기화
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# OpenAI 클라이언트 초기화 (API 키가 있을 때만)
+_openai_api_key = os.getenv("OPENAI_API_KEY") or settings.OPENAI_API_KEY
+client = OpenAI(api_key=_openai_api_key) if _openai_api_key else None
 
 
 class SpeechService:
@@ -41,6 +42,8 @@ class SpeechService:
             audio_file.name = filename
             
             # Whisper API 호출
+            if client is None:
+                raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다. 음성 인식을 사용하려면 API 키가 필요합니다.")
             transcript = client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
@@ -67,6 +70,8 @@ class SpeechService:
             오디오 바이너리 데이터 (MP3)
         """
         try:
+            if client is None:
+                raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다. 음성 생성을 사용하려면 API 키가 필요합니다.")
             response = client.audio.speech.create(
                 model="tts-1",  # 빠른 응답을 위해 tts-1 사용 (tts-1-hd는 더 고품질)
                 voice=voice,
