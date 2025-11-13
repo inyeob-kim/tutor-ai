@@ -31,16 +31,23 @@ pip install -r requirements.txt
 ### 3.1 로컬에 직접 설치한 경우
 
 1. PostgreSQL 서비스를 실행합니다.
-2. `psql`에 접속해 전용 계정과 데이터베이스를 만듭니다.
+2. OS에 맞는 터미널(Git Bash, PowerShell, iTerm 등)을 열고 PostgreSQL 슈퍼유저(보통 `postgres`)로 `psql` 클라이언트에 접속합니다.
+   - macOS/Linux: `psql -U postgres`
+   - Windows(Git Bash): `psql -U postgres -h localhost`
+   - 비밀번호를 요구하면 설치 시 설정한 `postgres` 계정 비밀번호를 입력하세요.
+3. 접속 후 아래 명령을 순서대로 실행하여 전용 계정과 데이터베이스를 만듭니다. 각 명령은 `;`로 끝나야 하며, 입력 후 Enter를 눌러 실행합니다.
 
 ```sql
--- 필요한 경우 postgres 슈퍼유저로 접속
+-- 슈퍼유저 세션에서 실행
+-- (필요 시 \c postgres 로 기본 DB에 연결)
 CREATE ROLE tutor_ai WITH LOGIN PASSWORD 'tutor_ai_pw';
 ALTER ROLE tutor_ai CREATEDB;
 
 CREATE DATABASE tutor_ai OWNER tutor_ai;
 GRANT ALL PRIVILEGES ON DATABASE tutor_ai TO tutor_ai;
 ```
+4. 확인이 필요하면 `\l`로 데이터베이스 목록을, `\du`로 롤 목록을 확인하거나 `\c tutor_ai`로 새 DB에 접속해 권한이 정상인지 점검합니다.
+5. 작업을 마쳤다면 `\q`로 `psql`을 종료합니다.
 
 > 원하는 사용자/비밀번호/DB 이름을 사용해도 되지만, `.env`의 접속 정보와 반드시 일치해야 합니다.
 

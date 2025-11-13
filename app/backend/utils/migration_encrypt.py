@@ -73,23 +73,26 @@ async def migrate_teachers():
     async with async_session_maker() as session:
         # 모든 선생님 조회
         result = await session.execute(
-            text("SELECT teacher_id, name, phone, email, bank_name, account_number FROM teachers")
+            text("SELECT teacher_id, nickname, phone, email, account_name, account_number FROM teachers")
         )
         rows = result.fetchall()
         
         for row in rows:
-            teacher_id, name, phone, email, bank_name, account_number = row
-            
-            # 이미 암호화된 데이터인지 확인
+            teacher_id, nickname, phone, email, account_name, account_number = row
+
+            # phone이 이미 암호화되어 있으면 전체 row는 처리된 것으로 간주
+            already_encrypted = False
             try:
-                json.loads(name)
+                json.loads(phone)
+                already_encrypted = True
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+            if already_encrypted:
                 print(f"Teacher {teacher_id}: Already encrypted, skipping")
                 continue
-            except (json.JSONDecodeError, TypeError):
-                pass  # 평문 데이터, 암호화 필요
             
             # 암호화
-            name_encrypted = json.dumps(aesgcm_encrypt_str(name))
             phone_encrypted = json.dumps(aesgcm_encrypt_str(phone))
             phone_hash = hmac_sha256_hex(phone)
             
@@ -103,13 +106,13 @@ async def migrate_teachers():
                     email_encrypted = json.dumps(aesgcm_encrypt_str(email))
                     email_hash = hmac_sha256_hex(email)
             
-            bank_name_encrypted = None
-            if bank_name:
+            account_name_encrypted = None
+            if account_name:
                 try:
-                    json.loads(bank_name)
-                    bank_name_encrypted = bank_name
+                    json.loads(account_name)
+                    account_name_encrypted = account_name
                 except (json.JSONDecodeError, TypeError):
-                    bank_name_encrypted = json.dumps(aesgcm_encrypt_str(bank_name))
+                    account_name_encrypted = json.dumps(aesgcm_encrypt_str(account_name))
             
             account_number_encrypted = None
             if account_number:
@@ -123,20 +126,18 @@ async def migrate_teachers():
             await session.execute(
                 text("""
                     UPDATE teachers 
-                    SET name = :name, 
-                        phone = :phone, 
+                    SET phone = :phone, 
                         email = :email,
-                        bank_name = :bank_name,
+                        account_name = :account_name,
                         account_number = :account_number,
                         phone_hash = :phone_hash,
                         email_hash = :email_hash
                     WHERE teacher_id = :teacher_id
                 """),
                 {
-                    "name": name_encrypted,
                     "phone": phone_encrypted,
                     "email": email_encrypted,
-                    "bank_name": bank_name_encrypted,
+                    "account_name": account_name_encrypted,
                     "account_number": account_number_encrypted,
                     "phone_hash": phone_hash,
                     "email_hash": email_hash,

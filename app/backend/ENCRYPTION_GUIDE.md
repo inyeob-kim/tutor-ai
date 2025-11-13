@@ -12,10 +12,9 @@
 - `parent_phone` - 부모 전화번호
 
 ### Teacher (선생님)
-- `name` - 이름
+- `account_name` - 계좌 예금주
 - `phone` - 전화번호
 - `email` - 이메일
-- `bank_name` - 은행명
 - `account_number` - 계좌번호
 
 ## 해시 필드

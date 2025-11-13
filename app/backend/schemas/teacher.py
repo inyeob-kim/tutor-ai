@@ -10,13 +10,14 @@ Provider = Literal["google", "kakao", "naver", "apple"]
 
 
 class TeacherBase(BaseModel):
-    name: str
+    nickname: str
     phone: str
     provider: Provider
     oauth_id: str
     subject_id: Optional[str] = None
     email: Optional[str] = None
-    bank_name: Optional[str] = None
+    account_name: Optional[str] = None
+    bank_code: Optional[str] = None
     account_number: Optional[str] = None
     tax_type: Optional[TaxType] = None
     hourly_rate_min: Optional[int] = None
@@ -36,17 +37,28 @@ class TeacherBase(BaseModel):
             return None
         return value
 
+    @field_validator("bank_code", mode="before")
+    @classmethod
+    def _normalize_bank_code(cls, value: Optional[str]):
+        if value is None or value == "":
+            return None
+        value = value.strip().upper()
+        if len(value) != 3:
+            raise ValueError("bank_code must be a 3-character code")
+        return value
+
 
 class TeacherCreate(TeacherBase):
     pass
 
 
 class TeacherUpdate(BaseModel):
-    name: Optional[str] = None
+    nickname: Optional[str] = None
     phone: Optional[str] = None
     subject_id: Optional[str] = None
     email: Optional[str] = None
-    bank_name: Optional[str] = None
+    account_name: Optional[str] = None
+    bank_code: Optional[str] = None
     account_number: Optional[str] = None
     tax_type: Optional[TaxType] = None
     hourly_rate_min: Optional[int] = None
@@ -58,6 +70,16 @@ class TeacherUpdate(BaseModel):
     total_students: Optional[int] = None
     monthly_income: Optional[int] = None
     notes: Optional[str] = None
+
+    @field_validator("bank_code", mode="before")
+    @classmethod
+    def _normalize_bank_code(cls, value: Optional[str]):
+        if value is None or value == "":
+            return None
+        value = value.strip().upper()
+        if len(value) != 3:
+            raise ValueError("bank_code must be a 3-character code")
+        return value
 
 
 class TeacherOut(TeacherBase):

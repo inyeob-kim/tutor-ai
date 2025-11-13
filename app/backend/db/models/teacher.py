@@ -22,10 +22,11 @@ class Teacher(Base):
     __tablename__ = "teachers"
 
     teacher_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(EncryptedString, nullable=False)
+    nickname: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
     phone: Mapped[str] = mapped_column(EncryptedString, nullable=False)
     email: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
-    bank_name: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    account_name: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    bank_code: Mapped[str | None] = mapped_column(String(3), nullable=True)
     account_number: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
     
     # 해시 필드 (검색용, 필요시 unique constraint에도 사용 가능)

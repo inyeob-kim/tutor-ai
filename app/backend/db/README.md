@@ -36,11 +36,12 @@
 | 컬럼명 | 타입 | NULL | 기본값 | 설명 |
 |--------|------|------|--------|------|
 | `teacher_id` | BIGINT | NOT NULL | AUTO_INCREMENT | 내부용 고유 ID (Primary Key) |
-| `name` | VARCHAR(50) | NOT NULL | - | 본명 |
+| `nickname` | VARCHAR(50) | NOT NULL | - | 공개용 닉네임 (유니크) |
 | `phone` | VARCHAR(20) | NOT NULL | - | 연락처 |
 | `subject_id` | VARCHAR(50) | NULL | - | 대표 과목 ID |
 | `email` | VARCHAR(100) | NULL | - | 이메일 |
-| `bank_name` | VARCHAR(50) | NULL | - | 입금받을 은행 |
+| `account_name` | TEXT | NULL | - | 계좌 예금주 (암호화 저장) |
+| `bank_code` | CHAR(3) | NULL | - | 은행 코드 |
 | `account_number` | VARCHAR(30) | NULL | - | 계좌번호 |
 | `tax_type` | ENUM('사업소득','기타소득','프리랜서','미신고') | NOT NULL | '사업소득' | 세금 신고 유형 |
 | `hourly_rate_min` | INT | NULL | - | 최저 시급 |
@@ -58,6 +59,7 @@
 | `updated_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 수정일시 |
 
 ### 제약 조건
+- **Unique Constraint**: `uq_teachers_nickname` (`nickname`) - 닉네임 중복 방지
 - **Unique Constraint**: `uniq_provider_oauth_id` (`provider`, `oauth_id`) - 소셜 계정 식별자 유니크
 ---
 
