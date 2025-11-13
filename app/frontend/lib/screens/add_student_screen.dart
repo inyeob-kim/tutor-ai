@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
+import '../services/teacher_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 
@@ -91,9 +93,22 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // 현재 로그인한 선생님 정보 가져오기
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher == null) {
+        throw Exception('선생님 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
+      }
+
+      // 선택된 과목을 subject_id로 변환 (백엔드는 subject_id를 사용)
+      String? subjectId;
+      if (_selectedSubject != null && _selectedSubject!.isNotEmpty) {
+        subjectId = _selectedSubject!;
+      }
+
       final data = <String, dynamic>{
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
+        'teacher_id': teacher.teacherId, // 현재 로그인한 선생님 ID 추가
         'is_adult': _isAdult,
         // 성인이 아닐 경우에만 보호자 전화번호, 학교, 학년 포함
         if (!_isAdult && _parentPhoneController.text.isNotEmpty)
@@ -102,7 +117,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
           'school': _schoolController.text.trim(),
         if (!_isAdult && _gradeController.text.isNotEmpty) 
           'grade': _gradeController.text.trim(),
-        if (_selectedSubject != null && _selectedSubject!.isNotEmpty) 'subject': _selectedSubject!,
+        if (subjectId != null && subjectId.isNotEmpty) 'subject_id': subjectId, // subject_id로 변경 (백엔드는 subject_id 사용)
         if (_startDate != null)
           'start_date': DateFormat('yyyy-MM-dd').format(_startDate!),
         if (_hourlyRateController.text.isNotEmpty)
@@ -110,6 +125,14 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         if (_notesController.text.isNotEmpty) 'notes': _notesController.text.trim(),
         'is_active': _isActive,
       };
+
+      // 디버깅: 전송할 데이터 확인
+      print('📤 학생 등록 요청 데이터:');
+      print('  - teacher_id: ${data['teacher_id']}');
+      print('  - name: ${data['name']}');
+      print('  - phone: ${data['phone']}');
+      print('  - subject_id: ${data['subject_id']}');
+      print('  - 전체 데이터: $data');
 
       await ApiService.createStudent(data);
 

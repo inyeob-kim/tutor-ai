@@ -171,7 +171,6 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
           children: [
             // 프로필 정보 섹션
             _buildSectionTitle('프로필 정보', theme, colorScheme),
-            SizedBox(height: Gaps.row),
             _buildTextField(
               controller: _nameController,
               label: '이름',
@@ -215,7 +214,6 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
 
             // 계좌 정보 섹션
             _buildSectionTitle('계좌 정보', theme, colorScheme),
-            SizedBox(height: Gaps.row),
             _buildTextField(
               controller: _bankNameController,
               label: '은행명',
@@ -282,11 +280,14 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
-    return Text(
-      title,
-      style: theme.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: colorScheme.onSurface,
+    return Padding(
+      padding: EdgeInsets.only(bottom: Gaps.cardPad),
+      child: Text(
+        title,
+        style: theme.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: colorScheme.onSurface,
+        ),
       ),
     );
   }

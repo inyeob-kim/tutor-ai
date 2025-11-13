@@ -14,10 +14,11 @@ class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
 
   @override
-  State<ScheduleScreen> createState() => _ScheduleScreenState();
+  State<ScheduleScreen> createState() => ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAliveClientMixin {
+/// ScheduleScreen의 State를 외부에서 접근할 수 있도록 public으로 변경
+class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   DateTime _selectedDate = DateTime.now();
   DateTime _viewMonth = DateTime.now(); // 현재 보는 월
   final ScrollController _dateScrollController = ScrollController();
@@ -33,15 +34,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
   // 수업 목록
   List<Lesson> _lessons = [];
   
-  // 마지막으로 화면이 활성화된 시간
-  DateTime? _lastActiveTime;
+  // 마지막으로 오늘 날짜로 리셋한 날짜 (날짜 변경 감지용)
+  DateTime? _lastResetDate;
+  bool _isVisible = false;
 
   @override
-  bool get wantKeepAlive => false; // 상태를 유지하지 않고 매번 초기화
+  bool get wantKeepAlive => true; // 상태를 유지하되, 화면이 보일 때 리셋
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // 화면 진입 시 항상 오늘 날짜로 설정
     _resetToToday();
     _loadStudents();
@@ -49,29 +52,62 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 화면이 다시 활성화될 때마다 오늘 날짜로 리셋
-    final now = DateTime.now();
-    // 마지막 활성화 시간과 비교하여 1초 이상 지났으면 리셋 (중복 호출 방지)
-    if (_lastActiveTime == null || now.difference(_lastActiveTime!).inSeconds > 1) {
-      _lastActiveTime = now;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _resetToToday();
-        }
-      });
-    }
-  }
-
-  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _dateScrollController.dispose();
     super.dispose();
   }
 
+  /// 외부에서 호출할 수 있는 리셋 메서드 (화면이 다시 활성화될 때 호출)
+  /// 선택된 날짜가 오늘이 아니면 무조건 오늘로 리셋
+  void resetToTodayIfNeeded() {
+    final today = DateTime.now();
+    final selectedDateOnly = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final todayOnly = DateTime(today.year, today.month, today.day);
+    
+    // 선택된 날짜가 오늘이 아니면 무조건 오늘로 리셋
+    // 또는 마지막 리셋 날짜가 오늘이 아니면 리셋 (날짜가 바뀌었을 수 있음)
+    if (selectedDateOnly != todayOnly) {
+      // 선택된 날짜가 오늘이 아니면 무조건 리셋
+      _resetToToday(force: true);
+    } else if (_lastResetDate != null) {
+      // 선택된 날짜가 오늘이지만, 마지막 리셋 날짜가 오늘이 아니면 리셋 (날짜가 바뀌었을 수 있음)
+      final lastResetDateOnly = DateTime(_lastResetDate!.year, _lastResetDate!.month, _lastResetDate!.day);
+      if (lastResetDateOnly != todayOnly) {
+        _resetToToday(force: true);
+      }
+    }
+  }
+  
+  /// 강제로 오늘 날짜로 리셋 (외부에서 호출 가능)
+  /// 화면 진입 시 무조건 오늘로 리셋
+  void forceResetToToday() {
+    _resetToToday(force: true);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // 앱이 포그라운드로 돌아올 때 오늘 날짜로 리셋
+    if (state == AppLifecycleState.resumed && _isVisible) {
+      resetToTodayIfNeeded();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 화면이 다시 활성화될 때마다 오늘 날짜로 리셋
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _isVisible = true;
+        resetToTodayIfNeeded();
+      }
+    });
+  }
+
   /// 오늘 날짜로 리셋
-  Future<void> _resetToToday() async {
+  Future<void> _resetToToday({bool force = false}) async {
     final today = DateTime.now();
     final excludeWeekends = await SettingsService.getExcludeWeekends();
     
@@ -85,20 +121,27 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
       }
     }
     
-    // 오늘 날짜로 변경된 경우에만 업데이트
-    if (mounted && (_selectedDate.year != selectedDate.year || 
-        _selectedDate.month != selectedDate.month || 
-        _selectedDate.day != selectedDate.day)) {
-      setState(() {
-        _selectedDate = selectedDate;
-        _viewMonth = DateTime(selectedDate.year, selectedDate.month, 1);
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _scrollToSelectedDate();
-          _loadLessons();
-        }
-      });
+    // 날짜 비교 (년, 월, 일만 비교)
+    final currentDateOnly = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final newDateOnly = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    
+    // 강제 리셋이거나 날짜가 다른 경우에만 업데이트
+    if (force || (mounted && currentDateOnly != newDateOnly)) {
+      // 마지막 리셋 날짜 업데이트
+      _lastResetDate = today;
+      
+      if (mounted) {
+        setState(() {
+          _selectedDate = selectedDate;
+          _viewMonth = DateTime(selectedDate.year, selectedDate.month, 1);
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _scrollToSelectedDate();
+            _loadLessons();
+          }
+        });
+      }
     } else if (mounted) {
       // 날짜가 같아도 수업 목록은 새로고침
       _loadLessons();
@@ -276,33 +319,58 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
   void _scrollToSelectedDate() {
     if (!_dateScrollController.hasClients) return;
     
-    // 현재 보는 월의 날짜 목록 생성
+    // _buildDateScrollSelector와 동일한 방식으로 날짜 목록 생성
     final lastDayOfMonth = DateTime(_viewMonth.year, _viewMonth.month + 1, 0);
     final daysInMonth = lastDayOfMonth.day;
-    final dates = List.generate(daysInMonth, (index) {
+    
+    // 해당 월의 모든 날짜 생성
+    final allDates = List.generate(daysInMonth, (index) {
       return DateTime(_viewMonth.year, _viewMonth.month, index + 1);
     });
     
+    // 주말 제외 옵션이 켜져 있으면 주말 제외 (실제 표시되는 날짜 목록과 동일)
+    final dates = _excludeWeekends
+        ? allDates.where((date) {
+            final weekday = date.weekday; // 1=월요일, 7=일요일
+            return weekday != 6 && weekday != 7; // 토요일(6), 일요일(7) 제외
+          }).toList()
+        : allDates;
+    
+    // 선택된 날짜의 인덱스 찾기
     final selectedIndex = dates.indexWhere((date) =>
         date.year == _selectedDate.year &&
         date.month == _selectedDate.month &&
         date.day == _selectedDate.day);
     
     if (selectedIndex != -1 && _dateScrollController.hasClients) {
-      // 각 날짜 카드의 대략적인 너비 (카드 + 마진) 약 80px
-      const itemWidth = 80.0;
       final position = _dateScrollController.position;
       if (position.hasViewportDimension) {
-        final screenWidth = position.viewportDimension;
-      final scrollPosition = (selectedIndex * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
-      
-      _dateScrollController.animateTo(
-          scrollPosition.clamp(0.0, position.maxScrollExtent),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+        // 각 날짜 카드의 실제 너비 계산
+        // padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: 12) = 20px 좌우 (총 40px)
+        // margin: EdgeInsets.only(right: Gaps.row) = 10px 오른쪽
+        // 날짜 숫자 + 요일 텍스트의 대략적인 너비 = 약 50-60px
+        // 총 카드 너비 = 50-60px (내용) + 40px (패딩) + 10px (마진) = 약 100-110px
+        // 하지만 더 정확한 계산을 위해 약간 더 넓게 설정
+        const itemWidth = 95.0; // 카드 너비 + 마진 (조정 가능)
+        final viewportWidth = position.viewportDimension;
+        
+        // 선택된 날짜를 중앙에 위치시키기 위한 스크롤 위치 계산
+        // 중앙 정렬: 선택된 아이템의 중심이 뷰포트의 중심에 오도록
+        // 스크롤 위치 = (인덱스 * 아이템 너비) - (뷰포트 너비 / 2) + (아이템 너비 / 2)
+        // 하지만 ListView의 padding을 고려해야 함 (좌우 각 Gaps.card = 16px)
+        final padding = Gaps.card; // 좌우 패딩
+        final targetScrollPosition = (selectedIndex * itemWidth) - (viewportWidth / 2) + (itemWidth / 2) - padding;
+        
+        // 스크롤 가능한 범위 내로 클램프
+        final clampedPosition = targetScrollPosition.clamp(0.0, position.maxScrollExtent);
+        
+        _dateScrollController.animateTo(
+          clampedPosition,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     }
-  }
   }
 
 
@@ -820,14 +888,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAlive
                       }
                     });
                     await _refreshDisabledHours();
-                    // 선택된 날짜로 스크롤
-                    Future.delayed(const Duration(milliseconds: 100), () {
+                    // 선택된 날짜로 스크롤 (중앙 정렬)
+                    Future.delayed(const Duration(milliseconds: 50), () {
                       _scrollToSelectedDate();
                     });
                     // 선택된 날짜의 수업 로드
                     _loadLessons();
                   },
                   child: Container(
+                    key: isSelected ? ValueKey('selected_date_${date.day}') : null,
                     margin: EdgeInsets.only(right: Gaps.row),
                     padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: 12),
                     decoration: BoxDecoration(

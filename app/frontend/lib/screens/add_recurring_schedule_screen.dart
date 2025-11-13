@@ -53,17 +53,29 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
 
   Future<void> _loadStudents() async {
     try {
-      final students = await ApiService.getStudents();
+      final studentsData = await ApiService.getStudents();
+      // API 응답을 올바른 형식으로 변환
+      final studentsList = studentsData.map((s) {
+        final studentId = s['student_id'] as int?;
+        final name = s['name'] as String? ?? '이름 없음';
+        // subjects는 List<dynamic>이거나 없을 수 있음
+        final subjects = (s['subjects'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? 
+                        (s['subject_id'] as String?)?.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList() ?? [];
+        
+        return {
+          'id': studentId,
+          'name': name,
+          'subjects': subjects,
+        };
+      }).where((s) => s['id'] != null).toList();
+      
       setState(() {
-        _students = students;
+        _students = studentsList;
       });
     } catch (e) {
+      print('⚠️ 학생 목록 로드 실패: $e');
       setState(() {
-        _students = [
-          {'id': 1, 'name': '김민수', 'subjects': ['수학']},
-          {'id': 2, 'name': '이지은', 'subjects': ['영어', '수학']},
-          {'id': 3, 'name': '박서준', 'subjects': ['과학', '수학']},
-        ];
+        _students = [];
       });
     }
   }
@@ -350,16 +362,19 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
           color: colorScheme.onSurface,
         ),
         items: _students.map((student) {
-          return DropdownMenuItem(
-            value: student['id'] as int,
+          final studentId = student['id'] as int?;
+          final name = student['name'] as String? ?? '이름 없음';
+          if (studentId == null) return null;
+          return DropdownMenuItem<int>(
+            value: studentId,
             child: Text(
-              student['name'] as String,
+              name,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurface,
               ),
             ),
           );
-        }).toList(),
+        }).whereType<DropdownMenuItem<int>>().toList(),
         dropdownColor: colorScheme.surface,
         onChanged: (value) {
           setState(() {
@@ -604,8 +619,45 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
   }
 
   Widget _buildSubjectSelector(ThemeData theme, ColorScheme colorScheme) {
-    final student = _students.firstWhere((s) => s['id'] == _selectedStudentId);
-    final subjects = (student['subjects'] as List<dynamic>).cast<String>();
+    if (_selectedStudentId == null) {
+      return const SizedBox.shrink();
+    }
+    
+    final student = _students.firstWhere(
+      (s) => s['id'] == _selectedStudentId,
+      orElse: () => {'id': null, 'name': '', 'subjects': <String>[]},
+    );
+    
+    final subjects = (student['subjects'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? <String>[];
+    
+    if (subjects.isEmpty) {
+      return Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.card),
+          side: BorderSide(
+            color: colorScheme.outline.withOpacity(0.1),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(Gaps.cardPad),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 20),
+              SizedBox(width: Gaps.row),
+              Expanded(
+                child: Text(
+                  '이 학생의 과목 정보가 없습니다.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Card(
       elevation: 0,

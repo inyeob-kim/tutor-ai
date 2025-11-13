@@ -75,21 +75,39 @@ def _build_history_entry(
 
 @router.post("", response_model=StudentOut, status_code=201)
 async def create_student(payload: StudentCreate, session: AsyncSession = Depends(get_session)):
+    # 디버깅: 받은 데이터 확인
+    print(f"📥 백엔드: 학생 생성 요청 받음")
+    print(f"  - payload.teacher_id: {payload.teacher_id}")
+    print(f"  - payload.name: {payload.name}")
+    print(f"  - payload.phone: {payload.phone}")
+    print(f"  - payload.subject_id: {payload.subject_id}")
+    
     data = payload.model_dump(exclude_unset=True)
+    print(f"  - data (model_dump 후): {data}")
+    print(f"  - data.get('teacher_id'): {data.get('teacher_id')}")
+    
     # 안전장치: 실제 컬럼만 생성에 사용
     cols = set(Student.__table__.columns.keys())
     safe = {k: v for k, v in data.items() if k in cols}
+    print(f"  - safe (컬럼 필터링 후): {safe}")
+    print(f"  - safe.get('teacher_id'): {safe.get('teacher_id')}")
     
     # 해시 필드는 자동 생성되므로 제외
     safe.pop('name_hash', None)
     safe.pop('phone_hash', None)
+    
+    # teacher_id가 None이면 경고 (디버깅용)
+    if safe.get('teacher_id') is None:
+        print(f"⚠️ 경고: teacher_id가 None입니다!")
     
     student = Student(**safe)
     session.add(student)
     try:
         await session.flush()
         await session.refresh(student)
+        print(f"✅ 학생 생성 성공: student_id={student.student_id}, teacher_id={student.teacher_id}")
         after_snapshot = _student_snapshot(student)
+        print(f"  - after_snapshot.teacher_id: {after_snapshot.get('teacher_id')}")
         session.add(
             _build_history_entry(
                 student.student_id,
@@ -100,6 +118,7 @@ async def create_student(payload: StudentCreate, session: AsyncSession = Depends
         await session.commit()
     except Exception as e:
         await session.rollback()
+        print(f"❌ 학생 생성 실패: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create student: {str(e)}")
     return _snapshot_to_out(after_snapshot)
 

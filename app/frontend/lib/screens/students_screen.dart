@@ -39,7 +39,21 @@ class _StudentsScreenState extends State<StudentsScreen> {
       final studentsList = studentsData.map((s) {
         final name = s['name'] as String? ?? '이름 없음';
         final grade = s['grade'] as String?;
-        final subjects = (s['subjects'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+        
+        // 백엔드에서는 subject_id (단일 문자열)를 반환하므로, 이를 리스트로 변환
+        final subjectId = s['subject_id'] as String?;
+        List<String> subjects = [];
+        if (subjectId != null && subjectId.isNotEmpty) {
+          // subject_id가 있으면 리스트에 추가
+          subjects = [subjectId];
+        } else {
+          // 없으면 기존 방식(subjects 배열)도 시도 (하위 호환성)
+          final subjectsArray = s['subjects'] as List<dynamic>?;
+          if (subjectsArray != null && subjectsArray.isNotEmpty) {
+            subjects = subjectsArray.map((e) => e.toString()).toList();
+          }
+        }
+        
         final phone = s['phone'] as String? ?? '';
         final sessions = s['total_sessions'] as int? ?? 0;
         final completedSessions = s['completed_sessions'] as int? ?? 0;
@@ -775,20 +789,29 @@ class _StudentDetailModal extends StatelessWidget {
                   // 수강 과목
                   SectionTitle(title: '수강 과목'),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: student.subjects.map(
-                      (subject) => Chip(
-                        label: Text(subject),
-                        backgroundColor: colorScheme.primaryContainer,
-                        labelStyle: TextStyle(
-                          color: colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  if (student.subjects.isEmpty)
+                    Text(
+                      '수강 과목이 없습니다',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
                       ),
-                    ).toList(),
-                  ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: student.subjects.map(
+                        (subject) => Chip(
+                          label: Text(subject),
+                          backgroundColor: colorScheme.primaryContainer,
+                          labelStyle: TextStyle(
+                            color: colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ).toList(),
+                    ),
                   const SizedBox(height: 32),
 
                   // 수정 버튼

@@ -17,14 +17,15 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
+  final GlobalKey<ScheduleScreenState> _scheduleScreenKey = GlobalKey<ScheduleScreenState>();
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    StudentsScreen(),
-    ScheduleScreen(),
-    StatsScreen(),
-    BillingScreen(),
-    SettingsScreen(),
+  List<Widget> get _screens => [
+    const HomeScreen(),
+    const StudentsScreen(),
+    ScheduleScreen(key: _scheduleScreenKey),
+    const StatsScreen(),
+    const BillingScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -32,6 +33,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     // 메인 화면 진입 시 Teacher 정보 로드 (캐시 또는 API)
     _loadTeacherInfo();
+    
+    // 첫 로드 시 스케줄 화면이 선택되어 있으면 오늘 날짜로 리셋
+    if (_currentIndex == 2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scheduleScreenKey.currentState != null) {
+          _scheduleScreenKey.currentState!.forceResetToToday();
+        }
+      });
+    }
   }
 
   /// Teacher 정보 로드
@@ -51,9 +61,27 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _onTabTapped(int index) {
+    final previousIndex = _currentIndex;
+    
     setState(() {
       _currentIndex = index;
     });
+    
+    // 스케줄 화면(인덱스 2)으로 전환될 때마다 오늘 날짜로 리셋
+    if (index == 2) {
+      // 스케줄 화면으로 전환 시 항상 오늘 날짜로 리셋
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scheduleScreenKey.currentState != null) {
+          // 다른 화면에서 왔으면 무조건 오늘로 리셋
+          if (previousIndex != 2) {
+            _scheduleScreenKey.currentState!.forceResetToToday();
+          } else {
+            // 이미 스케줄 화면이어도 선택된 날짜가 오늘이 아니면 리셋
+            _scheduleScreenKey.currentState!.resetToTodayIfNeeded();
+          }
+        }
+      });
+    }
   }
 
   @override

@@ -10,18 +10,33 @@ class ApiService {
   
   static Future<Map<String, dynamic>> createStudent(Map<String, dynamic> data) async {
     try {
+      // 디버깅: 전송할 데이터 확인
+      print('📤 API 서비스: 학생 생성 요청');
+      print('  - URL: $baseUrl/students');
+      print('  - teacher_id: ${data['teacher_id']}');
+      print('  - 전체 데이터: $data');
+
       final response = await http.post(
         Uri.parse('$baseUrl/students'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data),
       );
 
+      // 디버깅: 응답 확인
+      print('📥 API 서비스: 학생 생성 응답');
+      print('  - Status Code: ${response.statusCode}');
+      print('  - Response Body: ${response.body}');
+
       if (response.statusCode == 201) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        final result = jsonDecode(response.body) as Map<String, dynamic>;
+        print('✅ 학생 생성 성공: teacher_id=${result['teacher_id']}');
+        return result;
       } else {
+        print('❌ 학생 생성 실패: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to create student: ${response.body}');
       }
     } catch (e) {
+      print('❌ 학생 생성 에러: $e');
       throw Exception('Error creating student: $e');
     }
   }
