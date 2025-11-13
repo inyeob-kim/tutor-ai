@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/tokens.dart';
 import '../../routes/app_routes.dart';
 import '../../services/teacher_service.dart';
+import '../../services/settings_service.dart';
 
 class PhoneInputScreen extends StatefulWidget {
   const PhoneInputScreen({super.key});
@@ -246,6 +247,11 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
         email: user.email,
         subjects: subjects,
       );
+
+      // 선생님 과목 목록을 SettingsService에 저장
+      if (subjects.isNotEmpty) {
+        await SettingsService.setTeacherSubjects(subjects);
+      }
 
       print('✅ 회원가입 완료: Teacher 정보 저장 성공');
 

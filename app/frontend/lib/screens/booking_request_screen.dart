@@ -36,16 +36,10 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
         }
       });
     } catch (e) {
-      // 에러 처리 - 데모 데이터 사용
+      print('⚠️ 학생 목록 로드 실패: $e');
       setState(() {
-        _students = [
-          {'student_id': 1, 'name': '김민수'},
-          {'student_id': 2, 'name': '이지은'},
-          {'student_id': 3, 'name': '박서준'},
-        ];
-        if (_students.isNotEmpty) {
-          _selectedStudentId = _students.first['student_id']?.toString();
-        }
+        _students = [];
+        _selectedStudentId = null;
       });
     }
   }
@@ -305,14 +299,17 @@ class _BookingRequestScreenState extends State<BookingRequestScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _shareLink,
-                icon: Icon(Icons.share_rounded),
+                icon: Icon(Icons.share_rounded, color: AppColors.surface),
                 label: Text(
                   '예약 링크 생성 및 공유',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w600,
+                    color: AppColors.surface,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.surface,
                   padding: EdgeInsets.symmetric(vertical: Gaps.card),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(Radii.chip),

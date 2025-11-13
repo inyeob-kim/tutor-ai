@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
@@ -60,6 +61,44 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error creating schedule: $e');
+    }
+  }
+
+  /// 스케줄 목록 조회
+  static Future<List<Map<String, dynamic>>> getSchedules({
+    int? teacherId,
+    int? studentId,
+    String? subjectId,
+    String? status,
+    String? dateFrom,
+    String? dateTo,
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'pageSize': pageSize.toString(),
+      };
+      if (teacherId != null) queryParams['teacher_id'] = teacherId.toString();
+      if (studentId != null) queryParams['student_id'] = studentId.toString();
+      if (subjectId != null) queryParams['subject_id'] = subjectId;
+      if (status != null) queryParams['status'] = status;
+      if (dateFrom != null) queryParams['date_from'] = dateFrom;
+      if (dateTo != null) queryParams['date_to'] = dateTo;
+
+      final uri = Uri.parse('$baseUrl/schedules').replace(queryParameters: queryParams);
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final items = data['items'] as List;
+        return items.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to get schedules: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error getting schedules: $e');
     }
   }
 
@@ -210,6 +249,65 @@ class ApiService {
         throw Exception('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요. (http://localhost:8000)');
       }
       throw Exception('회원가입 중 오류가 발생했습니다: ${errorMsg.length > 150 ? errorMsg.substring(0, 150) : errorMsg}');
+    }
+  }
+
+  /// Teacher 정보 업데이트
+  static Future<Map<String, dynamic>> updateTeacher(
+    int teacherId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final auth = FirebaseAuth.instance;
+      final user = auth.currentUser;
+
+      if (user == null) {
+        throw Exception('로그인된 사용자가 없습니다. 다시 로그인해주세요.');
+      }
+
+      // ID 토큰 가져오기
+      final idToken = await user.getIdToken();
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception('인증 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
+      }
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/teachers/$teacherId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: jsonEncode(data),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('서버 응답 시간이 초과되었습니다.');
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        final errorBody = response.body;
+        if (errorBody.contains('password authentication failed')) {
+          throw Exception('데이터베이스 연결에 실패했습니다. 백엔드 서버와 데이터베이스가 실행 중인지 확인해주세요.');
+        } else if (errorBody.contains('Failed to fetch') || errorBody.contains('Connection refused')) {
+          throw Exception('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+        } else {
+          throw Exception('프로필 수정 실패: ${response.statusCode} - $errorBody');
+        }
+      }
+    } on SocketException {
+      throw Exception('네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.');
+    } on TimeoutException {
+      throw Exception('서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.');
+    } on FormatException {
+      throw Exception('서버 응답 형식이 올바르지 않습니다.');
+    } catch (e) {
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('프로필 수정 중 오류가 발생했습니다: $e');
     }
   }
 

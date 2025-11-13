@@ -12,121 +12,29 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  // 데모 데이터 - 학생 목록
-  final List<Student> students = [
-    Student(
-      name: "김민수",
-      grade: "고등학교 2학년",
-      subjects: ["수학"],
-      phone: "010-1234-5678",
-      sessions: 24,
-      completedSessions: 22,
-      color: AppColors.primary,
-      nextClass: "11월 7일 10:00",
-      attendanceRate: 92,
-      isAdult: false,
-    ),
-    Student(
-      name: "이지은",
-      grade: "중학교 3학년",
-      subjects: ["영어", "수학"],
-      phone: "010-2345-6789",
-      sessions: 18,
-      completedSessions: 18,
-      color: AppColors.success,
-      nextClass: "11월 7일 14:00",
-      attendanceRate: 100,
-      isAdult: false,
-    ),
-    Student(
-      name: "박서준",
-      grade: "고등학교 1학년",
-      subjects: ["과학", "수학"],
-      phone: "010-3456-7890",
-      sessions: 20,
-      completedSessions: 18,
-      color: AppColors.primary,
-      nextClass: "11월 7일 16:00",
-      attendanceRate: 90,
-      isAdult: false,
-    ),
-    Student(
-      name: "최성인",
-      subjects: ["토익", "영어회화"],
-      phone: "010-9999-9999",
-      sessions: 12,
-      completedSessions: 10,
-      color: AppColors.warning,
-      nextClass: "11월 8일 19:00",
-      attendanceRate: 83,
-      isAdult: true,
-    ),
-  ];
-
-  // 데모 데이터 - 청구
-  final List<Map<String, dynamic>> billings = [
-    {
-      'id': '1',
-      'student': '김민수',
-      'amount': 200000,
-      'status': 'paid',
-    },
-    {
-      'id': '2',
-      'student': '이지은',
-      'amount': 180000,
-      'status': 'unpaid',
-    },
-    {
-      'id': '3',
-      'student': '박서준',
-      'amount': 220000,
-      'status': 'pending',
-    },
-    {
-      'id': '4',
-      'student': '최유진',
-      'amount': 200000,
-      'status': 'paid',
-    },
-  ];
-
-  // 데모 데이터 - 수업
-  final List<Lesson> lessons = [
-    Lesson(
-      id: '1',
-      studentId: '1',
-      startsAt: DateTime.now(),
-      subject: '수학',
-      durationMin: 90,
-      status: 'done',
-      attendance: 'show',
-    ),
-    Lesson(
-      id: '2',
-      studentId: '2',
-      startsAt: DateTime.now().subtract(const Duration(days: 1)),
-      subject: '영어',
-      durationMin: 60,
-      status: 'done',
-      attendance: 'show',
-    ),
-    Lesson(
-      id: '3',
-      studentId: '3',
-      startsAt: DateTime.now().subtract(const Duration(days: 2)),
-      subject: '과학',
-      durationMin: 90,
-      status: 'done',
-      attendance: 'late',
-    ),
-  ];
+  // 학생 목록 (빈 리스트로 시작)
+  List<Student> students = [];
+  // 청구 목록 (빈 리스트로 시작)
+  List<Map<String, dynamic>> billings = [];
+  // 수업 목록 (빈 리스트로 시작)
+  List<Lesson> lessons = [];
 
   // 학생 통계
   Map<String, dynamic> get studentStats {
+    if (students.isEmpty) {
+      return {
+        'total': 0,
+        'today': 0,
+        'avgAttendance': 0,
+        'perfectAttendance': 0,
+        'lowAttendance': 0,
+      };
+    }
     final totalStudents = students.length;
+    final today = DateTime.now();
+    final todayStr = '${today.month}월 ${today.day}일';
     final todayStudents = students
-        .where((s) => s.nextClass.contains("11월 7일"))
+        .where((s) => s.nextClass.contains(todayStr))
         .length;
     final avgAttendance = (students
                 .map((s) => s.attendanceRate)
@@ -149,14 +57,22 @@ class _StatsScreenState extends State<StatsScreen> {
 
   // 청구 통계
   Map<String, dynamic> get billingStats {
+    if (billings.isEmpty) {
+      return {
+        'total': 0,
+        'paid': 0,
+        'unpaid': 0,
+        'unpaidCount': 0,
+      };
+    }
     final total = billings.fold<int>(
-        0, (sum, b) => sum + (b['amount'] as int));
+        0, (sum, b) => sum + ((b['amount'] as int?) ?? 0));
     final paid = billings
         .where((b) => b['status'] == 'paid')
-        .fold<int>(0, (sum, b) => sum + (b['amount'] as int));
+        .fold<int>(0, (sum, b) => sum + ((b['amount'] as int?) ?? 0));
     final unpaid = billings
         .where((b) => b['status'] == 'unpaid')
-        .fold<int>(0, (sum, b) => sum + (b['amount'] as int));
+        .fold<int>(0, (sum, b) => sum + ((b['amount'] as int?) ?? 0));
     final unpaidCount =
         billings.where((b) => b['status'] == 'unpaid').length;
 
@@ -170,6 +86,17 @@ class _StatsScreenState extends State<StatsScreen> {
 
   // 수업 통계
   Map<String, dynamic> get lessonStats {
+    if (lessons.isEmpty) {
+      return {
+        'total': 0,
+        'completed': 0,
+        'pending': 0,
+        'completionRate': 0,
+        'show': 0,
+        'late': 0,
+        'absent': 0,
+      };
+    }
     final total = lessons.length;
     final completed = lessons.where((l) => l.status == 'done').length;
     final pending = lessons.where((l) => l.status == 'pending').length;
@@ -217,25 +144,12 @@ class _StatsScreenState extends State<StatsScreen> {
             automaticallyImplyLeading: false,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '통계',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '과외 현황을 한눈에 확인하세요',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+              title: Text(
+                '통계',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
           ),
@@ -243,9 +157,95 @@ class _StatsScreenState extends State<StatsScreen> {
             padding: EdgeInsets.all(Gaps.screen),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // 학생 통계
-                _buildSectionHeader('학생 통계', theme, colorScheme),
+                // 주요 통계 그리드 (2x2)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickStatCard(
+                        theme: theme,
+                        colorScheme: colorScheme,
+                        icon: Icons.people_rounded,
+                        iconColor: AppColors.primary,
+                        label: '전체 학생',
+                        value: '${studentStats['total']}명',
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primaryLight,
+                            AppColors.primaryLight.withValues(alpha: 0.6),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: Gaps.card),
+                    Expanded(
+                      child: _buildQuickStatCard(
+                        theme: theme,
+                        colorScheme: colorScheme,
+                        icon: Icons.calendar_today_rounded,
+                        iconColor: AppColors.success,
+                        label: '오늘 수업',
+                        value: '${studentStats['today']}명',
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.success.withValues(alpha: 0.15),
+                            AppColors.success.withValues(alpha: 0.08),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 SizedBox(height: Gaps.card),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickStatCard(
+                        theme: theme,
+                        colorScheme: colorScheme,
+                        icon: Icons.account_balance_wallet_rounded,
+                        iconColor: AppColors.warning,
+                        label: '총 청구',
+                        value: _formatCurrency(billingStats['total'] as int),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.warning.withValues(alpha: 0.15),
+                            AppColors.warning.withValues(alpha: 0.08),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: Gaps.card),
+                    Expanded(
+                      child: _buildQuickStatCard(
+                        theme: theme,
+                        colorScheme: colorScheme,
+                        icon: Icons.event_note_rounded,
+                        iconColor: AppColors.primary,
+                        label: '전체 수업',
+                        value: '${lessonStats['total']}개',
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primaryLight.withValues(alpha: 0.7),
+                            AppColors.primaryLight.withValues(alpha: 0.4),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: Gaps.cardPad + 16),
+
+                // 학생 통계 상세
+                _buildSectionHeader('학생 통계', theme, colorScheme),
+                SizedBox(height: Gaps.card + 4),
                 _buildStatsCard(
                   theme: theme,
                   colorScheme: colorScheme,
@@ -254,37 +254,25 @@ class _StatsScreenState extends State<StatsScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       AppColors.primaryLight,
-                      AppColors.primaryLight.withValues(alpha: 0.8),
+                      AppColors.primaryLight.withValues(alpha: 0.7),
                     ],
                   ),
                   children: [
-                    _buildStatRow(
-                      theme: theme,
-                      colorScheme: colorScheme,
-                      icon: Icons.people_rounded,
-                      iconColor: AppColors.primary,
-                      label: '전체 학생',
-                      value: '${studentStats['total']}명',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatRow(
+                            theme: theme,
+                            colorScheme: colorScheme,
+                            icon: Icons.trending_up_rounded,
+                            iconColor: AppColors.success,
+                            label: '평균 출석률',
+                            value: '${studentStats['avgAttendance']}%',
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: Gaps.card),
-                    _buildStatRow(
-                      theme: theme,
-                      colorScheme: colorScheme,
-                      icon: Icons.calendar_today_rounded,
-                      iconColor: AppColors.primary,
-                      label: '오늘 수업',
-                      value: '${studentStats['today']}명',
-                    ),
-                    SizedBox(height: Gaps.card),
-                    _buildStatRow(
-                      theme: theme,
-                      colorScheme: colorScheme,
-                      icon: Icons.trending_up_rounded,
-                      iconColor: AppColors.success,
-                      label: '평균 출석률',
-                      value: '${studentStats['avgAttendance']}%',
-                    ),
-                    SizedBox(height: Gaps.card),
+                    SizedBox(height: Gaps.card + 4),
                     Row(
                       children: [
                         Expanded(
@@ -303,8 +291,8 @@ class _StatsScreenState extends State<StatsScreen> {
                             theme: theme,
                             colorScheme: colorScheme,
                             icon: Icons.warning_rounded,
-                            iconColor: AppColors.warning,
-                            label: '낮은 출석률',
+                            iconColor: AppColors.error,
+                            label: '낮은 출석',
                             value: '${studentStats['lowAttendance']}명',
                           ),
                         ),
@@ -312,11 +300,11 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: Gaps.cardPad + 12),
+                SizedBox(height: Gaps.cardPad + 16),
 
-                // 청구 통계
+                // 청구 통계 상세
                 _buildSectionHeader('청구 통계', theme, colorScheme),
-                SizedBox(height: Gaps.card),
+                SizedBox(height: Gaps.card + 4),
                 _buildStatsCard(
                   theme: theme,
                   colorScheme: colorScheme,
@@ -325,19 +313,10 @@ class _StatsScreenState extends State<StatsScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       AppColors.primaryLight.withValues(alpha: 0.8),
-                      AppColors.primaryLight.withValues(alpha: 0.6),
+                      AppColors.primaryLight.withValues(alpha: 0.5),
                     ],
                   ),
                   children: [
-                    _buildStatRow(
-                      theme: theme,
-                      colorScheme: colorScheme,
-                      icon: Icons.account_balance_wallet_rounded,
-                      iconColor: AppColors.primary,
-                      label: '총 청구 금액',
-                      value: _formatCurrency(billingStats['total'] as int),
-                    ),
-                    SizedBox(height: Gaps.card),
                     Row(
                       children: [
                         Expanded(
@@ -365,11 +344,11 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: Gaps.cardPad + 12),
+                SizedBox(height: Gaps.cardPad + 16),
 
-                // 수업 통계
+                // 수업 통계 상세
                 _buildSectionHeader('수업 통계', theme, colorScheme),
-                SizedBox(height: Gaps.card),
+                SizedBox(height: Gaps.card + 4),
                 _buildStatsCard(
                   theme: theme,
                   colorScheme: colorScheme,
@@ -377,20 +356,11 @@ class _StatsScreenState extends State<StatsScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      AppColors.success.withValues(alpha: 0.1),
-                      AppColors.success.withValues(alpha: 0.05),
+                      AppColors.success.withValues(alpha: 0.12),
+                      AppColors.success.withValues(alpha: 0.06),
                     ],
                   ),
                   children: [
-                    _buildStatRow(
-                      theme: theme,
-                      colorScheme: colorScheme,
-                      icon: Icons.event_note_rounded,
-                      iconColor: AppColors.success,
-                      label: '전체 수업',
-                      value: '${lessonStats['total']}개',
-                    ),
-                    SizedBox(height: Gaps.card),
                     Row(
                       children: [
                         Expanded(
@@ -416,16 +386,22 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: Gaps.card),
-                    _buildStatRow(
-                      theme: theme,
-                      colorScheme: colorScheme,
-                      icon: Icons.trending_up_rounded,
-                      iconColor: AppColors.primary,
-                      label: '완료율',
-                      value: '${lessonStats['completionRate']}%',
+                    SizedBox(height: Gaps.card + 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatRow(
+                            theme: theme,
+                            colorScheme: colorScheme,
+                            icon: Icons.trending_up_rounded,
+                            iconColor: AppColors.primary,
+                            label: '완료율',
+                            value: '${lessonStats['completionRate']}%',
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: Gaps.card),
+                    SizedBox(height: Gaps.card + 4),
                     Row(
                       children: [
                         Expanded(
@@ -455,7 +431,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             theme: theme,
                             colorScheme: colorScheme,
                             icon: Icons.cancel_outlined,
-                            iconColor: AppColors.warning,
+                            iconColor: AppColors.error,
                             label: '결석',
                             value: '${lessonStats['absent']}회',
                           ),
@@ -582,6 +558,60 @@ class _StatsScreenState extends State<StatsScreen> {
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStatCard({
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+    required Gradient gradient,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(Gaps.cardPad),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(Radii.card + 8),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.surface.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(Radii.icon),
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          SizedBox(height: Gaps.card),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: colorScheme.onSurface,
             ),

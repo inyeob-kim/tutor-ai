@@ -3,6 +3,8 @@ import 'package:dotted_border/dotted_border.dart';
 import '../models/lesson.dart';
 import '../models/student.dart';
 import '../services/settings_service.dart';
+import '../services/api_service.dart';
+import '../services/teacher_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import 'add_schedule_screen.dart';
@@ -26,88 +28,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Set<int> _disabledHours = {};
   bool _excludeWeekends = false;
 
-  // 데모 데이터 - 학생 목록
-  final List<Student> _students = [
-    Student(
-      name: "김민수",
-      grade: "고등학교 2학년",
-      subjects: ["수학"],
-      phone: "010-1234-5678",
-      sessions: 24,
-      completedSessions: 22,
-      color: AppColors.primary,
-      nextClass: "11월 7일 10:00",
-      attendanceRate: 92,
-      isAdult: false,
-    ),
-    Student(
-      name: "이지은",
-      grade: "중학교 3학년",
-      subjects: ["영어", "수학"],
-      phone: "010-2345-6789",
-      sessions: 18,
-      completedSessions: 18,
-      color: AppColors.success,
-      nextClass: "11월 7일 14:00",
-      attendanceRate: 100,
-      isAdult: false,
-    ),
-    Student(
-      name: "박서준",
-      grade: "고등학교 1학년",
-      subjects: ["과학", "수학"],
-      phone: "010-3456-7890",
-      sessions: 20,
-      completedSessions: 18,
-      color: AppColors.primary,
-      nextClass: "11월 7일 16:00",
-      attendanceRate: 90,
-      isAdult: false,
-    ),
-    Student(
-      name: "최유진",
-      grade: "중학교 2학년",
-      subjects: ["영어"],
-      phone: "010-4567-8901",
-      sessions: 16,
-      completedSessions: 14,
-      color: AppColors.warning,
-      nextClass: "11월 7일 19:00",
-      attendanceRate: 88,
-      isAdult: false,
-    ),
-    Student(
-      name: "정다은",
-      grade: "고등학교 3학년",
-      subjects: ["국어", "영어"],
-      phone: "010-5678-9012",
-      sessions: 30,
-      completedSessions: 28,
-      color: AppColors.primary,
-      nextClass: "11월 7일 20:00",
-      attendanceRate: 93,
-      isAdult: false,
-    ),
-    Student(
-      name: "윤서연",
-      subjects: ["토익", "영어회화"],
-      phone: "010-6789-0123",
-      sessions: 12,
-      completedSessions: 10,
-      color: AppColors.primary,
-      nextClass: "11월 7일 21:00",
-      attendanceRate: 83,
-      isAdult: true,
-    ),
-  ];
-
-  // 데모 데이터 - 수업 목록 (더미 데이터 추가)
+  // 학생 ID -> Student 매핑 (API에서 가져온 데이터 사용)
+  Map<int, Student> _studentsMap = {};
+  // 수업 목록
   List<Lesson> _lessons = [];
 
   @override
   void initState() {
     super.initState();
-    _initializeLessons();
+    _loadStudents();
     _loadSettings();
     // 주말 제외 옵션이 켜져 있고 현재 날짜가 주말이면 다음 평일로 이동
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -123,7 +52,155 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         }
       }
       _scrollToSelectedDate();
+      _loadLessons();
     });
+  }
+
+  /// 학생 목록 로드
+  Future<void> _loadStudents() async {
+    try {
+      final studentsData = await ApiService.getStudents();
+      final studentsMap = <int, Student>{};
+      
+      for (final s in studentsData) {
+        final studentId = s['student_id'] as int? ?? 0;
+        final name = s['name'] as String? ?? '이름 없음';
+        final grade = s['grade'] as String?;
+        final subjects = (s['subjects'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+        final phone = s['phone'] as String? ?? '';
+        final sessions = s['total_sessions'] as int? ?? 0;
+        final completedSessions = s['completed_sessions'] as int? ?? 0;
+        final isAdult = s['is_adult'] as bool? ?? false;
+        final nextClass = s['next_class'] as String? ?? '';
+        final attendanceRate = sessions > 0 ? ((completedSessions / sessions) * 100).round() : 0;
+
+        final student = Student(
+          name: name,
+          grade: grade,
+          subjects: subjects,
+          phone: phone,
+          sessions: sessions,
+          completedSessions: completedSessions,
+          color: AppColors.primary,
+          nextClass: nextClass,
+          attendanceRate: attendanceRate,
+          isAdult: isAdult,
+        );
+        
+        studentsMap[studentId] = student;
+      }
+
+      if (mounted) {
+        setState(() {
+          _studentsMap = studentsMap;
+        });
+      }
+    } catch (e) {
+      print('⚠️ 학생 목록 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _studentsMap = {};
+        });
+      }
+    }
+  }
+
+  /// 수업 목록 로드
+  Future<void> _loadLessons() async {
+    try {
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher == null) {
+        if (mounted) {
+          setState(() {
+            _lessons = [];
+          });
+        }
+        return;
+      }
+
+      // 선택된 날짜
+      final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+
+      // 스케줄 조회
+      final schedules = await ApiService.getSchedules(
+        teacherId: teacher.teacherId,
+        dateFrom: dateStr,
+        dateTo: dateStr,
+      );
+
+      // 학생 정보 다시 로드 (스케줄에 학생 이름 표시용)
+      if (_studentsMap.isEmpty) {
+        await _loadStudents();
+      }
+
+      // 수업을 Lesson으로 변환
+      final lessonsList = schedules.map((s) {
+        final scheduleId = s['schedule_id'] as int? ?? 0;
+        final studentId = s['student_id'] as int? ?? 0;
+        final subject = s['subject_id'] as String? ?? '과목 없음';
+        final startTime = s['start_time'] as String? ?? '00:00';
+        final endTime = s['end_time'] as String? ?? '00:00';
+        final status = s['status'] as String? ?? 'pending';
+
+        // 시간 파싱
+        final startParts = startTime.split(':');
+        final endParts = endTime.split(':');
+        final startHour = startParts.isNotEmpty ? int.tryParse(startParts[0]) ?? 0 : 0;
+        final startMin = startParts.length > 1 ? int.tryParse(startParts[1]) ?? 0 : 0;
+        final endHour = endParts.isNotEmpty ? int.tryParse(endParts[0]) ?? 0 : 0;
+        final endMin = endParts.length > 1 ? int.tryParse(endParts[1]) ?? 0 : 0;
+
+        // 시작 시간 계산
+        final startsAt = DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          startHour,
+          startMin,
+        );
+
+        // 종료 시간 계산
+        final endsAt = DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          endHour,
+          endMin,
+        );
+
+        // 수업 시간 (분)
+        final durationMin = endsAt.difference(startsAt).inMinutes;
+
+        // 출석 상태
+        String? attendance;
+        if (status == 'completed' || status == 'done') {
+          attendance = 'show'; // 기본값은 출석
+        }
+
+        return Lesson(
+          id: scheduleId.toString(),
+          studentId: studentId.toString(),
+          startsAt: startsAt,
+          subject: subject,
+          durationMin: durationMin,
+          status: status == 'completed' || status == 'done' ? 'done' : 'pending',
+          attendance: attendance,
+        );
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _lessons = lessonsList;
+        });
+      }
+    } catch (e) {
+      print('⚠️ 수업 목록 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _lessons = [];
+        });
+      }
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -173,185 +250,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       final position = _dateScrollController.position;
       if (position.hasViewportDimension) {
         final screenWidth = position.viewportDimension;
-        final scrollPosition = (selectedIndex * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
-        
-        _dateScrollController.animateTo(
+      final scrollPosition = (selectedIndex * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
+      
+      _dateScrollController.animateTo(
           scrollPosition.clamp(0.0, position.maxScrollExtent),
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
-
-  void _initializeLessons() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    
-    // 오늘 날짜의 수업들
-    _lessons = [
-      // 오늘 수업들
-      Lesson(
-        id: '1',
-        studentId: '1',
-        startsAt: DateTime(today.year, today.month, today.day, 13, 0),
-        subject: '수학',
-        durationMin: 90,
-        status: 'done',
-        attendance: 'show',
-      ),
-      Lesson(
-        id: '2',
-        studentId: '2',
-        startsAt: DateTime(today.year, today.month, today.day, 15, 0),
-        subject: '영어',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '3',
-        studentId: '3',
-        startsAt: DateTime(today.year, today.month, today.day, 17, 0),
-        subject: '과학',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '4',
-        studentId: '4',
-        startsAt: DateTime(today.year, today.month, today.day, 19, 0),
-        subject: '영어',
-        durationMin: 90,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '5',
-        studentId: '5',
-        startsAt: DateTime(today.year, today.month, today.day, 20, 0),
-        subject: '국어',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-      
-      // 내일 수업들
-      Lesson(
-        id: '6',
-        studentId: '1',
-        startsAt: DateTime(today.year, today.month, today.day + 1, 14, 0),
-        subject: '수학',
-        durationMin: 90,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '7',
-        studentId: '2',
-        startsAt: DateTime(today.year, today.month, today.day + 1, 16, 0),
-        subject: '영어',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '8',
-        studentId: '6',
-        startsAt: DateTime(today.year, today.month, today.day + 1, 18, 0),
-        subject: '토익',
-        durationMin: 120,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '9',
-        studentId: '3',
-        startsAt: DateTime(today.year, today.month, today.day + 1, 20, 0),
-        subject: '과학',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-      
-      // 모레 수업들
-      Lesson(
-        id: '10',
-        studentId: '1',
-        startsAt: DateTime(today.year, today.month, today.day + 2, 13, 0),
-        subject: '수학',
-        durationMin: 90,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '11',
-        studentId: '4',
-        startsAt: DateTime(today.year, today.month, today.day + 2, 15, 0),
-        subject: '영어',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '12',
-        studentId: '5',
-        startsAt: DateTime(today.year, today.month, today.day + 2, 17, 0),
-        subject: '국어',
-        durationMin: 90,
-        status: 'pending',
-        attendance: null,
-      ),
-      
-      // 이번 주 다른 날짜들
-      Lesson(
-        id: '13',
-        studentId: '2',
-        startsAt: DateTime(today.year, today.month, today.day + 3, 14, 0),
-        subject: '영어',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '14',
-        studentId: '3',
-        startsAt: DateTime(today.year, today.month, today.day + 3, 16, 0),
-        subject: '과학',
-        durationMin: 90,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '15',
-        studentId: '6',
-        startsAt: DateTime(today.year, today.month, today.day + 4, 18, 0),
-        subject: '영어회화',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '16',
-        studentId: '1',
-        startsAt: DateTime(today.year, today.month, today.day + 5, 13, 0),
-        subject: '수학',
-        durationMin: 90,
-        status: 'pending',
-        attendance: null,
-      ),
-      Lesson(
-        id: '17',
-        studentId: '4',
-        startsAt: DateTime(today.year, today.month, today.day + 5, 19, 0),
-        subject: '영어',
-        durationMin: 60,
-        status: 'pending',
-        attendance: null,
-      ),
-    ];
   }
+
 
 
   List<Lesson> get _filteredLessons {
@@ -427,10 +336,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Student? _findStudent(String studentId) {
     try {
-      final index = int.parse(studentId) - 1;
-      if (index >= 0 && index < _students.length) {
-        return _students[index];
-      }
+      final id = int.parse(studentId);
+      return _studentsMap[id];
     } catch (e) {
       // 파싱 실패
     }
@@ -456,9 +363,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
       );
       if (result == true) {
-        setState(() {
-          // 목록 새로고침
-        });
+        // 목록 새로고침
+        _loadLessons();
       }
     } catch (e) {
       if (mounted) {
@@ -565,9 +471,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               ),
                             );
                             if (result == true) {
-                              setState(() {
-                                // 목록 새로고침
-                              });
+                              // 목록 새로고침
+                              _loadLessons();
                             }
                           },
                           icon: const Icon(Icons.repeat_rounded, size: 18),
@@ -587,11 +492,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                  ),
-                  child: Column(
-                    children: [
-                      _buildMonthSelector(theme, colorScheme),
-                      _buildDateScrollSelector(theme, colorScheme),
+            ),
+            child: Column(
+              children: [
+                _buildMonthSelector(theme, colorScheme),
+                _buildDateScrollSelector(theme, colorScheme),
                       SizedBox(height: Gaps.screen),
                     ],
                   ),
@@ -649,15 +554,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               }
                             }
                             // 평일이거나 주말 제외 옵션이 꺼져 있으면 시간대 표시
-                              return Column(
-                                children: [
-                                  for (final hour in _timeSlots)
-                                    Padding(
+                            return Column(
+                              children: [
+                                for (final hour in _timeSlots)
+                                  Padding(
                                       padding: EdgeInsets.only(bottom: Gaps.card - 2),
-                                      child: _buildScheduleCard(hour, theme, colorScheme),
-                                    ),
-                                ],
-                              );
+                                    child: _buildScheduleCard(hour, theme, colorScheme),
+                                  ),
+                              ],
+                            );
                           },
                         ),
                         SizedBox(height: Gaps.screen * 2),
@@ -874,6 +779,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     Future.delayed(const Duration(milliseconds: 100), () {
                       _scrollToSelectedDate();
                     });
+                    // 선택된 날짜의 수업 로드
+                    _loadLessons();
                   },
                   child: Container(
                     margin: EdgeInsets.only(right: Gaps.row),
@@ -958,17 +865,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ],
           ),
         borderRadius: BorderRadius.circular(Radii.card),
-        border: Border.all(
+          border: Border.all(
           color: AppColors.primary.withValues(alpha: 0.1),
           width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
+          ),
+          boxShadow: [
+            BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
-          ),
-        ],
+            ),
+          ],
         ),
         padding: EdgeInsets.all(Gaps.cardPad),
         child: Column(

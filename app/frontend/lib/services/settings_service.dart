@@ -1,10 +1,12 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class SettingsService {
   static const String _keyStartHour = 'lesson_start_hour';
   static const String _keyEndHour = 'lesson_end_hour';
   static const String _keyDisabledHours = 'disabled_hours';
   static const String _keyExcludeWeekends = 'exclude_weekends';
+  static const String _keyTeacherSubjects = 'teacher_subjects';
   static const int _defaultStartHour = 12;
   static const int _defaultEndHour = 22;
 
@@ -81,6 +83,28 @@ class SettingsService {
   static Future<void> setExcludeWeekends(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyExcludeWeekends, value);
+  }
+
+  // 선생님 과목 목록 가져오기
+  static Future<List<String>> getTeacherSubjects() async {
+    final prefs = await SharedPreferences.getInstance();
+    final subjectsJson = prefs.getString(_keyTeacherSubjects);
+    if (subjectsJson == null || subjectsJson.isEmpty) {
+      return [];
+    }
+    try {
+      final List<dynamic> subjectsList = jsonDecode(subjectsJson);
+      return subjectsList.map((e) => e.toString()).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 선생님 과목 목록 저장
+  static Future<void> setTeacherSubjects(List<String> subjects) async {
+    final prefs = await SharedPreferences.getInstance();
+    final subjectsJson = jsonEncode(subjects);
+    await prefs.setString(_keyTeacherSubjects, subjectsJson);
   }
 }
 

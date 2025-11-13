@@ -9,6 +9,10 @@ import '../services/settings_service.dart';
 import '../services/teacher_service.dart';
 import '../routes/app_routes.dart';
 import 'teacher_subjects_screen.dart';
+import 'edit_teacher_profile_screen.dart';
+import 'terms_of_service_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'help_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -38,10 +42,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final startHour = await SettingsService.getStartHour();
     final endHour = await SettingsService.getEndHour();
     final excludeWeekends = await SettingsService.getExcludeWeekends();
+    final teacherSubjects = await SettingsService.getTeacherSubjects();
     setState(() {
       _startHour = startHour;
       _endHour = endHour;
       _excludeWeekends = excludeWeekends;
+      if (teacherSubjects.isNotEmpty) {
+        _teacherSubjects = teacherSubjects;
+      }
     });
   }
 
@@ -173,6 +181,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           setState(() {
                             _teacherSubjects = result;
                           });
+                          // SharedPreferences에 저장
+                          await SettingsService.setTeacherSubjects(result);
                         }
                       },
                     ),
@@ -315,7 +325,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       icon: Icons.description_outlined,
                       title: '이용약관',
                       onTap: () {
-                        // TODO: 이용약관
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TermsOfServiceScreen(),
+                          ),
+                        );
                       },
                     ),
                     const Divider(height: 1),
@@ -325,7 +340,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       icon: Icons.privacy_tip_outlined,
                       title: '개인정보 처리방침',
                       onTap: () {
-                        // TODO: 개인정보 처리방침
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PrivacyPolicyScreen(),
+                          ),
+                        );
                       },
                     ),
                     const Divider(height: 1),
@@ -335,7 +355,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       icon: Icons.help_outline_rounded,
                       title: '도움말',
                       onTap: () {
-                        // TODO: 도움말
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HelpScreen(),
+                          ),
+                        );
                       },
                     ),
                   ],
@@ -396,10 +421,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       child: InkWell(
-        onTap: () {
-          // TODO: 프로필 편집
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const EditTeacherProfileScreen(),
+            ),
+          );
+          if (result == true && mounted) {
+            // 프로필이 수정되었으면 화면 새로고침
+            await _loadTeacherInfo();
+            setState(() {});
+          }
         },
-        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        borderRadius: BorderRadius.circular(Radii.card),
         child: Padding(
           padding: EdgeInsets.all(Gaps.cardPad),
           child: Row(
@@ -495,7 +530,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback? onTap,
   }) {
     return ListTile(
-      leading: Icon(icon, color: colorScheme.primary),
+      leading: Icon(icon, color: AppColors.textMuted),
       title: Text(
         title,
         style: theme.textTheme.bodyLarge?.copyWith(
@@ -507,14 +542,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? Text(
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+                color: AppColors.textMuted,
               ),
             )
           : null,
       trailing: onTap != null
           ? Icon(
               Icons.chevron_right_rounded,
-              color: colorScheme.onSurfaceVariant,
+              color: AppColors.textMuted,
             )
           : null,
       onTap: onTap,
@@ -560,7 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       leading: Icon(
         title.contains('시작') ? Icons.access_time : Icons.access_time_filled,
-        color: colorScheme.primary,
+        color: AppColors.textMuted,
       ),
       title: Text(
         title,
@@ -572,13 +607,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: Text(
         '${value.toString().padLeft(2, '0')}:00',
         style: theme.textTheme.bodyMedium?.copyWith(
-          color: colorScheme.primary,
+          color: colorScheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
       ),
       trailing: Icon(
         Icons.chevron_right_rounded,
-        color: colorScheme.onSurfaceVariant,
+        color: AppColors.textMuted,
       ),
       onTap: () => _showTimePicker(context, value, onChanged),
     );

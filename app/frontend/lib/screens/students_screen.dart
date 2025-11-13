@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../widgets/section_title.dart';
+import '../services/api_service.dart';
 import 'add_student_screen.dart';
 import 'edit_student_screen.dart';
 import '../theme/tokens.dart';
@@ -18,63 +19,80 @@ class _StudentsScreenState extends State<StudentsScreen> {
   TabKey activeTab = TabKey.all;
   String query = "";
   Student? selectedStudent;
+  List<Student> students = [];
+  bool _isLoading = true;
 
-  // 데모 데이터
-  final List<Student> students = [
-    Student(
-      name: "김민수",
-      grade: "고등학교 2학년",
-      subjects: ["수학"],
-      phone: "010-1234-5678",
-      sessions: 24,
-      completedSessions: 22,
-      color: AppColors.primary,
-      nextClass: "11월 7일 10:00",
-      attendanceRate: 92,
-      isAdult: false, // 미성년자
-    ),
-    Student(
-      name: "이지은",
-      grade: "중학교 3학년",
-      subjects: ["영어", "수학"],
-      phone: "010-2345-6789",
-      sessions: 18,
-      completedSessions: 18,
-      color: AppColors.success,
-      nextClass: "11월 7일 14:00",
-      attendanceRate: 100,
-      isAdult: false, // 미성년자
-    ),
-    Student(
-      name: "박서준",
-      grade: "고등학교 1학년",
-      subjects: ["과학", "수학"],
-      phone: "010-3456-7890",
-      sessions: 20,
-      completedSessions: 18,
-      color: AppColors.primary,
-      nextClass: "11월 7일 16:00",
-      attendanceRate: 90,
-      isAdult: false, // 미성년자
-    ),
-    Student(
-      name: "최성인",
-      subjects: ["토익", "영어회화"],
-      phone: "010-9999-9999",
-      sessions: 12,
-      completedSessions: 10,
-      color: AppColors.warning,
-      nextClass: "11월 8일 19:00",
-      attendanceRate: 83,
-      isAdult: true, // 성인 (학년 없음)
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadStudents();
+  }
+
+  /// 학생 목록 로드
+  Future<void> _loadStudents() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final studentsData = await ApiService.getStudents();
+      final studentsList = studentsData.map((s) {
+        final name = s['name'] as String? ?? '이름 없음';
+        final grade = s['grade'] as String?;
+        final subjects = (s['subjects'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+        final phone = s['phone'] as String? ?? '';
+        final sessions = s['total_sessions'] as int? ?? 0;
+        final completedSessions = s['completed_sessions'] as int? ?? 0;
+        final isAdult = s['is_adult'] as bool? ?? false;
+        final nextClass = s['next_class'] as String? ?? '';
+        final attendanceRate = sessions > 0 ? ((completedSessions / sessions) * 100).round() : 0;
+
+        return Student(
+          name: name,
+          grade: grade,
+          subjects: subjects,
+          phone: phone,
+          sessions: sessions,
+          completedSessions: completedSessions,
+          color: AppColors.primary,
+          nextClass: nextClass,
+          attendanceRate: attendanceRate,
+          isAdult: isAdult,
+        );
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          students = studentsList;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('⚠️ 학생 목록 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          students = [];
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   // 통계
   Map<String, dynamic> get stats {
+    if (students.isEmpty) {
+      return {
+        'total': 0,
+        'today': 0,
+        'avgAttendance': 0,
+        'perfectAttendance': 0,
+      };
+    }
     final totalStudents = students.length;
+    final today = DateTime.now();
+    final todayStr = '${today.month}월 ${today.day}일';
     final todayStudents = students
-        .where((s) => s.nextClass.contains("11월 7일"))
+        .where((s) => s.nextClass.contains(todayStr))
         .length;
     final avgAttendance = (students
                 .map((s) => s.attendanceRate)
@@ -97,7 +115,9 @@ class _StudentsScreenState extends State<StudentsScreen> {
 
     // 탭 필터
     if (activeTab == TabKey.today) {
-      filtered = filtered.where((s) => s.nextClass.contains("11월 7일")).toList();
+      final today = DateTime.now();
+      final todayStr = '${today.month}월 ${today.day}일';
+      filtered = filtered.where((s) => s.nextClass.contains(todayStr)).toList();
     } else if (activeTab == TabKey.lowAttendance) {
       filtered = filtered.where((s) => s.attendanceRate < 90).toList();
     }
@@ -151,7 +171,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                     );
                     if (result == true) {
                       // 학생 추가 성공 시 목록 새로고침
-                      setState(() {});
+                      _loadStudents();
                     }
                   },
                   icon: const Icon(Icons.add, size: 18),
@@ -181,7 +201,16 @@ class _StudentsScreenState extends State<StudentsScreen> {
                 SizedBox(height: Gaps.screen),
 
                 // 학생 리스트
-                if (filteredStudents.isEmpty)
+                if (_isLoading)
+                  Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(Gaps.screen * 2),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  )
+                else if (filteredStudents.isEmpty)
                   _buildEmptyState(theme, colorScheme)
                 else
                   ...filteredStudents
@@ -219,7 +248,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
             Text(
               '학생이 없습니다',
               style: theme.textTheme.titleLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 8),

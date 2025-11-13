@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import '../services/teacher_service.dart';
+import '../services/api_service.dart';
 
 enum ScheduleStatus { completed, current, upcoming }
 
@@ -31,11 +32,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<ScheduleItem> schedule = [];
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
     // 홈화면 진입 시 Teacher 정보 로드 (캐시 또는 API)
     _loadTeacherInfo();
+    // 오늘의 스케줄 로드
+    _loadTodaySchedules();
   }
 
   /// Teacher 정보 로드
@@ -52,40 +58,109 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  final List<ScheduleItem> schedule = [
-    ScheduleItem(
-      id: "1",
-      time: "10:00",
-      endTime: "11:30",
-      student: "김민수",
-      subject: "수학",
-      status: ScheduleStatus.completed,
-    ),
-    ScheduleItem(
-      id: "2",
-      time: "14:00",
-      endTime: "15:00",
-      student: "이지은",
-      subject: "영어",
-      status: ScheduleStatus.current,
-    ),
-    ScheduleItem(
-      id: "3",
-      time: "16:00",
-      endTime: "17:00",
-      student: "박서준",
-      subject: "과학",
-      status: ScheduleStatus.upcoming,
-    ),
-    ScheduleItem(
-      id: "4",
-      time: "18:00",
-      endTime: "19:00",
-      student: "최유진",
-      subject: "수학",
-      status: ScheduleStatus.upcoming,
-    ),
-  ];
+  /// 오늘의 스케줄 로드
+  Future<void> _loadTodaySchedules() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher == null) {
+        setState(() {
+          schedule = [];
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // 오늘 날짜
+      final today = DateTime.now();
+      final dateFrom = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final dateTo = dateFrom;
+
+      // 스케줄 조회
+      final schedules = await ApiService.getSchedules(
+        teacherId: teacher.teacherId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      );
+
+      // 학생 정보 조회 (스케줄에 학생 이름 표시용)
+      final students = await ApiService.getStudents();
+
+      // 스케줄을 ScheduleItem으로 변환
+      final now = DateTime.now();
+      final items = schedules.map((s) {
+        final studentId = s['student_id'] as int?;
+        final student = students.firstWhere(
+          (st) => st['student_id'] == studentId,
+          orElse: () => {'name': '학생 없음'},
+        );
+        final studentName = student['name'] as String? ?? '학생 없음';
+        final subject = s['subject_id'] as String? ?? '과목 없음';
+        final startTime = s['start_time'] as String? ?? '';
+        final endTime = s['end_time'] as String? ?? '';
+        final status = s['status'] as String? ?? 'pending';
+
+        // 시간 파싱
+        final startParts = startTime.split(':');
+        final endParts = endTime.split(':');
+        final startHour = startParts.isNotEmpty ? int.tryParse(startParts[0]) ?? 0 : 0;
+        final startMin = startParts.length > 1 ? int.tryParse(startParts[1]) ?? 0 : 0;
+        final endHour = endParts.isNotEmpty ? int.tryParse(endParts[0]) ?? 0 : 0;
+        final endMin = endParts.length > 1 ? int.tryParse(endParts[1]) ?? 0 : 0;
+
+        // 스케줄 상태 결정
+        ScheduleStatus scheduleStatus;
+        if (status == 'completed' || status == 'done') {
+          scheduleStatus = ScheduleStatus.completed;
+        } else {
+          final scheduleDateTime = DateTime(
+            today.year,
+            today.month,
+            today.day,
+            startHour,
+            startMin,
+          );
+          if (scheduleDateTime.isBefore(now.subtract(const Duration(minutes: 30)))) {
+            scheduleStatus = ScheduleStatus.completed;
+          } else if (scheduleDateTime.isBefore(now.add(const Duration(minutes: 30)))) {
+            scheduleStatus = ScheduleStatus.current;
+          } else {
+            scheduleStatus = ScheduleStatus.upcoming;
+          }
+        }
+
+        return ScheduleItem(
+          id: (s['schedule_id'] as int? ?? 0).toString(),
+          time: '${startHour.toString().padLeft(2, '0')}:${startMin.toString().padLeft(2, '0')}',
+          endTime: '${endHour.toString().padLeft(2, '0')}:${endMin.toString().padLeft(2, '0')}',
+          student: studentName,
+          subject: subject,
+          status: scheduleStatus,
+        );
+      }).toList();
+
+      // 시간순으로 정렬
+      items.sort((a, b) => a.time.compareTo(b.time));
+
+      if (mounted) {
+        setState(() {
+          schedule = items;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('⚠️ 홈화면: 스케줄 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          schedule = [];
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void toggleComplete(String id) {
     setState(() {
@@ -142,20 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.notifications_none_rounded, color: AppColors.primary, size: 18),
-                      const SizedBox(width: 6),
-                      Text(
-                        '알림',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: Icon(Icons.notifications_none_rounded, color: AppColors.primary, size: 24),
                 ),
               ),
             ],
@@ -187,11 +249,51 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   SizedBox(height: Gaps.card),
-                  for (final item in schedule)
-                    Padding(
-                      padding: EdgeInsets.only(bottom: Gaps.card - 2),
-                      child: _buildScheduleCard(item, theme, colorScheme),
-                    ),
+                  if (_isLoading)
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(Gaps.screen * 2),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  else if (schedule.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(Gaps.screen * 2),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 64,
+                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '오늘 수업이 없습니다',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '수업을 등록하면 여기에 표시됩니다',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    for (final item in schedule)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: Gaps.card - 2),
+                        child: _buildScheduleCard(item, theme, colorScheme),
+                      ),
                   const SizedBox(height: 24),
                   _buildSectionHeader(
                     context,

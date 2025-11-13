@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
+import '../services/settings_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 
@@ -18,7 +19,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   final _parentPhoneController = TextEditingController();
   final _schoolController = TextEditingController();
   final _gradeController = TextEditingController();
-  final _subjectController = TextEditingController();
   final _hourlyRateController = TextEditingController();
   final _notesController = TextEditingController();
 
@@ -26,6 +26,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   bool _isActive = true;
   bool _isLoading = false;
   bool _isAdult = true; // 디폴트는 성인
+  List<String> _teacherSubjects = [];
+  String? _selectedSubject;
 
   final List<String> _gradeOptions = [
     '초등학교 1학년',
@@ -43,13 +45,28 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadTeacherSubjects();
+  }
+
+  Future<void> _loadTeacherSubjects() async {
+    final subjects = await SettingsService.getTeacherSubjects();
+    setState(() {
+      _teacherSubjects = subjects;
+      if (subjects.isNotEmpty && _selectedSubject == null) {
+        _selectedSubject = subjects.first;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _parentPhoneController.dispose();
     _schoolController.dispose();
     _gradeController.dispose();
-    _subjectController.dispose();
     _hourlyRateController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -85,7 +102,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
           'school': _schoolController.text.trim(),
         if (!_isAdult && _gradeController.text.isNotEmpty) 
           'grade': _gradeController.text.trim(),
-        if (_subjectController.text.isNotEmpty) 'subject': _subjectController.text.trim(),
+        if (_selectedSubject != null && _selectedSubject!.isNotEmpty) 'subject': _selectedSubject!,
         if (_startDate != null)
           'start_date': DateFormat('yyyy-MM-dd').format(_startDate!),
         if (_hourlyRateController.text.isNotEmpty)
@@ -227,14 +244,43 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               ),
             ],
             SizedBox(height: Gaps.card),
-            _buildTextField(
-              controller: _subjectController,
-              label: '과목',
-              hint: '예: 수학, 영어, 과학',
-              icon: Icons.book_outlined,
-              theme: theme,
-              colorScheme: colorScheme,
-            ),
+            if (_teacherSubjects.isEmpty)
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Radii.chip + 4),
+                  side: BorderSide(
+                    color: colorScheme.outline.withOpacity(0.1),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(Gaps.card),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 20),
+                      SizedBox(width: Gaps.row),
+                      Expanded(
+                        child: Text(
+                          '설정 화면에서 가르치는 과목을 먼저 선택해주세요',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              _buildDropdownField(
+                label: '과목',
+                value: _selectedSubject,
+                options: _teacherSubjects,
+                icon: Icons.book_outlined,
+                onChanged: (value) => setState(() => _selectedSubject = value),
+                theme: theme,
+                colorScheme: colorScheme,
+              ),
             SizedBox(height: Gaps.card),
             _buildDateField(
               label: '시작일',

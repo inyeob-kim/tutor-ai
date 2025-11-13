@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 /// ===== Design Tokens (Colors) =====
 class AppColors {
   // Brand
-  static const primary = Color(0xFF1E64FF);
-  static const primaryDark = Color(0xFF0F53E6);
-  static const primaryLight = Color(0xFFEAF3FF);
+  static const primary = Color(0xFF3182F6);
+  static const primaryDark = Color(0xFF1E6FE8);
+  static const primaryLight = Color(0xFFEBF4FF);
 
   // Surfaces
   static const background = Color(0xFFF5F6F8);
