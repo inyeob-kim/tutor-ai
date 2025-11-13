@@ -15,6 +15,8 @@ import '../screens/signup/name_input_screen.dart';
 import '../screens/signup/phone_input_screen.dart';
 import '../screens/signup/signup_complete_screen.dart';
 import '../screens/add_billing_screen.dart';
+import '../screens/welcome_screen.dart';
+import '../screens/bye_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -34,6 +36,8 @@ class AppRoutes {
   static const String signupName = '/signup/name';
   static const String signupPhone = '/signup/phone';
   static const String signupComplete = '/signup/complete';
+  static const String welcome = '/welcome';
+  static const String bye = '/bye';
 
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
     final routeName = routeSettings.name ?? splash;
@@ -118,6 +122,16 @@ class AppRoutes {
             case signupComplete:
               return MaterialPageRoute(
                 builder: (_) => const SignupCompleteScreen(),
+                settings: routeSettings,
+              );
+            case welcome:
+              return MaterialPageRoute(
+                builder: (_) => const WelcomeScreen(),
+                settings: routeSettings,
+              );
+            case bye:
+              return MaterialPageRoute(
+                builder: (_) => const ByeScreen(),
                 settings: routeSettings,
               );
             default:

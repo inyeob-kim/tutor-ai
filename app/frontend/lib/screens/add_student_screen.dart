@@ -6,6 +6,7 @@ import '../services/settings_service.dart';
 import '../services/teacher_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import '../widgets/loading_indicator.dart';
 
 class AddStudentScreen extends StatefulWidget {
   const AddStudentScreen({super.key});
@@ -364,9 +365,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   ? SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                      child: const SmallLoadingIndicator(
+                        size: 20,
                       ),
                     )
                   : Text(

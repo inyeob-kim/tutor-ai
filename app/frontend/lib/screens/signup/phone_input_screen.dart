@@ -5,6 +5,7 @@ import '../../theme/tokens.dart';
 import '../../routes/app_routes.dart';
 import '../../services/teacher_service.dart';
 import '../../services/settings_service.dart';
+import '../../widgets/loading_indicator.dart';
 
 class PhoneInputScreen extends StatefulWidget {
   const PhoneInputScreen({super.key});
@@ -194,11 +195,8 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                       ? SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.surface,
-                            ),
+                          child: const SmallLoadingIndicator(
+                            size: 24,
                           ),
                         )
                       : Text(

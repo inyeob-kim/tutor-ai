@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import 'add_student_screen.dart';
 import 'edit_student_screen.dart';
 import '../theme/tokens.dart';
+import '../widgets/loading_indicator.dart';
 
 enum TabKey { all, today, lowAttendance }
 
@@ -219,9 +220,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                   Center(
                     child: Padding(
                       padding: EdgeInsets.all(Gaps.screen * 2),
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary,
-                      ),
+                      child: const LoadingIndicator(),
                     ),
                   )
                 else if (filteredStudents.isEmpty)

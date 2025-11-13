@@ -9,6 +9,7 @@ import 'dart:convert';
 import '../services/api_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import '../widgets/loading_indicator.dart';
 
 class AiAssistantScreen extends StatefulWidget {
   const AiAssistantScreen({super.key});
@@ -390,8 +391,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen>
               // 처리 중 표시
               if (_isProcessing) ...[
                 SizedBox(height: Gaps.cardPad + 4),
-                Center(
-                  child: CircularProgressIndicator(),
+                const Center(
+                  child: LoadingIndicator(),
                 ),
                 SizedBox(height: Gaps.row),
                 Center(

@@ -102,6 +102,18 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       if (mounted) {
         _isVisible = true;
         resetToTodayIfNeeded();
+        // 스크롤 위치도 업데이트 - 여러 프레임에 걸쳐 시도
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            _scrollToSelectedDate();
+            // 한 번 더 시도 (ListView 렌더링 완료 보장)
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                _scrollToSelectedDate();
+              }
+            });
+          }
+        });
       }
     });
   }
@@ -109,14 +121,14 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   /// 오늘 날짜로 리셋
   Future<void> _resetToToday({bool force = false}) async {
     final today = DateTime.now();
-    final excludeWeekends = await SettingsService.getExcludeWeekends();
+      final excludeWeekends = await SettingsService.getExcludeWeekends();
     
     DateTime selectedDate = today;
-    if (excludeWeekends) {
+      if (excludeWeekends) {
       final weekday = today.weekday;
-      if (weekday == 6 || weekday == 7) {
-        // 다음 평일 찾기
-        int daysToAdd = weekday == 6 ? 2 : 1; // 토요일이면 2일 후(월요일), 일요일이면 1일 후(월요일)
+        if (weekday == 6 || weekday == 7) {
+          // 다음 평일 찾기
+          int daysToAdd = weekday == 6 ? 2 : 1; // 토요일이면 2일 후(월요일), 일요일이면 1일 후(월요일)
         selectedDate = today.add(Duration(days: daysToAdd));
       }
     }
@@ -131,14 +143,26 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       _lastResetDate = today;
       
       if (mounted) {
-        setState(() {
+          setState(() {
           _selectedDate = selectedDate;
           _viewMonth = DateTime(selectedDate.year, selectedDate.month, 1);
         });
+        // 스크롤을 위해 여러 프레임 대기 (ListView 렌더링 완료 보장)
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            _scrollToSelectedDate();
-            _loadLessons();
+            // 첫 번째 프레임 후에도 조금 더 기다려서 ListView가 완전히 렌더링되도록
+            Future.delayed(const Duration(milliseconds: 200), () {
+              if (mounted) {
+                _scrollToSelectedDate();
+                _loadLessons();
+                // 한 번 더 시도 (중앙 정렬 보장)
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    _scrollToSelectedDate();
+                  }
+                });
+              }
+            });
           }
         });
       }
@@ -316,8 +340,18 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   }
 
 
-  void _scrollToSelectedDate() {
-    if (!_dateScrollController.hasClients) return;
+  void _scrollToSelectedDate({int retryCount = 0}) {
+    // 스크롤 컨트롤러가 아직 준비되지 않았으면 재시도
+    if (!_dateScrollController.hasClients) {
+      if (retryCount < 10 && mounted) {
+        Future.delayed(Duration(milliseconds: 50 * (retryCount + 1)), () {
+          if (mounted) {
+            _scrollToSelectedDate(retryCount: retryCount + 1);
+          }
+        });
+      }
+      return;
+    }
     
     // _buildDateScrollSelector와 동일한 방식으로 날짜 목록 생성
     final lastDayOfMonth = DateTime(_viewMonth.year, _viewMonth.month + 1, 0);
@@ -342,35 +376,46 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         date.month == _selectedDate.month &&
         date.day == _selectedDate.day);
     
-    if (selectedIndex != -1 && _dateScrollController.hasClients) {
-      final position = _dateScrollController.position;
-      if (position.hasViewportDimension) {
-        // 각 날짜 카드의 실제 너비 계산
-        // padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: 12) = 20px 좌우 (총 40px)
-        // margin: EdgeInsets.only(right: Gaps.row) = 10px 오른쪽
-        // 날짜 숫자 + 요일 텍스트의 대략적인 너비 = 약 50-60px
-        // 총 카드 너비 = 50-60px (내용) + 40px (패딩) + 10px (마진) = 약 100-110px
-        // 하지만 더 정확한 계산을 위해 약간 더 넓게 설정
-        const itemWidth = 95.0; // 카드 너비 + 마진 (조정 가능)
-        final viewportWidth = position.viewportDimension;
-        
-        // 선택된 날짜를 중앙에 위치시키기 위한 스크롤 위치 계산
-        // 중앙 정렬: 선택된 아이템의 중심이 뷰포트의 중심에 오도록
-        // 스크롤 위치 = (인덱스 * 아이템 너비) - (뷰포트 너비 / 2) + (아이템 너비 / 2)
-        // 하지만 ListView의 padding을 고려해야 함 (좌우 각 Gaps.card = 16px)
-        final padding = Gaps.card; // 좌우 패딩
-        final targetScrollPosition = (selectedIndex * itemWidth) - (viewportWidth / 2) + (itemWidth / 2) - padding;
-        
-        // 스크롤 가능한 범위 내로 클램프
-        final clampedPosition = targetScrollPosition.clamp(0.0, position.maxScrollExtent);
-        
-        _dateScrollController.animateTo(
-          clampedPosition,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+    if (selectedIndex == -1) return;
+    
+    final position = _dateScrollController.position;
+    if (!position.hasViewportDimension || !position.hasContentDimensions) {
+      // 뷰포트나 콘텐츠 크기가 아직 결정되지 않았으면 재시도
+      if (retryCount < 10 && mounted) {
+        Future.delayed(Duration(milliseconds: 100 * (retryCount + 1)), () {
+          if (mounted) {
+            _scrollToSelectedDate(retryCount: retryCount + 1);
+          }
+        });
       }
+      return;
     }
+    
+    // 각 날짜 카드의 실제 너비 계산
+    // padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: 12) = 20px 좌우 (총 40px)
+    // margin: EdgeInsets.only(right: Gaps.row) = 10px 오른쪽
+    // 날짜 숫자 + 요일 텍스트의 대략적인 너비 = 약 50-60px
+    // 총 카드 너비 = 50-60px (내용) + 40px (패딩) + 10px (마진) = 약 100-110px
+    // 실제 측정값 기반으로 더 정확하게 조정
+    const itemWidth = 100.0; // 카드 너비 + 마진 (더 정확한 값)
+    final viewportWidth = position.viewportDimension;
+    final maxScrollExtent = position.maxScrollExtent;
+    
+    // 선택된 날짜를 중앙에 위치시키기 위한 스크롤 위치 계산
+    // 중앙 정렬: 선택된 아이템의 중심이 뷰포트의 중심에 오도록
+    // 스크롤 위치 = (인덱스 * 아이템 너비) - (뷰포트 너비 / 2) + (아이템 너비 / 2)
+    // ListView의 좌우 padding은 자동으로 고려됨 (ScrollController는 padding을 제외한 위치를 반환)
+    final targetScrollPosition = (selectedIndex * itemWidth) - (viewportWidth / 2) + (itemWidth / 2);
+    
+    // 스크롤 가능한 범위 내로 클램프
+    final clampedPosition = targetScrollPosition.clamp(0.0, maxScrollExtent > 0 ? maxScrollExtent : 0.0);
+    
+    // 스크롤 애니메이션 (더 부드럽게)
+    _dateScrollController.animateTo(
+      clampedPosition,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+    );
   }
 
 
@@ -396,10 +441,16 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   }
 
   // 타임슬롯별 수업 찾기
+  // 해당 시간대(hour)에 시작하는 수업을 찾습니다
+  // 예: 14:00 또는 14:30에 시작하는 수업은 14시 타임슬롯에 표시
   Lesson? _findLessonForSlot(int hour) {
     try {
       return _filteredLessons.firstWhere(
-        (lesson) => lesson.startsAt.hour == hour,
+        (lesson) {
+          // 수업이 해당 시간대에 시작하는지 확인
+          // hour:00 또는 hour:30에 시작하는 수업
+          return lesson.startsAt.hour == hour;
+        },
       );
     } catch (e) {
       return null;
@@ -475,8 +526,12 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         ),
       );
       if (result == true) {
-        // 목록 새로고침
-        _loadLessons();
+        // 목록 새로고침 - 약간의 지연을 두어 서버 반영 시간 확보
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _loadLessons();
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -888,9 +943,17 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
                       }
                     });
                     await _refreshDisabledHours();
-                    // 선택된 날짜로 스크롤 (중앙 정렬)
-                    Future.delayed(const Duration(milliseconds: 50), () {
-                      _scrollToSelectedDate();
+                    // 선택된 날짜로 스크롤 (중앙 정렬) - 여러 번 시도하여 확실히 중앙 정렬
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (mounted) {
+                        _scrollToSelectedDate();
+                        // 한 번 더 시도 (중앙 정렬 보장)
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          if (mounted) {
+                            _scrollToSelectedDate();
+                          }
+                        });
+                      }
                     });
                     // 선택된 날짜의 수업 로드
                     _loadLessons();

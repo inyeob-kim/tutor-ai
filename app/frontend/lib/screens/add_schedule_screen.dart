@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../services/api_service.dart';
+import '../services/teacher_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import '../widgets/loading_indicator.dart';
 
 class AddScheduleScreen extends StatefulWidget {
   final DateTime? initialDate;
@@ -73,31 +76,40 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
   Future<void> _loadStudents() async {
     setState(() => _isLoadingStudents = true);
     try {
-      final students = await ApiService.getStudents();
+      final studentsData = await ApiService.getStudents();
+      // API 응답을 올바른 형식으로 변환
+      final studentsList = studentsData.map((s) {
+        final studentId = s['student_id'] as int?;
+        final name = s['name'] as String? ?? '이름 없음';
+        // 백엔드에서는 subject_id (단일 문자열)를 반환하므로, 이를 리스트로 변환
+        final subjectId = s['subject_id'] as String?;
+        List<String> subjects = [];
+        if (subjectId != null && subjectId.isNotEmpty) {
+          // subject_id가 있으면 리스트에 추가
+          subjects = [subjectId];
+        } else {
+          // 없으면 기존 방식(subjects 배열)도 시도 (하위 호환성)
+          final subjectsArray = s['subjects'] as List<dynamic>?;
+          if (subjectsArray != null && subjectsArray.isNotEmpty) {
+            subjects = subjectsArray.map((e) => e.toString()).toList();
+          }
+        }
+        
+        return {
+          'id': studentId, // student_id를 id로 변환
+          'name': name,
+          'subjects': subjects,
+        };
+      }).where((s) => s['id'] != null).toList();
+      
       setState(() {
-        _students = students;
+        _students = studentsList;
         _isLoadingStudents = false;
       });
     } catch (e) {
-      // API 실패 시 데모 데이터 사용
+      print('⚠️ 학생 목록 로드 실패: $e');
       setState(() {
-        _students = [
-          {
-            'id': 1,
-            'name': '김민수',
-            'subjects': ['수학'],
-          },
-          {
-            'id': 2,
-            'name': '이지은',
-            'subjects': ['영어', '수학'],
-          },
-          {
-            'id': 3,
-            'name': '박서준',
-            'subjects': ['과학', '수학'],
-          },
-        ];
+        _students = [];
         _isLoadingStudents = false;
       });
     }
@@ -192,12 +204,31 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // 현재 로그인한 선생님 정보 가져오기
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher == null) {
+        throw Exception('선생님 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
+      }
+
+      // 과목이 선택되지 않았으면 에러
+      if (_selectedSubject == null || _selectedSubject!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('과목을 선택해주세요'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
       final data = <String, dynamic>{
+        'teacher_id': teacher.teacherId, // 현재 로그인한 선생님 ID 추가
         'student_id': _selectedStudentId,
         'lesson_date': DateFormat('yyyy-MM-dd').format(_selectedDate),
         'start_time': _selectedTimeRange['start'],
         'end_time': _selectedTimeRange['end'] ?? _selectedTimeRange['start'],
-        if (_selectedSubject != null) 'subject': _selectedSubject,
+        'subject_id': _selectedSubject!, // subject_id로 변경 (백엔드는 subject_id 사용)
         if (_notesController.text.isNotEmpty) 'notes': _notesController.text.trim(),
       };
 
@@ -616,12 +647,11 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                 foregroundColor: AppColors.surface,
               ),
               child: _isLoading
-                  ? SizedBox(
+                  ? const SizedBox(
                       height: Gaps.screen,
                       width: Gaps.screen,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                      child: SmallLoadingIndicator(
+                        size: 20,
                       ),
                     )
                   : Text(

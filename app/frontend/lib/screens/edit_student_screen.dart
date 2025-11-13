@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import '../widgets/loading_indicator.dart';
 
 class EditStudentScreen extends StatefulWidget {
   final Student student;
@@ -180,9 +181,8 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                   ? SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                      child: const SmallLoadingIndicator(
+                        size: 20,
                       ),
                     )
                   : Text(

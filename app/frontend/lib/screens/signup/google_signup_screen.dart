@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../routes/app_routes.dart';
 import '../../services/api_service.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/loading_indicator.dart';
 
 class GoogleSignupScreen extends StatefulWidget {
   const GoogleSignupScreen({super.key});
@@ -223,15 +224,8 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
                     elevation: 0,
                   ),
                   icon: _isLoading
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.textPrimary,
-                            ),
-                          ),
+                      ? const SmallLoadingIndicator(
+                          size: 20,
                         )
                       : const Icon(
                           Icons.g_mobiledata_rounded,

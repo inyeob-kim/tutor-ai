@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../routes/app_routes.dart';
-import '../theme/tokens.dart';
 import '../services/teacher_service.dart';
 
 /// 스플래시 화면에서 사용할 애셋 타입
@@ -23,7 +22,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   // ===== 설정 가능한 경로 (나중에 쉽게 변경 가능) =====
-  static const String _animationPath = 'assets/animations/clockLottieAnimation.json';
+  static const String _animationPath = 'assets/animations/loading.json';
   static const String _imagePath = 'assets/images/temp_logo.png';
   // ==============================================
 
@@ -76,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen>
         final teacher = await TeacherService.instance.loadTeacher();
         
         if (teacher != null) {
-          // ✅ 이미 회원가입 완료 → 메인 화면으로
+          // ✅ 이미 회원가입 완료 → 메인 화면으로 바로 이동
           print('✅ 회원가입 완료 → MainNavigationScreen으로 이동');
           print('✅ Teacher 정보: name=${teacher.name}, subject_id=${teacher.subjectId}');
           if (mounted) {
@@ -168,15 +167,6 @@ class _SplashScreenState extends State<SplashScreen>
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: _buildSplashContent(colors),
-                ),
-              ),
-              SizedBox(height: Gaps.cardPad + 8),
-              SizedBox(
-                width: Gaps.cardPad + 8,
-                height: Gaps.cardPad + 8,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: colors.primary,
                 ),
               ),
             ],

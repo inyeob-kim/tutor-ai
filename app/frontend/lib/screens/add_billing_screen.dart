@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import '../widgets/loading_indicator.dart';
 
 class AddBillingScreen extends StatefulWidget {
   const AddBillingScreen({super.key});
@@ -209,7 +210,7 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
               child: _isLoadingStudents
                   ? Padding(
                       padding: EdgeInsets.all(Gaps.cardPad + 4),
-                      child: const Center(child: CircularProgressIndicator()),
+                      child: const Center(child: LoadingIndicator()),
                     )
                   : _students.isEmpty
                       ? Padding(
@@ -453,9 +454,8 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
                   ? SizedBox(
                       height: Gaps.screen,
                       width: Gaps.screen,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                      child: const SmallLoadingIndicator(
+                        size: 20,
                       ),
                     )
                   : Text(

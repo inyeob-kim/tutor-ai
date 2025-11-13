@@ -3,6 +3,7 @@ import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import '../services/teacher_service.dart';
 import '../services/api_service.dart';
+import '../widgets/loading_indicator.dart';
 
 enum ScheduleStatus { completed, current, upcoming }
 
@@ -253,9 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Center(
                       child: Padding(
                         padding: EdgeInsets.all(Gaps.screen * 2),
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
+                        child: const LoadingIndicator(),
                       ),
                     )
                   else if (schedule.isEmpty)

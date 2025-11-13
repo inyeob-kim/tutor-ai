@@ -720,10 +720,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       print('✅ 로그아웃 완료');
 
-      // 5. 로그인 화면으로 리다이렉트
+      // 5. Bye 화면으로 이동 후 로그인 화면으로 리다이렉트
       if (context.mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil(
-          AppRoutes.googleSignup,
+          AppRoutes.bye,
           (route) => false, // 모든 이전 화면 제거
         );
       }
