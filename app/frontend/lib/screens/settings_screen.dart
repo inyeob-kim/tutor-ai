@@ -7,6 +7,7 @@ import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import '../services/settings_service.dart';
 import '../services/teacher_service.dart';
+import '../services/api_service.dart';
 import '../routes/app_routes.dart';
 import 'teacher_subjects_screen.dart';
 import 'edit_teacher_profile_screen.dart';
@@ -183,6 +184,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           });
                           // SharedPreferences에 저장
                           await SettingsService.setTeacherSubjects(result);
+                          
+                          // DB에도 저장 (Teacher 업데이트)
+                          try {
+                            final teacher = await TeacherService.instance.loadTeacher();
+                            if (teacher != null) {
+                              // 과목 목록을 콤마로 구분하여 subject_id에 저장
+                              final subjectId = result.join(',');
+                              await ApiService.updateTeacher(teacher.teacherId, {
+                                'subject_id': subjectId,
+                              });
+                              // TeacherService 캐시 새로고침
+                              await TeacherService.instance.refresh();
+                              print('✅ 선생님 과목 목록 DB 저장 완료: $subjectId');
+                            }
+                          } catch (e) {
+                            print('⚠️ 선생님 과목 목록 DB 저장 실패: $e');
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('과목 목록 저장에 실패했습니다: ${e.toString()}'),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
+                          }
                         }
                       },
                     ),

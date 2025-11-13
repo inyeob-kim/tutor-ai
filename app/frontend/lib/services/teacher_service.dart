@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'api_service.dart';
+import 'settings_service.dart';
 
 /// Teacher 정보 모델
 class Teacher {
@@ -154,6 +155,16 @@ class TeacherService {
           try {
             final json = jsonDecode(cachedJson) as Map<String, dynamic>;
             _currentTeacher = Teacher.fromJson(json);
+            
+            // subject_id에서 과목 목록을 파싱하여 SettingsService에 저장
+            if (_currentTeacher!.subjectId != null && _currentTeacher!.subjectId!.isNotEmpty) {
+              final subjectList = _currentTeacher!.subjectId!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+              if (subjectList.isNotEmpty) {
+                await SettingsService.setTeacherSubjects(subjectList);
+                print('✅ 선생님 과목 목록 로드 (캐시): ${subjectList.join(", ")}');
+              }
+            }
+            
             print('✅ SharedPreferences에서 Teacher 정보 로드: ${_currentTeacher!.name}');
             return _currentTeacher;
           } catch (e) {
@@ -179,6 +190,16 @@ class TeacherService {
 
       _currentTeacher = Teacher.fromJson(teacherJson);
       await _saveCache(_currentTeacher!);
+      
+      // subject_id에서 과목 목록을 파싱하여 SettingsService에 저장
+      if (_currentTeacher!.subjectId != null && _currentTeacher!.subjectId!.isNotEmpty) {
+        final subjectList = _currentTeacher!.subjectId!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+        if (subjectList.isNotEmpty) {
+          await SettingsService.setTeacherSubjects(subjectList);
+          print('✅ 선생님 과목 목록 로드: ${subjectList.join(", ")}');
+        }
+      }
+      
       print('✅ API에서 Teacher 정보 로드: ${_currentTeacher!.name}');
       return _currentTeacher;
     } catch (e) {
@@ -203,8 +224,11 @@ class TeacherService {
         throw Exception('로그인된 사용자가 없습니다. 다시 로그인해주세요.');
       }
 
-      // subjects가 있으면 첫 번째 과목을 subject_id로 사용
-      final finalSubjectId = subjectId ?? (subjects != null && subjects.isNotEmpty ? subjects.first : null);
+      // subjects가 있으면 모든 과목을 콤마로 구분하여 subject_id로 저장
+      final finalSubjectId = subjectId ?? 
+          (subjects != null && subjects.isNotEmpty 
+              ? subjects.join(',') 
+              : null);
 
       final teacherJson = await ApiService.createTeacher({
         'name': name,
@@ -217,6 +241,15 @@ class TeacherService {
 
       _currentTeacher = Teacher.fromJson(teacherJson);
       await _saveCache(_currentTeacher!);
+      
+      // subject_id에서 과목 목록을 파싱하여 SettingsService에 저장
+      if (_currentTeacher!.subjectId != null && _currentTeacher!.subjectId!.isNotEmpty) {
+        final subjectList = _currentTeacher!.subjectId!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+        if (subjectList.isNotEmpty) {
+          await SettingsService.setTeacherSubjects(subjectList);
+        }
+      }
+      
       print('✅ Teacher 정보 생성 성공: ${_currentTeacher!.name}');
       return _currentTeacher;
     } catch (e) {

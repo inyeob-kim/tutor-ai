@@ -339,16 +339,28 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
         value: _selectedStudentId,
         decoration: InputDecoration(
           labelText: '학생',
+          labelStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.textSecondary,
+          ),
           prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.cardPad),
         ),
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: colorScheme.onSurface,
+        ),
         items: _students.map((student) {
           return DropdownMenuItem(
             value: student['id'] as int,
-            child: Text(student['name'] as String),
+            child: Text(
+              student['name'] as String,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
           );
         }).toList(),
+        dropdownColor: colorScheme.surface,
         onChanged: (value) {
           setState(() {
             _selectedStudentId = value;
@@ -394,7 +406,9 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
                     _weekdayLabels[index],
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? AppColors.surface : colorScheme.onSurface,
+                      color: isSelected 
+                          ? AppColors.surface 
+                          : AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -433,7 +447,8 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
                         Text(
                           '시작일',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
                           ),
                         ),
                         SizedBox(height: Gaps.row - 6),
@@ -447,7 +462,7 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                  Icon(Icons.chevron_right, color: AppColors.textMuted),
                 ],
               ),
             ),
@@ -478,7 +493,8 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
                         Text(
                           '종료일',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
                           ),
                         ),
                         SizedBox(height: Gaps.row - 6),
@@ -492,7 +508,7 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                  Icon(Icons.chevron_right, color: AppColors.textMuted),
                 ],
               ),
             ),
@@ -516,22 +532,41 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_selectedTimeRange['start'] != null)
+            if (_selectedTimeRange['start'] != null) ...[
               Container(
                 padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: Gaps.row),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(Radii.chip),
                 ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.access_time_rounded, size: 18, color: AppColors.primary),
+                    SizedBox(width: Gaps.row),
+                    Text(
+                      '${_selectedTimeRange['start']} - ${_selectedTimeRange['end'] ?? _selectedTimeRange['start']}',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: Gaps.card),
+            ] else ...[
+              Padding(
+                padding: EdgeInsets.only(bottom: Gaps.row),
                 child: Text(
-                  '${_selectedTimeRange['start']} - ${_selectedTimeRange['end'] ?? _selectedTimeRange['start']}',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                  '시작 시간과 종료 시간을 선택하세요',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
                   ),
                 ),
               ),
-            SizedBox(height: Gaps.card),
+            ],
             Wrap(
               spacing: Gaps.row,
               runSpacing: Gaps.row,
@@ -553,7 +588,9 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
                       timeSlot,
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? AppColors.surface : colorScheme.onSurface,
+                        color: isSelected 
+                            ? AppColors.surface 
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -582,16 +619,28 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
         value: _selectedSubject,
         decoration: InputDecoration(
           labelText: '과목',
+          labelStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.textSecondary,
+          ),
           prefixIcon: Icon(Icons.book_outlined, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.cardPad),
         ),
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: colorScheme.onSurface,
+        ),
         items: subjects.map((subject) {
           return DropdownMenuItem(
             value: subject,
-            child: Text(subject),
+            child: Text(
+              subject,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
           );
         }).toList(),
+        dropdownColor: colorScheme.surface,
         onChanged: (value) => setState(() => _selectedSubject = value),
       ),
     );
@@ -609,9 +658,18 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
       child: TextFormField(
         controller: _notesController,
         maxLines: 3,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+        ),
         decoration: InputDecoration(
           labelText: '메모',
+          labelStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.textSecondary,
+          ),
           hintText: '추가 메모를 입력하세요',
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.textMuted,
+          ),
           prefixIcon: Icon(Icons.note_outlined, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.cardPad),

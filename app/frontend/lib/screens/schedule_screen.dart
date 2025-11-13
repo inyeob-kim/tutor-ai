@@ -17,7 +17,7 @@ class ScheduleScreen extends StatefulWidget {
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
-class _ScheduleScreenState extends State<ScheduleScreen> {
+class _ScheduleScreenState extends State<ScheduleScreen> with AutomaticKeepAliveClientMixin {
   DateTime _selectedDate = DateTime.now();
   DateTime _viewMonth = DateTime.now(); // 현재 보는 월
   final ScrollController _dateScrollController = ScrollController();
@@ -32,28 +32,77 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Map<int, Student> _studentsMap = {};
   // 수업 목록
   List<Lesson> _lessons = [];
+  
+  // 마지막으로 화면이 활성화된 시간
+  DateTime? _lastActiveTime;
+
+  @override
+  bool get wantKeepAlive => false; // 상태를 유지하지 않고 매번 초기화
 
   @override
   void initState() {
     super.initState();
+    // 화면 진입 시 항상 오늘 날짜로 설정
+    _resetToToday();
     _loadStudents();
     _loadSettings();
-    // 주말 제외 옵션이 켜져 있고 현재 날짜가 주말이면 다음 평일로 이동
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final excludeWeekends = await SettingsService.getExcludeWeekends();
-      if (excludeWeekends) {
-        final weekday = _selectedDate.weekday;
-        if (weekday == 6 || weekday == 7) {
-          // 다음 평일 찾기
-          int daysToAdd = weekday == 6 ? 2 : 1; // 토요일이면 2일 후(월요일), 일요일이면 1일 후(월요일)
-          setState(() {
-            _selectedDate = _selectedDate.add(Duration(days: daysToAdd));
-          });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 화면이 다시 활성화될 때마다 오늘 날짜로 리셋
+    final now = DateTime.now();
+    // 마지막 활성화 시간과 비교하여 1초 이상 지났으면 리셋 (중복 호출 방지)
+    if (_lastActiveTime == null || now.difference(_lastActiveTime!).inSeconds > 1) {
+      _lastActiveTime = now;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _resetToToday();
         }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _dateScrollController.dispose();
+    super.dispose();
+  }
+
+  /// 오늘 날짜로 리셋
+  Future<void> _resetToToday() async {
+    final today = DateTime.now();
+    final excludeWeekends = await SettingsService.getExcludeWeekends();
+    
+    DateTime selectedDate = today;
+    if (excludeWeekends) {
+      final weekday = today.weekday;
+      if (weekday == 6 || weekday == 7) {
+        // 다음 평일 찾기
+        int daysToAdd = weekday == 6 ? 2 : 1; // 토요일이면 2일 후(월요일), 일요일이면 1일 후(월요일)
+        selectedDate = today.add(Duration(days: daysToAdd));
       }
-      _scrollToSelectedDate();
+    }
+    
+    // 오늘 날짜로 변경된 경우에만 업데이트
+    if (mounted && (_selectedDate.year != selectedDate.year || 
+        _selectedDate.month != selectedDate.month || 
+        _selectedDate.day != selectedDate.day)) {
+      setState(() {
+        _selectedDate = selectedDate;
+        _viewMonth = DateTime(selectedDate.year, selectedDate.month, 1);
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _scrollToSelectedDate();
+          _loadLessons();
+        }
+      });
+    } else if (mounted) {
+      // 날짜가 같아도 수업 목록은 새로고침
       _loadLessons();
-    });
+    }
   }
 
   /// 학생 목록 로드
@@ -223,11 +272,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    _dateScrollController.dispose();
-    super.dispose();
-  }
 
   void _scrollToSelectedDate() {
     if (!_dateScrollController.hasClients) return;
@@ -423,6 +467,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAliveClientMixin을 위해 필요
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
