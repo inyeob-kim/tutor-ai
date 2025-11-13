@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../theme/tokens.dart';
 import '../../routes/app_routes.dart';
+import '../../services/teacher_service.dart';
 
 class PhoneInputScreen extends StatefulWidget {
   const PhoneInputScreen({super.key});
@@ -227,20 +228,26 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     }
 
     try {
-      // TODO: 실제 회원가입 API 호출
-      // final phoneDigits = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
-      // await ApiService.signup({
-      //   'name': name,
-      //   'phone': phoneDigits,
-      //   'subjects': subjects,
-      // });
+      // Firebase Auth 사용자 확인
+      final auth = FirebaseAuth.instance;
+      final user = auth.currentUser;
 
-      // 성공 시 (시뮬레이션)
-      await Future.delayed(const Duration(seconds: 1));
+      if (user == null) {
+        throw Exception('로그인된 사용자가 없습니다. 다시 로그인해주세요.');
+      }
 
-      // 회원가입 완료 플래그 저장
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('is_signed_up', true);
+      // 전화번호 정리 (하이픈 제거)
+      final phoneDigits = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
+
+      // Teacher 정보 생성 (DB에 저장)
+      await TeacherService.instance.createTeacher(
+        name: name,
+        phone: phoneDigits,
+        email: user.email,
+        subjects: subjects,
+      );
+
+      print('✅ 회원가입 완료: Teacher 정보 저장 성공');
 
       if (mounted) {
         setState(() {
@@ -253,16 +260,31 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
         Navigator.of(context).pushReplacementNamed(AppRoutes.signupComplete);
       }
     } catch (e) {
+      print('❌ 회원가입 실패: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
       if (context.mounted) {
+        // 에러 메시지 추출 (Exception: ... 부분 제거)
+        String errorMessage = e.toString();
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring(11);
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('회원가입 실패: $e'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: '확인',
+              textColor: AppColors.surface,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
           ),
         );
       }

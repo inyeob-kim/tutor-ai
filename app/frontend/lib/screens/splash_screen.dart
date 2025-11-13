@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../routes/app_routes.dart';
 import '../theme/tokens.dart';
+import '../services/teacher_service.dart';
 
 /// 스플래시 화면에서 사용할 애셋 타입
 enum _SplashAssetType {
@@ -70,37 +70,29 @@ class _SplashScreenState extends State<SplashScreen>
         return;
       }
 
-      // ✅ 로그인된 사용자 → 회원가입 여부 확인
-      // TODO: 향후 백엔드/DB에서 프로필 확인 로직 추가
-      // 예: ApiService.getTeacherProfile(currentUser.uid) 또는
-      //     Firestore에서 'teachers/{uid}' 문서 확인
-      // 
-      // 현재는 SharedPreferences 사용 (임시)
-      // 추후에는 백엔드 API 또는 Firestore에서 프로필 존재 여부를 확인해야 함
-      final prefs = await SharedPreferences.getInstance();
-      final isSignedUp = prefs.getBool('is_signed_up') ?? false;
-      
-      // TODO: 백엔드 연동 시 아래와 같이 변경
-      // try {
-      //   final profile = await ApiService.getTeacherProfile(currentUser.uid);
-      //   final isSignedUp = profile != null;
-      //   ...
-      // } catch (e) {
-      //   print('⚠️ 프로필 확인 실패: $e');
-      //   // 에러 발생 시 회원가입 플로우로 진행
-      //   isSignedUp = false;
-      // }
-
-      if (isSignedUp) {
-        // ✅ 이미 회원가입 완료 → 메인 화면으로
-        print('✅ 회원가입 완료 → MainNavigationScreen으로 이동');
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed(AppRoutes.mainNavigation);
+      // ✅ 로그인된 사용자 → 회원가입 여부 확인 (백엔드/DB에서 Teacher 정보 확인)
+      try {
+        // Teacher 정보 로드 (캐시 또는 API)
+        final teacher = await TeacherService.instance.loadTeacher();
+        
+        if (teacher != null) {
+          // ✅ 이미 회원가입 완료 → 메인 화면으로
+          print('✅ 회원가입 완료 → MainNavigationScreen으로 이동');
+          print('✅ Teacher 정보: name=${teacher.name}, subject_id=${teacher.subjectId}');
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed(AppRoutes.mainNavigation);
+          }
+        } else {
+          // ✅ Firebase Auth에 사용자가 있지만 회원가입이 완료되지 않음
+          // → 과목 선택 화면으로 이동 (회원가입 플로우 시작)
+          print('✅ 로그인 완료, 회원가입 미완료 → SubjectSelectionScreen으로 이동');
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed(AppRoutes.signupSubject);
+          }
         }
-      } else {
-        // ✅ Firebase Auth에 사용자가 있지만 회원가입이 완료되지 않음
-        // → 과목 선택 화면으로 이동 (회원가입 플로우 시작)
-        print('✅ 로그인 완료, 회원가입 미완료 → SubjectSelectionScreen으로 이동');
+      } catch (e) {
+        print('⚠️ Teacher 정보 확인 실패: $e');
+        // 에러 발생 시 회원가입 플로우로 진행
         if (mounted) {
           Navigator.of(context).pushReplacementNamed(AppRoutes.signupSubject);
         }

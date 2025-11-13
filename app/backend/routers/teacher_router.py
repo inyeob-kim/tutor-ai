@@ -136,6 +136,24 @@ async def list_teachers(
     return TeacherListResp(total=total, page=page, pageSize=pageSize, items=items)
 
 
+@router.get("/by-oauth", response_model=TeacherOut)
+async def get_teacher_by_oauth(
+    provider: str = Query(..., description="OAuth provider (google, kakao, naver, apple)"),
+    oauth_id: str = Query(..., description="OAuth ID (Firebase UID)"),
+    session: AsyncSession = Depends(get_session),
+):
+    """OAuth provider와 oauth_id로 teacher 조회"""
+    stmt = select(Teacher).where(
+        Teacher.provider == provider,
+        Teacher.oauth_id == oauth_id,
+    )
+    result = await session.execute(stmt)
+    teacher = result.scalar_one_or_none()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    return _snapshot_to_out(_teacher_snapshot(teacher))
+
+
 @router.get("/{teacher_id}", response_model=TeacherOut)
 async def get_teacher(teacher_id: int, session: AsyncSession = Depends(get_session)):
     teacher = await session.get(Teacher, teacher_id)

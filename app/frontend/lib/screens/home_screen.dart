@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import '../services/teacher_service.dart';
 
 enum ScheduleStatus { completed, current, upcoming }
 
@@ -30,6 +31,27 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 홈화면 진입 시 Teacher 정보 로드 (캐시 또는 API)
+    _loadTeacherInfo();
+  }
+
+  /// Teacher 정보 로드
+  Future<void> _loadTeacherInfo() async {
+    try {
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher != null && mounted) {
+        print('✅ 홈화면: Teacher 정보 로드 완료 - name=${teacher.name}, subject_id=${teacher.subjectId}');
+        // 필요시 setState로 UI 업데이트
+        setState(() {});
+      }
+    } catch (e) {
+      print('⚠️ 홈화면: Teacher 정보 로드 실패: $e');
+    }
+  }
+
   final List<ScheduleItem> schedule = [
     ScheduleItem(
       id: "1",

@@ -196,7 +196,7 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
               ),
               SizedBox(height: Gaps.card),
               Text(
-                '구글 계정으로 간편하게 시작하세요',
+                'Google 계정으로 간편하게 시작하세요',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
@@ -239,7 +239,7 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
                           color: AppColors.textPrimary,
                         ),
                   label: Text(
-                    _isLoading ? '로그인 중...' : '구글로 시작하기',
+                    _isLoading ? '로그인 중...' : 'Google로 시작하기',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
