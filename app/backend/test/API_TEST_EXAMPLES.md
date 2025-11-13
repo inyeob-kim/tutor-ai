@@ -9,12 +9,13 @@
 curl -X POST "http://localhost:8000/teachers" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "홍길동",
+    "nickname": "길동쌤",
     "phone": "01012345678",
     "provider": "google",
     "oauth_id": "google_123456789",
     "email": "teacher@example.com",
-    "bank_name": "국민은행",
+    "account_name": "홍길동",
+    "bank_code": "004",
     "account_number": "123-456-789012",
     "tax_type": "사업소득",
     "hourly_rate_min": 30000,
@@ -29,11 +30,11 @@ curl -X POST "http://localhost:8000/teachers" \
 # 전체 목록
 curl "http://localhost:8000/teachers?page=1&pageSize=20"
 
-# 검색 (이름 또는 전화번호)
-curl "http://localhost:8000/teachers?q=홍길동&page=1&pageSize=20"
+# 검색 (닉네임 또는 전화번호)
+curl "http://localhost:8000/teachers?q=길동&page=1&pageSize=20"
 
 # 정렬
-curl "http://localhost:8000/teachers?orderBy=name&order=asc"
+curl "http://localhost:8000/teachers?orderBy=nickname&order=asc"
 ```
 
 ### 1.3 선생님 상세 조회

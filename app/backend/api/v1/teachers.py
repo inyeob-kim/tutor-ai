@@ -19,7 +19,7 @@ async def list_teachers(
     stmt = select(Teacher)
     if q:
         like = f"%{q}%"
-        stmt = stmt.where((Teacher.name.ilike(like)) | (Teacher.phone.ilike(like)))
+        stmt = stmt.where((Teacher.nickname.ilike(like)) | (Teacher.phone.ilike(like)))
     if subject_id is not None:
         stmt = stmt.where(Teacher.subject_id == subject_id)
     stmt = stmt.order_by(Teacher.created_at.desc()).limit(size).offset((page - 1) * size)
@@ -28,11 +28,12 @@ async def list_teachers(
         "items": [
             {
                 "teacher_id": t.teacher_id,
-                "name": t.name,
+                "nickname": t.nickname,
                 "phone": t.phone,
                 "email": t.email,
                 "subject_id": t.subject_id,
-                "bank_name": t.bank_name,
+                "account_name": t.account_name,
+                "bank_code": t.bank_code,
                 "account_number": t.account_number,
                 "tax_type": t.tax_type,
                 "hourly_rate_min": t.hourly_rate_min,
@@ -61,11 +62,12 @@ async def get_teacher(teacher_id: int, db: AsyncSession = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Teacher not found")
     return {
         "teacher_id": teacher.teacher_id,
-        "name": teacher.name,
+        "nickname": teacher.nickname,
         "phone": teacher.phone,
         "email": teacher.email,
         "subject_id": teacher.subject_id,
-        "bank_name": teacher.bank_name,
+        "account_name": teacher.account_name,
+        "bank_code": teacher.bank_code,
         "account_number": teacher.account_number,
         "tax_type": teacher.tax_type,
         "hourly_rate_min": teacher.hourly_rate_min,

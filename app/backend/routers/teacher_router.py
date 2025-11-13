@@ -74,6 +74,13 @@ async def create_teacher(payload: TeacherCreate, session: AsyncSession = Depends
     data = payload.model_dump(exclude_unset=True)
     cols = set(Teacher.__table__.columns.keys())
     safe = {k: v for k, v in data.items() if k in cols}
+    nickname = safe.get("nickname")
+    if nickname:
+        exists = await session.scalar(
+            select(func.count()).select_from(Teacher).where(Teacher.nickname == nickname)
+        )
+        if exists:
+            raise HTTPException(status_code=409, detail="Nickname already in use")
     teacher = Teacher(**safe)
     session.add(teacher)
     try:
@@ -106,7 +113,8 @@ async def list_teachers(
 ):
     orderable = {
         "created_at": Teacher.created_at,
-        "name": Teacher.name,
+        "nickname": Teacher.nickname,
+        "name": Teacher.nickname,  # backward compatibility alias
         "total_students": Teacher.total_students,
         "monthly_income": Teacher.monthly_income,
     }
@@ -119,8 +127,8 @@ async def list_teachers(
 
     if q:
         like = f"%{q}%"
-        stmt = stmt.where((Teacher.name.ilike(like)) | (Teacher.phone.ilike(like)))
-        count_stmt = count_stmt.where((Teacher.name.ilike(like)) | (Teacher.phone.ilike(like)))
+        stmt = stmt.where((Teacher.nickname.ilike(like)) | (Teacher.phone.ilike(like)))
+        count_stmt = count_stmt.where((Teacher.nickname.ilike(like)) | (Teacher.phone.ilike(like)))
     if subject_id is not None:
         stmt = stmt.where(Teacher.subject_id == subject_id)
         count_stmt = count_stmt.where(Teacher.subject_id == subject_id)
@@ -175,11 +183,12 @@ async def update_teacher(
     before_snapshot = _teacher_snapshot(teacher)
     data = payload.model_dump(exclude_unset=True)
     allowed_fields = {
-        "name",
+        "nickname",
         "phone",
         "email",
         "subject_id",
-        "bank_name",
+        "account_name",
+        "bank_code",
         "account_number",
         "tax_type",
         "hourly_rate_min",
@@ -199,6 +208,17 @@ async def update_teacher(
             status_code=400,
             detail=f"Fields cannot be updated: {', '.join(disallowed)}",
         )
+
+    if "nickname" in data:
+        new_nickname = data["nickname"]
+        if new_nickname != teacher.nickname:
+            exists = await session.scalar(
+                select(func.count())
+                .select_from(Teacher)
+                .where(Teacher.nickname == new_nickname, Teacher.teacher_id != teacher_id)
+            )
+            if exists:
+                raise HTTPException(status_code=409, detail="Nickname already in use")
 
     for key, value in data.items():
         setattr(teacher, key, value)
