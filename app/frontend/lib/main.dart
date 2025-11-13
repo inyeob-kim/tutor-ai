@@ -1,72 +1,49 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 
-import 'theme/app_theme.dart';
+import 'firebase_options.dart';
 import 'routes/app_routes.dart';
 import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
+import 'theme/app_theme.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Google Sign-In 리다이렉트 결과 처리
-  // getRedirectResult는 한 번만 호출되어야 하므로 여기서 처리
+  // ✅ 인증 상태 확인 (Web/모바일 공통)
+  // Web에서는 signInWithPopup을 사용하므로 getRedirectResult() 불필요
+  // 모바일에서는 google_sign_in 패키지를 사용하므로 currentUser만 확인
   final auth = FirebaseAuth.instance;
-  try {
-    final result = await auth.getRedirectResult();
+  final currentUser = auth.currentUser;
+
+  if (currentUser != null) {
+    print('✅ 로그인된 사용자 발견: uid=${currentUser.uid}, email=${currentUser.email}');
     
-    // getRedirectResult()는 UserCredential 객체를 반환합니다
-    // UserCredential에는 다음이 포함됩니다:
-    // - user: User 객체 (사용자 정보)
-    // - credential: AuthCredential 객체
-    // - additionalUserInfo: AdditionalUserInfo 객체
-    
-    print('=== Google 로그인 반환값 확인 ===');
-    print('result.user: ${result.user}');
-    print('result.credential: ${result.credential}');
-    print('result.additionalUserInfo: ${result.additionalUserInfo}');
-    
-    // 에러 확인
-    if (result.user == null && result.credential == null) {
-      print('⚠️ 리다이렉트 결과가 없습니다. 가능한 원인:');
-      print('  1. Google 로그인을 아직 시도하지 않았거나');
-      print('  2. 리다이렉트가 완료되지 않았거나');
-      print('  3. Firebase Console에서 Authorized redirect URIs가 설정되지 않았을 수 있습니다');
-      print('  현재 URL: ${Uri.base}');
-    }
-    
-    if (result.user != null) {
-      final user = result.user!;
-      print('user.uid: ${user.uid}');
-      print('user.email: ${user.email}');
-      print('user.displayName: ${user.displayName}');
-      print('user.photoURL: ${user.photoURL}');
-      print('user.emailVerified: ${user.emailVerified}');
-      print('user.providerData: ${user.providerData}');
-      
-      // 리다이렉트 후 로그인 성공 처리
-      final idToken = await user.getIdToken();
+    try {
+      final idToken = await currentUser.getIdToken();
       if (idToken != null) {
-        print('idToken: ${idToken.substring(0, 50)}...'); // 처음 50자만 출력
+        final previewLength = idToken.length > 40 ? 40 : idToken.length;
+        print('idToken 앞부분: ${idToken.substring(0, previewLength)}...');
+
+        // 🔥 백엔드에 우리 서비스용 로그인 요청 (선택적)
+        // 에러 발생해도 앱은 계속 실행되도록 처리
         try {
           await ApiService.googleLogin(idToken);
-          print('구글 로그인 성공: ${user.email}');
-          // 로그인 성공 후 사용자는 Firebase Auth에 자동으로 설정됨
-          // splash screen에서 currentUser를 확인하여 과목 선택 화면으로 이동
+          print('✅ 구글 로그인 백엔드 연동 성공');
         } catch (e) {
-          print('구글 로그인 처리 실패: $e');
+          print('⚠️ 백엔드 연동 실패 (앱은 계속 진행): $e');
         }
       }
-    } else {
-      print('리다이렉트 결과 없음 (main.dart) - 로그인하지 않았거나 이미 처리됨');
+    } catch (e) {
+      print('⚠️ idToken 가져오기 실패: $e');
     }
-  } catch (e) {
-    print('리다이렉트 결과 처리 중 오류: $e');
+  } else {
+    print('ℹ️ 로그인된 사용자 없음 (첫 진입이거나 아직 로그인 안 함)');
   }
 
   runApp(const App());
@@ -80,8 +57,10 @@ class App extends StatelessWidget {
     return MaterialApp(
       theme: buildLightTheme(),
       debugShowCheckedModeBanner: false,
-      initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.generateRoute,
+      // ✅ 스플래시에서 FirebaseAuth.instance.currentUser를 확인
+      //    - currentUser가 null이면 → GoogleSignupScreen으로 이동
+      //    - currentUser가 있으면 → 회원가입 여부 확인 후 적절한 화면으로 이동
       home: const SplashScreen(),
     );
   }

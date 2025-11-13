@@ -53,33 +53,60 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
 
     try {
+      // ✅ Firebase Auth 사용자 상태 확인
+      final auth = FirebaseAuth.instance;
+      final currentUser = auth.currentUser;
+      
+      print('=== 인증 상태 확인 ===');
+      print('currentUser: ${currentUser?.uid ?? "없음"}');
+      print('currentUser.email: ${currentUser?.email ?? "없음"}');
+
+      if (currentUser == null) {
+        // 로그인 안됨 → 구글 로그인 화면으로
+        print('✅ 로그인 안됨 → GoogleSignupScreen으로 이동');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.googleSignup);
+        }
+        return;
+      }
+
+      // ✅ 로그인된 사용자 → 회원가입 여부 확인
+      // TODO: 향후 백엔드/DB에서 프로필 확인 로직 추가
+      // 예: ApiService.getTeacherProfile(currentUser.uid) 또는
+      //     Firestore에서 'teachers/{uid}' 문서 확인
+      // 
+      // 현재는 SharedPreferences 사용 (임시)
+      // 추후에는 백엔드 API 또는 Firestore에서 프로필 존재 여부를 확인해야 함
       final prefs = await SharedPreferences.getInstance();
       final isSignedUp = prefs.getBool('is_signed_up') ?? false;
       
-      // Firebase Auth 사용자 상태 확인
-      final auth = FirebaseAuth.instance;
-      
-      // getRedirectResult는 main.dart에서 이미 호출되었으므로 여기서는 currentUser만 확인
-      // 리다이렉트 후 사용자는 자동으로 currentUser에 설정됨
-      final currentUser = auth.currentUser;
-      print('현재 사용자 상태: ${currentUser?.email ?? "없음"}, isSignedUp: $isSignedUp');
+      // TODO: 백엔드 연동 시 아래와 같이 변경
+      // try {
+      //   final profile = await ApiService.getTeacherProfile(currentUser.uid);
+      //   final isSignedUp = profile != null;
+      //   ...
+      // } catch (e) {
+      //   print('⚠️ 프로필 확인 실패: $e');
+      //   // 에러 발생 시 회원가입 플로우로 진행
+      //   isSignedUp = false;
+      // }
 
       if (isSignedUp) {
-        // 이미 회원가입 완료 → 메인 화면으로
-        print('회원가입 완료 → 메인 화면으로 이동');
-        Navigator.of(context).pushReplacementNamed(AppRoutes.mainNavigation);
-      } else if (currentUser != null) {
-        // Firebase Auth에 사용자가 있지만 회원가입이 완료되지 않음
-        // → 과목 선택 화면으로 이동 (회원가입 플로우 계속)
-        print('로그인 완료, 회원가입 미완료 → 과목 선택 화면으로 이동');
-        Navigator.of(context).pushReplacementNamed(AppRoutes.signupSubject);
+        // ✅ 이미 회원가입 완료 → 메인 화면으로
+        print('✅ 회원가입 완료 → MainNavigationScreen으로 이동');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.mainNavigation);
+        }
       } else {
-        // 로그인 안됨 → 구글 로그인 화면으로
-        print('로그인 안됨 → 구글 로그인 화면으로 이동');
-        Navigator.of(context).pushReplacementNamed(AppRoutes.googleSignup);
+        // ✅ Firebase Auth에 사용자가 있지만 회원가입이 완료되지 않음
+        // → 과목 선택 화면으로 이동 (회원가입 플로우 시작)
+        print('✅ 로그인 완료, 회원가입 미완료 → SubjectSelectionScreen으로 이동');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(AppRoutes.signupSubject);
+        }
       }
     } catch (e) {
-      print('회원가입 상태 확인 중 오류: $e');
+      print('❌ 회원가입 상태 확인 중 오류: $e');
       // 에러 발생 시 구글 로그인 화면으로 이동
       if (mounted) {
         Navigator.of(context).pushReplacementNamed(AppRoutes.googleSignup);

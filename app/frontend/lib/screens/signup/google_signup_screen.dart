@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../../routes/app_routes.dart';
+import '../../services/api_service.dart';
 import '../../theme/tokens.dart';
 
 class GoogleSignupScreen extends StatefulWidget {
@@ -14,36 +18,137 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
   bool _isLoading = false;
 
   Future<void> _handleGoogleSignIn() async {
+    if (!mounted || _isLoading) return;
+
     setState(() => _isLoading = true);
 
     try {
-      // Firebase Auth만 사용한 구글 로그인 (People API 불필요)
-      // 웹에서는 signInWithRedirect를 사용합니다
+      final auth = FirebaseAuth.instance;
+      UserCredential? userCredential;
+
       if (kIsWeb) {
-        print('Google 로그인 시작...');
-        print('현재 URL: ${Uri.base}');
+        // ===== Web 환경: signInWithPopup 사용 =====
+        print('🔵 Google 로그인 (Web - signInWithPopup) 시작...');
         
-        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-        print('GoogleAuthProvider 생성 완료');
+        final googleProvider = GoogleAuthProvider()
+          ..setCustomParameters({'prompt': 'select_account'});
         
-        await FirebaseAuth.instance.signInWithRedirect(googleProvider);
-        print('signInWithRedirect 호출 완료 - 리다이렉트 예정');
+        userCredential = await auth.signInWithPopup(googleProvider);
         
-        // signInWithRedirect는 페이지를 리다이렉트하므로 여기서는 반환
-        // 리다이렉트 후 main.dart에서 getRedirectResult로 처리합니다
-        return;
+        print('✅ signInWithPopup 성공: user=${userCredential.user?.uid}');
       } else {
-        // 모바일 플랫폼에서는 기존 방식 사용
-        throw UnsupportedError('모바일 플랫폼은 아직 지원되지 않습니다');
+        // ===== 모바일 환경: google_sign_in 패키지 사용 =====
+        print('🔵 Google 로그인 (모바일 - google_sign_in) 시작...');
+        
+        final googleSignIn = GoogleSignIn();
+        final googleUser = await googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          // 사용자가 로그인 취소
+          print('ℹ️ 사용자가 로그인을 취소했습니다');
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
+          return;
+        }
+        
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        
+        userCredential = await auth.signInWithCredential(credential);
+        print('✅ signInWithCredential 성공: user=${userCredential.user?.uid}');
       }
-    } catch (e) {
-      print('Google 로그인 에러: $e');
+
+      final user = userCredential.user;
+      
+      if (user == null) {
+        print('⚠️ 로그인 결과 user가 null입니다');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('로그인에 실패했습니다. 다시 시도해주세요.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        return;
+      }
+
+      print('✅ 로그인 성공: uid=${user.uid}, email=${user.email}');
+      
+      // ✅ 로그인 성공 후 처리
+      // FirebaseAuth.instance.currentUser에 이미 user가 설정됨
+      await _handleLoginSuccess(user);
+      
+    } catch (e, stackTrace) {
+      print('🟥 Google 로그인 에러: $e');
+      print('에러 타입: ${e.runtimeType}');
+      print('스택 트레이스: $stackTrace');
+
       if (mounted) {
-        setState(() => _isLoading = false);
+        String errorMessage = '구글 로그인 실패: $e';
+        final msg = e.toString();
+        
+        if (msg.contains('popup_closed_by_user') || msg.contains('sign_in_canceled')) {
+          errorMessage = '로그인이 취소되었습니다.';
+        } else if (msg.contains('popup_blocked')) {
+          errorMessage = '팝업이 차단되었습니다. 브라우저 팝업 차단을 해제하고 다시 시도해주세요.';
+        } else if (msg.contains('network_error')) {
+          errorMessage = '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('구글 로그인 실패: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// 로그인 성공 후 처리 (백엔드 연동 및 화면 이동)
+  Future<void> _handleLoginSuccess(User user) async {
+    if (!mounted) return;
+
+    try {
+      // 백엔드 연동 (선택적)
+      final idToken = await user.getIdToken();
+      if (idToken != null) {
+        final previewLength = idToken.length > 40 ? 40 : idToken.length;
+        print('idToken (앞 $previewLength자): ${idToken.substring(0, previewLength)}...');
+
+        try {
+          await ApiService.googleLogin(idToken);
+          print('✅ 백엔드 연동 성공');
+        } catch (apiError) {
+          print('⚠️ 백엔드 연동 실패 (계속 진행): $apiError');
+          // 백엔드 연동 실패해도 로그인은 성공했으므로 계속 진행
+        }
+      }
+
+      // ✅ 로그인 성공 후 화면 이동
+      // SplashScreen으로 이동하여 인증 상태 확인 및 적절한 화면으로 라우팅
+      // (회원가입 여부 확인은 SplashScreen에서 처리)
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.splash);
+      }
+    } catch (e) {
+      print('❌ 로그인 후 처리 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('로그인 후 처리 중 오류가 발생했습니다: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -128,7 +233,7 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
                             ),
                           ),
                         )
-                      : Icon(
+                      : const Icon(
                           Icons.g_mobiledata_rounded,
                           size: 24,
                           color: AppColors.textPrimary,
@@ -149,4 +254,3 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
     );
   }
 }
-
