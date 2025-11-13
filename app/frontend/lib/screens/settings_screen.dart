@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import '../services/settings_service.dart';
+import '../services/teacher_service.dart';
+import '../routes/app_routes.dart';
 import 'teacher_subjects_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -25,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+    _loadTeacherInfo();
   }
 
   Future<void> _loadSettings() async {
@@ -36,6 +43,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _endHour = endHour;
       _excludeWeekends = excludeWeekends;
     });
+  }
+
+  /// Teacher 정보 로드
+  Future<void> _loadTeacherInfo() async {
+    try {
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher != null && mounted) {
+        setState(() {
+          // Teacher 정보를 사용하여 프로필 업데이트
+          // (현재는 하드코딩된 값 사용 중, 나중에 실제 값으로 교체 가능)
+        });
+      }
+    } catch (e) {
+      print('⚠️ 설정 화면: Teacher 정보 로드 실패: $e');
+    }
   }
 
   Future<void> _saveStartHour(int hour) async {
@@ -324,9 +346,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: OutlinedButton(
-                    onPressed: () {
-                      // TODO: 로그아웃
-                    },
+                    onPressed: () => _handleLogout(context),
                     style: OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: Gaps.card),
                       side: BorderSide(color: AppColors.error),
@@ -353,6 +373,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildProfileSection(ThemeData theme, ColorScheme colorScheme) {
+    // Teacher 정보 가져오기 (캐시에서)
+    final teacher = TeacherService.instance.currentTeacher;
+    final auth = FirebaseAuth.instance;
+    final user = auth.currentUser;
+
+    // 표시할 이름과 이메일
+    final displayName = teacher?.name ?? user?.displayName ?? '선생님';
+    final displayEmail = teacher?.email ?? user?.email ?? 'teacher@example.com';
+    
+    // 이름의 첫 글자 (아바타용)
+    final firstChar = displayName.isNotEmpty 
+        ? displayName.substring(0, 1) 
+        : '선';
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -374,7 +408,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 radius: 32,
                 backgroundColor: AppColors.primary,
                 child: Text(
-                  '선',
+                  firstChar,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -388,7 +422,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '선생님',
+                      displayName,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: colorScheme.onSurface,
@@ -396,7 +430,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'teacher@example.com',
+                      displayEmail,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -548,6 +582,102 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       onTap: () => _showTimePicker(context, value, onChanged),
     );
+  }
+
+  /// 로그아웃 처리
+  Future<void> _handleLogout(BuildContext context) async {
+    // 확인 다이얼로그 표시
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          '로그아웃',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          '정말 로그아웃하시겠습니까?',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            child: const Text('로그아웃'),
+          ),
+        ],
+      ),
+    );
+
+    // 사용자가 취소를 선택한 경우
+    if (confirm != true) {
+      return;
+    }
+
+    try {
+      print('🔵 로그아웃 시작...');
+
+      // 1. TeacherService 캐시 초기화
+      await TeacherService.instance.clear();
+      print('✅ Teacher 정보 캐시 삭제 완료');
+
+      // 2. Firebase Auth에서 로그아웃
+      final auth = FirebaseAuth.instance;
+      await auth.signOut();
+      print('✅ Firebase Auth 로그아웃 완료');
+
+      // 3. 모바일 환경에서 Google Sign-In 로그아웃
+      if (!kIsWeb) {
+        try {
+          final googleSignIn = GoogleSignIn();
+          await googleSignIn.signOut();
+          print('✅ Google Sign-In 로그아웃 완료');
+        } catch (e) {
+          print('⚠️ Google Sign-In 로그아웃 실패 (무시): $e');
+          // Google Sign-In 로그아웃 실패해도 계속 진행
+        }
+      }
+
+      // 4. SharedPreferences의 is_signed_up 플래그 제거 (더 이상 사용하지 않지만 깔끔하게)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('is_signed_up');
+        print('✅ SharedPreferences 정리 완료');
+      } catch (e) {
+        print('⚠️ SharedPreferences 정리 실패 (무시): $e');
+      }
+
+      print('✅ 로그아웃 완료');
+
+      // 5. 로그인 화면으로 리다이렉트
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.googleSignup,
+          (route) => false, // 모든 이전 화면 제거
+        );
+      }
+    } catch (e) {
+      print('❌ 로그아웃 실패: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('로그아웃 중 오류가 발생했습니다: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 
   void _showTimePicker(BuildContext context, int currentHour, ValueChanged<int> onChanged) {
