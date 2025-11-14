@@ -7,6 +7,7 @@ import 'routes/app_routes.dart';
 import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
 import 'services/settings_service.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -15,6 +16,9 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // 알림 서비스 초기화
+  await NotificationService.instance.initialize();
 
   // ✅ 인증 상태 확인 (Web/모바일 공통)
   // Web에서는 signInWithPopup을 사용하므로 getRedirectResult() 불필요

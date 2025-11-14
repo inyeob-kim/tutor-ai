@@ -7,6 +7,7 @@ class SettingsService {
   static const String _keyDisabledHours = 'disabled_hours';
   static const String _keyExcludeWeekends = 'exclude_weekends';
   static const String _keyTeacherSubjects = 'teacher_subjects';
+  static const String _keyNotificationsEnabled = 'notifications_enabled';
   static const int _defaultStartHour = 12;
   static const int _defaultEndHour = 22;
 
@@ -117,6 +118,18 @@ class SettingsService {
   static Future<void> setDarkMode(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('dark_mode', enabled);
+  }
+
+  // 알림 설정 가져오기
+  static Future<bool> getNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_keyNotificationsEnabled) ?? true; // 기본값: 활성화
+  }
+
+  // 알림 설정 저장
+  static Future<void> setNotificationsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keyNotificationsEnabled, enabled);
   }
 }
 

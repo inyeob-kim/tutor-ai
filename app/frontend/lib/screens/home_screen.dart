@@ -3,6 +3,7 @@ import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import '../services/teacher_service.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/loading_indicator.dart';
 
 enum ScheduleStatus { completed, current, upcoming }
@@ -46,6 +47,17 @@ class HomeScreenState extends State<HomeScreen> {
     _loadTeacherInfo();
     // 오늘의 스케줄 로드
     loadTodaySchedules();
+    // 알림 스케줄링
+    _scheduleReminders();
+  }
+
+  /// 일정 리마인드 알림 스케줄링
+  Future<void> _scheduleReminders() async {
+    try {
+      await NotificationService.instance.scheduleLessonReminders();
+    } catch (e) {
+      print('⚠️ 알림 스케줄링 실패: $e');
+    }
   }
 
   /// Teacher 정보 로드
@@ -157,6 +169,8 @@ class HomeScreenState extends State<HomeScreen> {
           schedule = items;
           _isLoading = false;
         });
+        // 스케줄 로드 후 알림 재스케줄링
+        _scheduleReminders();
       }
     } catch (e) {
       print('⚠️ 홈화면: 스케줄 로드 실패: $e');

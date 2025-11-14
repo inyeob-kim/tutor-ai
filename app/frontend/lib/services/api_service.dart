@@ -280,6 +280,88 @@ class ApiService {
     }
   }
 
+  /// 청구서 목록 조회
+  static Future<List<Map<String, dynamic>>> getInvoices({
+    int? teacherId,
+    int? studentId,
+    String? status,
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'pageSize': pageSize.toString(),
+      };
+      if (teacherId != null) queryParams['teacher_id'] = teacherId.toString();
+      if (studentId != null) queryParams['student_id'] = studentId.toString();
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse('$baseUrl/invoices').replace(queryParameters: queryParams);
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final items = data['items'] as List;
+        return items.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to get invoices: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error getting invoices: $e');
+    }
+  }
+
+  /// 청구서 업데이트
+  static Future<Map<String, dynamic>> updateInvoice({
+    required int invoiceId,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/invoices/$invoiceId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data ?? {}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to update invoice: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating invoice: $e');
+    }
+  }
+
+  /// 청구서 카카오페이 링크 생성 및 발송
+  static Future<Map<String, dynamic>> createAndSendInvoiceLink({
+    required int invoiceId,
+    String? approvalUrl,
+    String? cancelUrl,
+    String? failUrl,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (approvalUrl != null) queryParams['approval_url'] = approvalUrl;
+      if (cancelUrl != null) queryParams['cancel_url'] = cancelUrl;
+      if (failUrl != null) queryParams['fail_url'] = failUrl;
+
+      final uri = Uri.parse('$baseUrl/invoices/$invoiceId/create-kakao-pay-link')
+          .replace(queryParameters: queryParams.isEmpty ? null : queryParams);
+      
+      final response = await http.post(uri);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to create invoice link: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error creating invoice link: $e');
+    }
+  }
+
   static Future<Map<String, dynamic>> googleLogin(String idToken) async {
     try {
       final response = await http.post(

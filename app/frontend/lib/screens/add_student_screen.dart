@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
@@ -7,6 +9,7 @@ import '../services/teacher_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import '../widgets/loading_indicator.dart';
+import 'add_recurring_schedule_screen.dart';
 
 class AddStudentScreen extends StatefulWidget {
   const AddStudentScreen({super.key});
@@ -135,7 +138,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       print('  - subject_id: ${data['subject_id']}');
       print('  - 전체 데이터: $data');
 
-      await ApiService.createStudent(data);
+      final studentResult = await ApiService.createStudent(data);
+      final studentId = studentResult['student_id'] as int?;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -144,6 +148,12 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
             backgroundColor: AppColors.success,
           ),
         );
+        
+        // 스케줄 자동 제안 다이얼로그 표시
+        if (studentId != null) {
+          await _showScheduleSuggestionDialog(studentId, _nameController.text.trim());
+        }
+        
         Navigator.of(context).pop(true);
       }
     } catch (e) {
@@ -158,6 +168,254 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// 스케줄 자동 제안 다이얼로그
+  Future<void> _showScheduleSuggestionDialog(int studentId, String studentName) async {
+    if (!mounted) return;
+
+    // 일반적인 과외 시간 제안 (수요일/목요일 오후 4시)
+    final suggestedWeekday = 3; // 수요일 (0=월요일, 3=수요일)
+    final suggestedTime = '16:00';
+    final suggestedEndTime = '17:00';
+    final suggestedDateFrom = DateTime.now();
+    final suggestedDateTo = DateTime.now().add(const Duration(days: 28)); // 4주
+
+    final weekdayLabels = ['월', '화', '수', '목', '금', '토', '일'];
+    final weekdayLabel = weekdayLabels[suggestedWeekday];
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.card),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.calendar_today, color: AppColors.primary, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '수업 일정 제안',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$studentName님의 수업 일정을 등록하시겠어요?',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(Radii.chip),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.schedule, size: 20, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        '제안 일정',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(Radii.chip),
+                        ),
+                        child: Text(
+                          '매주 $weekdayLabel',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '$suggestedTime - $suggestedEndTime',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${DateFormat('M월 d일').format(suggestedDateFrom)} ~ ${DateFormat('M월 d일').format(suggestedDateTo)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(Radii.chip),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: AppColors.textSecondary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '터치 한 번으로 반복 수업을 등록할 수 있어요',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('skip'),
+            child: Text(
+              '나중에',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('custom'),
+            child: Text(
+              '직접 설정',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop('accept'),
+            icon: const Icon(Icons.check, size: 18),
+            label: const Text('추가하기'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == 'accept' && mounted) {
+      // 제안된 일정으로 바로 등록
+      await _createSuggestedSchedule(
+        studentId,
+        suggestedWeekday,
+        suggestedTime,
+        suggestedEndTime,
+        suggestedDateFrom,
+        suggestedDateTo,
+      );
+    } else if (result == 'custom' && mounted) {
+      // 반복 수업 등록 화면으로 이동
+      final scheduleResult = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AddRecurringScheduleScreen(),
+        ),
+      );
+      if (scheduleResult == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('수업 일정이 등록되었습니다.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 제안된 스케줄로 반복 수업 생성
+  Future<void> _createSuggestedSchedule(
+    int studentId,
+    int weekday,
+    String startTime,
+    String endTime,
+    DateTime dateFrom,
+    DateTime dateTo,
+  ) async {
+    if (!mounted) return;
+
+    try {
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher == null) {
+        throw Exception('선생님 정보를 불러올 수 없습니다.');
+      }
+
+      // subject_id 가져오기
+      final subjectId = _selectedSubject ?? '';
+
+      // bulk-generate API 호출
+      final queryParams = <String, String>{
+        'teacher_id': teacher.teacherId.toString(),
+        'student_id': studentId.toString(),
+        'subject_id': subjectId,
+        'weekday': weekday.toString(),
+        'start_time': startTime,
+        'end_time': endTime,
+        'date_from': DateFormat('yyyy-MM-dd').format(dateFrom),
+        'date_to': DateFormat('yyyy-MM-dd').format(dateTo),
+      };
+
+      final uri = Uri.parse('${ApiService.baseUrl}/schedules/bulk-generate')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.post(uri);
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body) as Map<String, dynamic>;
+        final created = result['created'] as int? ?? 0;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$created개의 수업 일정이 등록되었습니다.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else {
+        throw Exception('스케줄 등록 실패: ${response.body}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('스케줄 등록 실패: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     }
   }

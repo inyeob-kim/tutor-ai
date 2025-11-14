@@ -4,6 +4,7 @@ import '../theme/tokens.dart';
 import '../services/api_service.dart';
 import '../services/teacher_service.dart';
 import '../services/settings_service.dart';
+import '../services/report_service.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -209,7 +210,7 @@ class _StatsScreenState extends State<StatsScreen> {
       'lowAttendance': lowAttendance,
     };
 
-      // 수업 통계
+  // 수업 통계
       final completedLessons = thisMonthLessons.where((l) => 
         l['status'] == 'completed' || l['status'] == 'done'
       ).length;
@@ -279,20 +280,31 @@ class _StatsScreenState extends State<StatsScreen> {
                   parent: TossScrollPhysics(),
                 ),
         slivers: [
-                  SliverAppBar(
+          SliverAppBar(
                     backgroundColor: AppColors.surface,
-                    elevation: 0,
+            elevation: 0,
                     pinned: true,
-                    title: Text(
-                      '통계',
-                      style: theme.textTheme.headlineSmall?.copyWith(
+                    leading: IconButton(
+                      icon: Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+              title: Text(
+                '통계',
+                style: theme.textTheme.headlineSmall?.copyWith(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     centerTitle: false,
-                  ),
+                    actions: [
+                      IconButton(
+                        icon: Icon(Icons.share_rounded, color: AppColors.textSecondary),
+                        onPressed: () => _showReportShareDialog(context, theme, colorScheme),
+                        tooltip: '리포트 공유',
+                      ),
+                    ],
+          ),
           SliverPadding(
             padding: EdgeInsets.all(Gaps.screen),
             sliver: SliverList(
@@ -423,8 +435,8 @@ class _StatsScreenState extends State<StatsScreen> {
                   children: [
                     Expanded(
                 child: _buildMiniStatInCard(
-                  theme: theme,
-                  icon: Icons.calendar_today_rounded,
+                        theme: theme,
+                        icon: Icons.calendar_today_rounded,
                   label: '이번 달 수업',
                   value: '${_teacherStats['thisMonthLessons'] ?? 0}개',
                   isLight: true,
@@ -435,7 +447,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 child: _buildMiniStatInCard(
                         theme: theme,
                   icon: Icons.today_rounded,
-                  label: '오늘 수업',
+                        label: '오늘 수업',
                   value: '${_teacherStats['todayLessons'] ?? 0}개',
                   isLight: true,
                 ),
@@ -462,16 +474,16 @@ class _StatsScreenState extends State<StatsScreen> {
                   label: '평균 출석률',
                   value: '${_teacherStats['avgAttendance'] ?? 0}%',
                   isLight: true,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: Gaps.card),
-          Row(
-            children: [
-              Expanded(
+                SizedBox(height: Gaps.card),
+                Row(
+                  children: [
+                    Expanded(
                 child: _buildMiniStatInCard(
-                  theme: theme,
+                        theme: theme,
                   icon: Icons.person_add_rounded,
                   label: '신규 학생',
                   value: '${_teacherStats['newStudentsThisMonth'] ?? 0}명',
@@ -535,12 +547,12 @@ class _StatsScreenState extends State<StatsScreen> {
           SizedBox(height: Gaps.card),
           Row(
             children: [
-              Expanded(
+                    Expanded(
                 child: _buildMiniStat(
-                  theme: theme,
-                  colorScheme: colorScheme,
+                        theme: theme,
+                        colorScheme: colorScheme,
                   icon: Icons.people_rounded,
-                  iconColor: AppColors.primary,
+                        iconColor: AppColors.primary,
                   label: '학생 수',
                   value: '${stats['studentCount'] ?? 0}명',
                 ),
@@ -607,28 +619,28 @@ class _StatsScreenState extends State<StatsScreen> {
                             iconColor: AppColors.success,
                             label: '평균 출석률',
                   value: '${_studentStats['avgAttendance'] ?? 0}%',
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: Gaps.card + 4),
-          Row(
-            children: [
-              Expanded(
-                child: _buildMiniStat(
-                  theme: theme,
-                  colorScheme: colorScheme,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: Gaps.card + 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMiniStat(
+                            theme: theme,
+                            colorScheme: colorScheme,
                   icon: Icons.people_rounded,
                   iconColor: AppColors.primary,
                   label: '전체 학생',
                   value: '${_studentStats['total'] ?? 0}명',
-                ),
-              ),
-              SizedBox(width: Gaps.row),
-              Expanded(
-                child: _buildMiniStat(
-                  theme: theme,
-                  colorScheme: colorScheme,
+                          ),
+                        ),
+                        SizedBox(width: Gaps.row),
+                        Expanded(
+                          child: _buildMiniStat(
+                            theme: theme,
+                            colorScheme: colorScheme,
                   icon: Icons.check_circle_rounded,
                   iconColor: AppColors.success,
                   label: '활성 학생',
@@ -637,7 +649,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: Gaps.card + 4),
+                SizedBox(height: Gaps.card + 4),
                     Row(
                       children: [
                         Expanded(
@@ -950,6 +962,267 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 리포트 공유 다이얼로그
+  Future<void> _showReportShareDialog(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) async {
+    final period = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.card),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.assessment_rounded, color: AppColors.primary, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '리포트 생성',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+            Text(
+              '리포트 기간을 선택하세요',
+              style: theme.textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 16),
+          Container(
+              padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(Radii.chip),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: AppColors.textSecondary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '리포트는 수업 횟수, 수익, 미납, 출석률을 포함합니다',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('weekly'),
+            child: Text(
+              '이번 주',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop('monthly'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+            ),
+            child: const Text('이번 달'),
+          ),
+        ],
+      ),
+    );
+
+    if (period != null && context.mounted) {
+      await _generateAndShareReport(context, period, theme, colorScheme);
+    }
+  }
+
+  /// 리포트 생성 및 공유
+  Future<void> _generateAndShareReport(
+    BuildContext context,
+    String period,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) async {
+    try {
+      // 로딩 표시
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+          ),
+        ),
+      );
+
+      // 리포트 생성
+      final report = await ReportService.instance.generateReport(period: period);
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // 로딩 닫기
+
+        // 리포트 공유 옵션 표시
+        final action = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Radii.card),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.assessment_rounded, color: AppColors.primary, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '리포트 생성 완료',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '리포트가 생성되었습니다.',
+                  style: theme.textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(Radii.chip),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildReportSummaryItem(
+                        theme,
+                        Icons.event_note_rounded,
+                        '완료된 수업',
+                        '${report['lessonCount']}개',
+                      ),
+                      const SizedBox(height: 8),
+                      _buildReportSummaryItem(
+                        theme,
+                        Icons.account_balance_wallet_rounded,
+                        '총 수입',
+                        _formatCurrency(report['income'] as int? ?? 0),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildReportSummaryItem(
+                        theme,
+                        Icons.warning_rounded,
+                        '미납',
+                        '${report['unpaidCount']}건',
+                      ),
+                      const SizedBox(height: 8),
+                      _buildReportSummaryItem(
+                        theme,
+                        Icons.trending_up_rounded,
+                        '평균 출석률',
+                        '${report['avgAttendance']}%',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop('copy'),
+                child: Text(
+                  '복사',
+                  style: TextStyle(color: AppColors.primary),
+                ),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop('share'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
+                child: const Text('공유'),
+              ),
+            ],
+          ),
+        );
+
+        if (action == 'copy' && context.mounted) {
+          await ReportService.instance.copyReport(context, report);
+        } else if (action == 'share' && context.mounted) {
+          // 공유 기능 (클립보드에 복사 후 안내)
+          await ReportService.instance.copyReport(context, report);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('리포트가 클립보드에 복사되었습니다. 카카오톡 등으로 공유해주세요.'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop(); // 로딩 닫기
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('리포트 생성 실패: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildReportSummaryItem(
+    ThemeData theme,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: 8),
+          Text(
+            label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+            ),
+          ),
+        const Spacer(),
+          Text(
+            value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            color: AppColors.primary,
+            ),
+          ),
+        ],
     );
   }
 }

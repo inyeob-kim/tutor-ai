@@ -3,6 +3,7 @@ import '../models/student.dart';
 import '../widgets/section_title.dart';
 import '../services/api_service.dart';
 import '../services/teacher_service.dart';
+import '../services/student_note_service.dart';
 import 'add_student_screen.dart';
 import 'edit_student_screen.dart';
 import 'inactive_students_screen.dart';
@@ -614,7 +615,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
   }
 }
 
-class _StudentDetailModal extends StatelessWidget {
+class _StudentDetailModal extends StatefulWidget {
   final Student student;
   final ThemeData theme;
   final ColorScheme colorScheme;
@@ -630,7 +631,58 @@ class _StudentDetailModal extends StatelessWidget {
   });
 
   @override
+  State<_StudentDetailModal> createState() => _StudentDetailModalState();
+}
+
+class _StudentDetailModalState extends State<_StudentDetailModal> {
+  String? _summary;
+  Map<String, dynamic>? _nextLesson;
+  bool _isLoadingSummary = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSummary();
+  }
+
+  Future<void> _loadSummary() async {
+    if (widget.student.studentId == null) return;
+
+    setState(() => _isLoadingSummary = true);
+
+    try {
+      // 다음 수업 정보 가져오기
+      final nextLesson = await StudentNoteService.instance.getNextLesson(widget.student.studentId!);
+      
+      // 학생 메모 가져오기
+      final notes = await StudentNoteService.instance.getStudentNotes(widget.student.studentId!);
+      
+      // AI 요약 생성
+      final summary = await StudentNoteService.instance.generateSummary(notes);
+
+      if (mounted) {
+        setState(() {
+          _nextLesson = nextLesson;
+          _summary = summary;
+          _isLoadingSummary = false;
+        });
+      }
+    } catch (e) {
+      print('❌ 요약 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingSummary = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final colorScheme = widget.colorScheme;
+    final student = widget.student;
+    
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
       minChildSize: 0.5,
@@ -662,7 +714,7 @@ class _StudentDetailModal extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       IconButton(
-                        onPressed: onClose,
+                        onPressed: widget.onClose,
                         icon: Icon(Icons.close, color: AppColors.surface),
                         style: IconButton.styleFrom(
                           backgroundColor: AppColors.surface.withOpacity(0.2),
@@ -819,10 +871,18 @@ class _StudentDetailModal extends StatelessWidget {
                   ),
                   const Divider(height: 32),
 
+                  // AI 요약 (다음 수업 전)
+                  if (_nextLesson != null || _summary != null) ...[
+                    SectionTitle(title: '수업 요약'),
+                    const SizedBox(height: 12),
+                    _buildSummaryCard(context, theme, colorScheme),
+                    const SizedBox(height: 32),
+                  ],
+
                   // 출석률 상세
                   SectionTitle(title: '출석률'),
                   const SizedBox(height: 12),
-                  _buildAttendanceDetail(context, theme, colorScheme),
+                  _buildAttendanceDetail(context, theme, colorScheme, student),
                   const SizedBox(height: 32),
 
                   // 수강 과목
@@ -944,8 +1004,8 @@ class _StudentDetailModal extends StatelessWidget {
                             Navigator.of(context).pop();
                             
                             // 비활성화된 경우 목록에서 즉시 제거
-                            if (student.isActive && onDeactivated != null) {
-                              onDeactivated!();
+                            if (student.isActive && widget.onDeactivated != null) {
+                              widget.onDeactivated!();
                             }
                             
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -999,6 +1059,7 @@ class _StudentDetailModal extends StatelessWidget {
     BuildContext context,
     ThemeData theme,
     ColorScheme colorScheme,
+    Student student,
   ) {
     final barColor = student.attendanceRate >= 95
         ? AppColors.success
@@ -1076,6 +1137,156 @@ class _StudentDetailModal extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    if (_isLoadingSummary) {
+      return Container(
+        padding: EdgeInsets.all(Gaps.cardPad),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(Radii.card),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.all(Gaps.cardPad),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(Radii.card),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 헤더
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(Radii.icon),
+                ),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI 요약',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    if (_nextLesson != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '다음 수업 전 확인',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // 요약 내용
+          if (_summary != null) ...[
+            Container(
+              padding: EdgeInsets.all(Gaps.card),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(Radii.chip),
+              ),
+              child: Text(
+                _summary!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  height: 1.6,
+                ),
+              ),
+            ),
+          ] else ...[
+            Text(
+              '아직 수업 메모가 없습니다.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          // 다음 수업 정보
+          if (_nextLesson != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(Gaps.card),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(Radii.chip),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '다음 수업',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_nextLesson!['lesson_date']} ${_nextLesson!['start_time']}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

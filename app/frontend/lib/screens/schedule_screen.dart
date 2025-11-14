@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 
@@ -42,6 +43,8 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   // 마지막으로 오늘 날짜로 리셋한 날짜 (날짜 변경 감지용)
   DateTime? _lastResetDate;
   bool _isVisible = false;
+  Timer? _lessonEndCheckTimer; // 수업 종료 체크 타이머
+  Set<String> _shownLessonEndDialogs = {}; // 이미 표시한 수업 종료 다이얼로그 ID 저장
 
   @override
   bool get wantKeepAlive => true; // 상태를 유지하되, 화면이 보일 때 리셋
@@ -54,12 +57,14 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
     _resetToToday();
     _loadStudents();
     _loadSettings();
+    _startLessonEndCheckTimer();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _dateScrollController.dispose();
+    _lessonEndCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -403,6 +408,8 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         setState(() {
           _lessons = lessonsList;
         });
+        // 수업 목록 로드 후 종료된 수업 체크
+        _checkForEndedLessons();
       }
       
       print('✅ 수업 목록 로드 완료: $dateStr (${lessonsList.length}개)');
@@ -688,6 +695,188 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       // 그 외의 경우 표시
       return true;
     }).toList();
+  }
+
+  /// 수업 종료 체크 타이머 시작
+  void _startLessonEndCheckTimer() {
+    _lessonEndCheckTimer?.cancel();
+    _lessonEndCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      _checkForEndedLessons();
+    });
+  }
+
+  /// 종료된 수업 확인 및 자동 출결 다이얼로그 표시
+  void _checkForEndedLessons() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    // 오늘 날짜의 수업만 확인
+    for (final lesson in _filteredLessons) {
+      final lessonDate = DateTime(
+        lesson.startsAt.year,
+        lesson.startsAt.month,
+        lesson.startsAt.day,
+      );
+      
+      // 오늘 날짜의 수업이고, 아직 완료되지 않았고, 수업이 끝났는지 확인
+      if (lessonDate.isAtSameMomentAs(today) &&
+          lesson.status != 'done' &&
+          lesson.endsAt.isBefore(now)) {
+        // 이미 다이얼로그를 표시한 수업이 아니면
+        if (!_shownLessonEndDialogs.contains(lesson.id)) {
+          _shownLessonEndDialogs.add(lesson.id);
+          _showLessonEndDialog(lesson);
+        }
+      }
+    }
+  }
+
+  /// 수업 종료 다이얼로그 표시
+  Future<void> _showLessonEndDialog(Lesson lesson) async {
+    final student = _findStudent(lesson.studentId);
+    final studentName = student?.name ?? '학생';
+    
+    if (!mounted) return;
+    
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.card),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: AppColors.primary, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '수업 완료 확인',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$studentName 학생의 수업이 끝났나요?',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${lesson.subject} · ${lesson.durationMin}분',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(Radii.chip),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '예를 누르면 자동으로 출석 처리됩니다',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              '아니오',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+            ),
+            child: const Text('예'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
+      // 자동 출결 처리 및 수업 완료 처리
+      await _completeLessonWithAttendance(lesson.id);
+    }
+  }
+
+  /// 수업 완료 및 출석 처리 (1클릭)
+  Future<void> _completeLessonWithAttendance(String lessonId) async {
+    try {
+      final scheduleId = int.parse(lessonId);
+      
+      // API로 수업 완료 및 출석 처리
+      await ApiService.updateSchedule(
+        scheduleId: scheduleId,
+        status: 'completed',
+      );
+      
+      // 로컬 상태 업데이트
+      setState(() {
+        final lesson = _lessons.firstWhere((l) => l.id == lessonId);
+        final index = _lessons.indexOf(lesson);
+        _lessons[index] = Lesson(
+          id: lesson.id,
+          studentId: lesson.studentId,
+          startsAt: lesson.startsAt,
+          subject: lesson.subject,
+          durationMin: lesson.durationMin,
+          status: 'done',
+          attendance: 'show', // 자동 출석 처리
+        );
+      });
+      
+      // 캐시 무효화
+      final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+      _lessonsCache.remove(dateStr);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('수업이 완료되었고 출석 처리되었습니다.'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ 수업 완료 처리 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('처리 중 오류가 발생했습니다: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _toggleDone(String lessonId) {

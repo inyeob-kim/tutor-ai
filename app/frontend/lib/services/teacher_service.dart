@@ -116,10 +116,9 @@ class Teacher {
 
 /// Teacher 정보를 관리하는 서비스 (싱글톤)
 class TeacherService {
-  static TeacherService? _instance;
-  static TeacherService get instance => _instance ??= TeacherService._();
-
-  TeacherService._();
+  static final TeacherService instance = TeacherService._internal();
+  factory TeacherService() => instance;
+  TeacherService._internal();
 
   Teacher? _currentTeacher;
   static const String _cacheKey = 'cached_teacher';

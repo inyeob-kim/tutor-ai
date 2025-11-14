@@ -3,6 +3,7 @@ import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import '../main.dart';
 import '../services/settings_service.dart';
+import '../services/notification_service.dart';
 
 class AppSettingsScreen extends StatefulWidget {
   const AppSettingsScreen({super.key});
@@ -24,9 +25,11 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
 
   Future<void> _loadSettings() async {
     final isDarkMode = await SettingsService.getDarkMode();
+    final notificationsEnabled = await SettingsService.getNotificationsEnabled();
     if (mounted) {
       setState(() {
         darkModeEnabled = isDarkMode;
+        this.notificationsEnabled = notificationsEnabled;
       });
     }
   }
@@ -63,8 +66,17 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       title: '푸시 알림',
                       subtitle: '수업 일정 및 청구 알림을 받습니다',
                       value: notificationsEnabled,
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         setState(() => notificationsEnabled = value);
+                        await SettingsService.setNotificationsEnabled(value);
+                        // 알림 설정 변경 시 알림 재스케줄링
+                        if (value) {
+                          // 알림이 활성화되면 알림 스케줄링
+                          await NotificationService.instance.scheduleLessonReminders();
+                        } else {
+                          // 알림이 비활성화되면 모든 알림 취소
+                          await NotificationService.instance.cancelAll();
+                        }
                       },
                     ),
                     const Divider(height: 1),
