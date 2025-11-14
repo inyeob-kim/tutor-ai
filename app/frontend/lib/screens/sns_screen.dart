@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import '../services/settings_service.dart';
+import 'post_detail_screen.dart';
 
 class SnsScreen extends StatefulWidget {
   const SnsScreen({super.key});
@@ -11,6 +13,7 @@ class SnsScreen extends StatefulWidget {
 
 class _SnsScreenState extends State<SnsScreen> {
   String? _selectedSubject;
+  List<String> _teacherSubjects = [];
 
   final List<Map<String, dynamic>> _allPosts = [
     {
@@ -149,22 +152,35 @@ class _SnsScreenState extends State<SnsScreen> {
   }
 
   List<String> get _availableSubjects {
-    if (_allPosts.isEmpty) {
+    // 선생님이 가르치는 과목만 반환
+    if (_teacherSubjects.isEmpty) {
       return [];
     }
-    final subjects = _allPosts
-        .map((post) => post['subject'] as String?)
-        .where((subject) => subject != null && subject.isNotEmpty)
-        .cast<String>()
-        .toSet()
-        .toList();
-    subjects.sort();
-    return subjects;
+    return List<String>.from(_teacherSubjects)..sort();
   }
 
   @override
   void initState() {
     super.initState();
+    _loadTeacherSubjects();
+  }
+
+  Future<void> _loadTeacherSubjects() async {
+    try {
+      final subjects = await SettingsService.getTeacherSubjects();
+      if (mounted) {
+        setState(() {
+          _teacherSubjects = subjects.isNotEmpty ? subjects : [];
+        });
+      }
+    } catch (e) {
+      print('⚠️ 선생님 과목 목록 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _teacherSubjects = [];
+        });
+      }
+    }
   }
 
 
@@ -192,6 +208,16 @@ class _SnsScreenState extends State<SnsScreen> {
     });
   }
 
+  Future<void> _refreshPosts() async {
+    // 새로고침 로직 (필요시 API 호출)
+    await Future.delayed(const Duration(milliseconds: 500));
+    // 선생님 과목 목록도 다시 로드
+    await _loadTeacherSubjects();
+    setState(() {
+      // 데이터 새로고침
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -199,9 +225,13 @@ class _SnsScreenState extends State<SnsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        physics: const TossScrollPhysics(),
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: _refreshPosts,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: TossScrollPhysics(),
+          ),
+          slivers: [
           // AppBar
           SliverAppBar(
             backgroundColor: AppColors.surface,
@@ -246,6 +276,7 @@ class _SnsScreenState extends State<SnsScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -270,17 +301,18 @@ class _SnsScreenState extends State<SnsScreen> {
               ),
               SizedBox(width: Gaps.row),
               // 과목별 필터 버튼
-              ...subjects.map((subject) {
-                return Padding(
-                  padding: EdgeInsets.only(right: Gaps.row),
-                  child: _buildFilterChip(
-                    label: subject,
-                    isSelected: _selectedSubject == subject,
-                    onTap: () => _selectSubject(subject),
-                    theme: theme,
-                  ),
-                );
-              }),
+              if (subjects.isNotEmpty)
+                ...subjects.map((subject) {
+                  return Padding(
+                    padding: EdgeInsets.only(right: Gaps.row),
+                    child: _buildFilterChip(
+                      label: subject,
+                      isSelected: _selectedSubject == subject,
+                      onTap: () => _selectSubject(subject),
+                      theme: theme,
+                    ),
+                  );
+                }),
             ],
           ),
         ),
@@ -299,23 +331,23 @@ class _SnsScreenState extends State<SnsScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(Radii.chip),
       child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: Gaps.card,
-          vertical: 6,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.primaryLight,
+          color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(Radii.chip),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3),
-            width: isSelected ? 1.5 : 1,
+            color: isSelected ? AppColors.primary : AppColors.divider,
+            width: 1,
           ),
         ),
         child: Text(
           label,
           style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: isSelected ? AppColors.surface : AppColors.primary,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isSelected ? AppColors.surface : AppColors.textSecondary,
           ),
         ),
       ),
@@ -342,9 +374,18 @@ class _SnsScreenState extends State<SnsScreen> {
         ),
       ),
       color: AppColors.surface,
-      child: Padding(
-        padding: EdgeInsets.all(Gaps.cardPad),
-        child: Column(
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => PostDetailScreen(post: post),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(Radii.card),
+        child: Padding(
+          padding: EdgeInsets.all(Gaps.cardPad),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Author & Subject
@@ -474,7 +515,11 @@ class _SnsScreenState extends State<SnsScreen> {
                 // Comment Button
                 InkWell(
                   onTap: () {
-                    // TODO: 댓글 화면으로 이동
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailScreen(post: post),
+                      ),
+                    );
                   },
                   borderRadius: BorderRadius.circular(Radii.icon),
                   child: Container(
@@ -505,6 +550,7 @@ class _SnsScreenState extends State<SnsScreen> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );

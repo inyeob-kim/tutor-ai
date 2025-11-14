@@ -172,6 +172,14 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       // 마지막 리셋 날짜 업데이트
       _lastResetDate = today;
       
+      // 강제 리셋 시 캐시 무효화
+      if (force) {
+        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+        final selectedDateStr = '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
+        _lessonsCache.remove(todayStr);
+        _lessonsCache.remove(selectedDateStr);
+      }
+      
       if (mounted) {
           setState(() {
           _selectedDate = selectedDate;
@@ -184,7 +192,7 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
             Future.delayed(const Duration(milliseconds: 50), () {
               if (mounted) {
                 _scrollToSelectedDate();
-                _loadLessons();
+                _loadLessons(forceRefresh: force);
               }
             });
             // 두 번째 프레임 후 (ListView 렌더링 완료 보장)

@@ -181,9 +181,15 @@ class HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        physics: const TossScrollPhysics(),
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await loadTodaySchedules();
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: TossScrollPhysics(),
+          ),
+          slivers: [
           // 고정 AppBar
           SliverAppBar(
             pinned: true,
@@ -305,6 +311,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -521,7 +528,7 @@ class HomeScreenState extends State<HomeScreen> {
     final isCompleted = item.status == ScheduleStatus.completed;
     final isCurrent = item.status == ScheduleStatus.current;
     final accentColor = isCurrent
-        ? AppColors.primary
+        ? AppColors.warning
         : isCompleted
             ? AppColors.success
             : colorScheme.outlineVariant;
@@ -567,22 +574,31 @@ class HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: isCurrent ? 0.15 : 0.08),
+                        color: isCurrent 
+                            ? AppColors.warning.withValues(alpha: 0.15)
+                            : isCompleted
+                                ? AppColors.success.withValues(alpha: 0.15)
+                                : AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(Radii.chip + 2),
                       ),
                       child: Text(
                         '${item.time} - ${item.endTime}',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: accentColor,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: isCurrent 
+                              ? AppColors.warning
+                              : isCompleted
+                                  ? AppColors.success
+                                  : AppColors.primary,
                         ),
                       ),
                     ),
                     if (isCurrent) ...[
                       const SizedBox(width: 8),
-                      Icon(Icons.bolt_rounded, size: 18, color: accentColor),
+                      Icon(Icons.bolt_rounded, size: 18, color: AppColors.warning),
                     ],
                   ],
                 ),
@@ -686,8 +702,12 @@ class HomeScreenState extends State<HomeScreen> {
               ],
             ),
             child: InkWell(
-              onTap: () {
-                Navigator.of(context).pushNamed(item.route);
+              onTap: () async {
+                final result = await Navigator.of(context).pushNamed(item.route);
+                // 수업 등록 성공 시 스케줄 새로고침
+                if (result == true && item.route == '/schedules/add') {
+                  loadTodaySchedules();
+                }
               },
               borderRadius: BorderRadius.circular(Radii.card + 4),
               child: Column(
