@@ -39,6 +39,7 @@ class HomeScreenState extends State<HomeScreen> {
   List<ScheduleItem> schedule = [];
   bool _isLoading = true;
   bool _hasNotifications = false; // 알림이 있는지 여부 (나중에 실제 알림 데이터와 연동)
+  String? _teacherNickname;
 
   @override
   void initState() {
@@ -66,8 +67,9 @@ class HomeScreenState extends State<HomeScreen> {
       final teacher = await TeacherService.instance.loadTeacher();
       if (teacher != null && mounted) {
         print('✅ 홈화면: Teacher 정보 로드 완료 - nickname=${teacher.nickname}, subject_id=${teacher.subjectId}');
-        // 필요시 setState로 UI 업데이트
-        setState(() {});
+        setState(() {
+          _teacherNickname = teacher.nickname;
+        });
       }
     } catch (e) {
       print('⚠️ 홈화면: Teacher 정보 로드 실패: $e');
@@ -214,7 +216,7 @@ class HomeScreenState extends State<HomeScreen> {
             automaticallyImplyLeading: false,
             toolbarHeight: 64,
             title: Text(
-              '과외 진행 현황',
+              _teacherNickname != null ? '$_teacherNickname 선생님' : '',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -273,7 +275,9 @@ class HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeroCard(theme, colorScheme),
+                  _buildWeatherCard(theme, colorScheme),
+                  const SizedBox(height: Gaps.card),
+                  _buildDailyMessageCard(theme, colorScheme),
                   const SizedBox(height: 32),
                   _buildSectionHeader(
                     context,
@@ -413,8 +417,62 @@ class HomeScreenState extends State<HomeScreen> {
     return messages[dayOfYear % messages.length];
   }
 
-  Widget _buildHeroCard(ThemeData theme, ColorScheme colorScheme) {
+  Widget _buildWeatherCard(ThemeData theme, ColorScheme colorScheme) {
     final weather = _weatherInfo;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(Radii.card),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(Gaps.cardPad + 4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.surface.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(Radii.icon),
+            ),
+            child: Icon(
+              weather['icon'] as IconData,
+              color: weather['color'] as Color,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                weather['text'] as String,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                weather['temp'] as String,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyMessageCard(ThemeData theme, ColorScheme colorScheme) {
     final dailyMessage = _dailyMessage;
 
     return Container(
@@ -423,99 +481,31 @@ class HomeScreenState extends State<HomeScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primaryLight,
-            AppColors.primaryLight.withValues(alpha: 0.8),
+            colorScheme.primaryContainer,
+            colorScheme.primaryContainer.withValues(alpha: 0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(Radii.card),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: colorScheme.primary.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: EdgeInsets.fromLTRB(Gaps.cardPad + 4, 28, Gaps.cardPad + 4, Gaps.cardPad + 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 날씨 정보
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(Radii.icon),
-                ),
-                child: Icon(
-                  weather['icon'] as IconData,
-                  color: weather['color'] as Color,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    weather['text'] as String,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    weather['temp'] as String,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              // 오늘 수업 개수
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(Radii.chip + 4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 18,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '오늘 $todayLessonCount개',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      padding: EdgeInsets.all(Gaps.cardPad + 4),
+      child: Center(
+        child: Text(
+          dailyMessage,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onPrimaryContainer,
+            height: 1.4,
           ),
-          const SizedBox(height: 24),
-          // 덕담 메시지
-          Text(
-            dailyMessage,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
-              height: 1.4,
-            ),
-          ),
-        ],
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }

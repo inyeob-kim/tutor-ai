@@ -561,7 +561,7 @@ class _BillingScreenState extends State<BillingScreen> {
             Text(
               '청구 내역이 없습니다',
               style: theme.textTheme.titleLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),

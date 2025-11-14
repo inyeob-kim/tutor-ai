@@ -324,9 +324,29 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
         keyboardType: keyboardType,
         onChanged: onChanged,
         decoration: InputDecoration(
-          labelText: label + (required ? ' *' : ''),
+          label: required
+              ? RichText(
+                  text: TextSpan(
+                    text: label,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: ' *',
+                        style: TextStyle(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Text(label),
           hintText: hint,
-          prefixIcon: Icon(icon, color: AppColors.textMuted),
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
+          prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.card),
         ),
@@ -363,7 +383,11 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
         value: value,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: AppColors.textMuted),
+          hintText: '${label} 선택',
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
+          prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.card),
         ),

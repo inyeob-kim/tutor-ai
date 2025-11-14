@@ -67,7 +67,11 @@ class _SubjectSelectionScreenState extends State<SubjectSelectionScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            }
+          },
           color: AppColors.textPrimary,
         ),
       ),

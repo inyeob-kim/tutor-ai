@@ -333,12 +333,19 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         await _loadStudents();
       }
 
-      // 수업을 Lesson으로 변환 (취소된 수업 필터링)
+      // 수업을 Lesson으로 변환 (취소된 수업 및 비활성화된 학생의 수업 필터링)
       final lessonsList = schedules
           .where((s) {
             // 취소된 수업 제외
             final status = s['status'] as String? ?? 'pending';
-            return status != 'cancelled';
+            if (status == 'cancelled') return false;
+            
+            // 비활성화된 학생의 수업 제외
+            final studentId = s['student_id'] as int? ?? 0;
+            final student = _studentsMap[studentId];
+            if (student != null && !student.isActive) return false;
+            
+            return true;
           })
           .map((s) {
         final scheduleId = s['schedule_id'] as int? ?? 0;
@@ -1060,167 +1067,152 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Column(
-        children: [
-          // 고정 AppBar
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.textPrimary.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      body: CustomScrollView(
+        physics: const TossScrollPhysics(),
+        slivers: [
+          // AppBar
+          SliverAppBar(
+            pinned: true,
+            floating: false,
+            backgroundColor: colorScheme.surface,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            toolbarHeight: 64,
+            title: Text(
+              '수업 스케줄',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
             ),
-            child: Column(
-              children: [
-                // AppBar
-                SizedBox(
-                  height: 64,
-                  child: AppBar(
-                    backgroundColor: AppColors.surface,
-                    elevation: 0,
-                    automaticallyImplyLeading: false,
-                    title: Text(
-                      '수업 스케줄',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurface,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddRecurringScheduleScreen(),
                       ),
+                    );
+                    if (result == true) {
+                      // 캐시 무효화 (오늘 날짜와 선택된 날짜)
+                      final today = DateTime.now();
+                      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+                      final selectedDateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+                      _lessonsCache.remove(todayStr);
+                      _lessonsCache.remove(selectedDateStr);
+                      
+                      // 목록 새로고침 - 서버 반영 시간 확보를 위해 여러 번 시도
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        if (mounted) {
+                          _loadLessons(forceRefresh: true);
+                        }
+                      });
+                      // 한 번 더 시도 (서버 동기화 지연 대비)
+                      Future.delayed(const Duration(milliseconds: 1000), () {
+                        if (mounted) {
+                          _loadLessons(forceRefresh: true);
+                        }
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.repeat_rounded, size: 18),
+                  label: const Text('반복 등록'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                    actions: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: Gaps.screen),
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const AddRecurringScheduleScreen(),
-                              ),
-                            );
-                            if (result == true) {
-                              // 캐시 무효화 (오늘 날짜와 선택된 날짜)
-                              final today = DateTime.now();
-                              final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-                              final selectedDateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
-                              _lessonsCache.remove(todayStr);
-                              _lessonsCache.remove(selectedDateStr);
-                              
-                              // 목록 새로고침 - 서버 반영 시간 확보를 위해 여러 번 시도
-                              Future.delayed(const Duration(milliseconds: 500), () {
-                                if (mounted) {
-                                  _loadLessons(forceRefresh: true);
-                                }
-                              });
-                              // 한 번 더 시도 (서버 동기화 지연 대비)
-                              Future.delayed(const Duration(milliseconds: 1000), () {
-                                if (mounted) {
-                                  _loadLessons(forceRefresh: true);
-                                }
-                              });
-                            }
-                          },
-                          icon: const Icon(Icons.repeat_rounded, size: 18),
-                          label: const Text('반복 등록'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-                // 월 선택 및 날짜 선택 스크롤 뷰
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-            ),
-            child: Column(
-              children: [
-                _buildMonthSelector(theme, colorScheme),
-                _buildDateScrollSelector(theme, colorScheme),
-                      SizedBox(height: Gaps.screen),
-                    ],
+              ),
+            ],
+          ),
+
+          // 날짜 선택기
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.textPrimary.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                children: [
+                  _buildMonthSelector(theme, colorScheme),
+                  _buildDateScrollSelector(theme, colorScheme),
+                  SizedBox(height: Gaps.screen),
+                ],
+              ),
             ),
           ),
-          // 메인 컨텐츠
-          Expanded(
-            child: CustomScrollView(
-              physics: const TossScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(Gaps.screen, Gaps.card, Gaps.screen, Gaps.cardPad + 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 주말 제외 옵션이 켜져 있고 선택된 날짜가 주말이면 메시지 표시
-                        Builder(
-                          builder: (context) {
-                            if (_excludeWeekends) {
-                              final weekday = _selectedDate.weekday; // 1=월요일, 7=일요일
-                              if (weekday == 6 || weekday == 7) {
-                                return Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(Gaps.screen * 2),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.weekend_rounded,
-                                          size: 64,
-                                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          '주말에는 수업이 없습니다',
-                                          style: theme.textTheme.titleLarge?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '설정에서 주말 제외 옵션을 끄면\n주말에도 수업을 등록할 수 있습니다',
-                                          textAlign: TextAlign.center,
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }
-                            }
-                            // 평일이거나 주말 제외 옵션이 꺼져 있으면 시간대 표시
-                            return Column(
+
+          // Content
+          SliverPadding(
+            padding: EdgeInsets.all(Gaps.screen),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // 주말 제외 옵션이 켜져 있고 선택된 날짜가 주말이면 메시지 표시
+                Builder(
+                  builder: (context) {
+                    if (_excludeWeekends) {
+                      final weekday = _selectedDate.weekday; // 1=월요일, 7=일요일
+                      if (weekday == 6 || weekday == 7) {
+                        return Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(Gaps.screen * 2),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                for (final hour in _timeSlots)
-                                  Padding(
-                                      padding: EdgeInsets.only(bottom: Gaps.card - 2),
-                                    child: _buildScheduleCard(hour, theme, colorScheme),
+                                Icon(
+                                  Icons.weekend_rounded,
+                                  size: 64,
+                                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  '주말에는 수업이 없습니다',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '설정에서 주말 제외 옵션을 끄면\n주말에도 수업을 등록할 수 있습니다',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                  ),
+                                ),
                               ],
-                            );
-                          },
-                        ),
-                        SizedBox(height: Gaps.screen * 2),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                    // 평일이거나 주말 제외 옵션이 꺼져 있으면 시간대 표시
+                    return Column(
+                      children: [
+                        for (final hour in _timeSlots)
+                          Padding(
+                            padding: EdgeInsets.only(bottom: Gaps.card - 2),
+                            child: _buildScheduleCard(hour, theme, colorScheme),
+                          ),
                       ],
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              ],
+                SizedBox(height: Gaps.screen * 2),
+              ]),
             ),
           ),
         ],

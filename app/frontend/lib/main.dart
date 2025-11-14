@@ -13,9 +13,21 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Firebase가 이미 초기화되어 있지 않은 경우에만 초기화
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    // 이미 초기화되어 있는 경우 에러 무시
+    if (e.toString().contains('duplicate-app')) {
+      print('ℹ️ Firebase가 이미 초기화되어 있습니다.');
+    } else {
+      rethrow;
+    }
+  }
 
   // 알림 서비스 초기화
   await NotificationService.instance.initialize();

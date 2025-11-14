@@ -913,31 +913,40 @@ class _StudentDetailModalState extends State<_StudentDetailModal> {
                     ),
                   const SizedBox(height: 32),
 
-                  // 수정 버튼
-                  FilledButton.icon(
-                    onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EditStudentScreen(student: student),
-                        ),
-                      );
-                      if (result == true) {
-                        Navigator.of(context).pop();
-                        // TODO: 목록 새로고침
-                      }
-                    },
-                    icon: const Icon(Icons.edit_rounded),
-                    label: const Text('학생 정보 수정'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 비활성화/활성화 버튼
-                  OutlinedButton.icon(
-                    onPressed: student.studentId != null ? () async {
+                  // 버튼들 (가로 배치)
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: Row(
+                        children: [
+                          // 수정 버튼
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditStudentScreen(student: student),
+                                  ),
+                                );
+                                if (result == true) {
+                                  Navigator.of(context).pop();
+                                  // TODO: 목록 새로고침
+                                }
+                              },
+                              icon: const Icon(Icons.edit_rounded),
+                              label: const Text('정보 수정'),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                minimumSize: const Size(0, 48),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // 비활성화/활성화 버튼
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: student.studentId != null ? () async {
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
@@ -1030,19 +1039,25 @@ class _StudentDetailModalState extends State<_StudentDetailModal> {
                         }
                       }
                     } : null,
-                    icon: Icon(
-                      student.isActive ? Icons.person_off_rounded : Icons.person_add_rounded,
-                    ),
-                    label: Text(student.isActive ? '학생 비활성화' : '학생 활성화'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      foregroundColor: student.isActive
-                          ? Colors.red
-                          : AppColors.success,
-                      side: BorderSide(
-                        color: student.isActive
-                            ? Colors.red
-                            : AppColors.success,
+                              icon: Icon(
+                                student.isActive ? Icons.person_off_rounded : Icons.person_add_rounded,
+                              ),
+                              label: Text(student.isActive ? '비활성화' : '활성화'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                minimumSize: const Size(0, 48),
+                                foregroundColor: student.isActive
+                                    ? Colors.red
+                                    : AppColors.success,
+                                side: BorderSide(
+                                  color: student.isActive
+                                      ? Colors.red
+                                      : AppColors.success,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

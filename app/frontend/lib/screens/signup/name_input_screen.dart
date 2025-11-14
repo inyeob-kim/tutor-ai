@@ -42,7 +42,11 @@ class _NameInputScreenState extends State<NameInputScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            }
+          },
           color: AppColors.textPrimary,
         ),
         title: Text(
@@ -86,7 +90,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
                   hintText: '닉네임을 입력하세요',
                   hintStyle: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w400,
-                    color: AppColors.textMuted,
+                    color: AppColors.textSecondary.withOpacity(0.5),
                   ),
                   filled: true,
                   fillColor: AppColors.surface,

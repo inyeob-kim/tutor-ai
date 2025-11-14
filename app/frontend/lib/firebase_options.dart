@@ -21,10 +21,9 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for android - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        // 임시로 웹 설정 사용 (개발 중)
+        // 프로덕션에서는 FlutterFire CLI로 Android 앱을 등록해야 합니다
+        return android;
       case TargetPlatform.iOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for ios - '
@@ -60,5 +59,15 @@ class DefaultFirebaseOptions {
     authDomain: 'ssamdaeshin-d0ba7.firebaseapp.com',
     storageBucket: 'ssamdaeshin-d0ba7.firebasestorage.app',
     measurementId: 'G-W0M1F1LKMC',
+  );
+
+  // Android 설정 (임시로 웹 설정과 동일하게 사용)
+  // 프로덕션에서는 FlutterFire CLI로 Android 앱을 등록하고 고유한 설정을 사용해야 합니다
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyDBZqtkKTkYpa78Jq3-ZCVokYjjm5IqiIg',
+    appId: '1:510898282975:android:placeholder', // 실제 Android 앱 ID로 교체 필요
+    messagingSenderId: '510898282975',
+    projectId: 'ssamdaeshin-d0ba7',
+    storageBucket: 'ssamdaeshin-d0ba7.firebasestorage.app',
   );
 }

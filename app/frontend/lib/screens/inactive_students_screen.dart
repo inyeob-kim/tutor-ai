@@ -573,59 +573,65 @@ class _StudentDetailModal extends StatelessWidget {
                   const SizedBox(height: 32),
 
                   // 활성화 버튼
-                  FilledButton.icon(
-                    onPressed: student.studentId != null ? () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('학생 활성화'),
-                          content: Text(
-                            '${student.name} 학생을 다시 활성화하시겠습니까?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('취소'),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: FilledButton.icon(
+                        onPressed: student.studentId != null ? () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('학생 활성화'),
+                              content: Text(
+                                '${student.name} 학생을 다시 활성화하시겠습니까?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: const Text('취소'),
+                                ),
+                                FilledButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: const Text('활성화'),
+                                ),
+                              ],
                             ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('활성화'),
-                            ),
-                          ],
-                        ),
-                      );
-
-                      if (confirmed == true && student.studentId != null) {
-                        try {
-                          await ApiService.updateStudent(
-                            studentId: student.studentId!,
-                            data: {'is_active': true},
                           );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${student.name} 학생이 활성화되었습니다.'),
-                              ),
-                            );
-                            onActivated();
+
+                          if (confirmed == true && student.studentId != null) {
+                            try {
+                              await ApiService.updateStudent(
+                                studentId: student.studentId!,
+                                data: {'is_active': true},
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('${student.name} 학생이 활성화되었습니다.'),
+                                  ),
+                                );
+                                onActivated();
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('오류가 발생했습니다: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('오류가 발생했습니다: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      }
-                    } : null,
-                    icon: const Icon(Icons.person_add_rounded),
-                    label: const Text('학생 활성화'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: AppColors.success,
+                        } : null,
+                        icon: const Icon(Icons.person_add_rounded),
+                        label: const Text('활성화'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                          minimumSize: const Size(0, 48),
+                          backgroundColor: AppColors.success,
+                        ),
+                      ),
                     ),
                   ),
                 ],

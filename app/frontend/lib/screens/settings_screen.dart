@@ -453,7 +453,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: OutlinedButton(
                     onPressed: () => _handleLogout(context),
                     style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: Gaps.card),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       side: BorderSide(color: AppColors.error),
                     ),
                     child: Text(

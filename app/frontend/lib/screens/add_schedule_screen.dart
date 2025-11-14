@@ -30,6 +30,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
   String? _selectedSubject;
   bool _isLoading = false;
   List<Map<String, dynamic>> _students = [];
+  Map<int, bool> _studentActiveMap = {}; // student_id -> is_active
   bool _isLoadingStudents = false;
   // 해당 날짜의 등록된 수업 목록 (disabled 처리용)
   List<Map<String, dynamic>> _existingSchedules = [];
@@ -106,8 +107,19 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
         };
       }).where((s) => s['id'] != null).toList();
       
+      // 학생 활성 상태 Map 생성
+      final activeMap = <int, bool>{};
+      for (final s in studentsData) {
+        final studentId = s['student_id'] as int?;
+        final isActive = s['is_active'] as bool? ?? true;
+        if (studentId != null) {
+          activeMap[studentId] = isActive;
+        }
+      }
+      
       setState(() {
         _students = studentsList;
+        _studentActiveMap = activeMap;
         _isLoadingStudents = false;
       });
     } catch (e) {
@@ -151,9 +163,16 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
         status: 'confirmed', // confirmed 수업만
       );
 
+      // 비활성화된 학생의 수업 제외
+      final filteredSchedules = schedules.where((s) {
+        final studentId = s['student_id'] as int? ?? 0;
+        final isActive = _studentActiveMap[studentId] ?? true;
+        return isActive; // 활성화된 학생의 수업만 포함
+      }).toList();
+
       if (mounted) {
         setState(() {
-          _existingSchedules = schedules;
+          _existingSchedules = filteredSchedules;
         });
       }
     } catch (e) {
@@ -743,13 +762,17 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                 controller: _notesController,
                 maxLines: 3,
                 decoration: InputDecoration(
+                  labelText: '메모',
                   hintText: '메모를 입력하세요',
+                  hintStyle: TextStyle(
+                    color: AppColors.textSecondary.withOpacity(0.5),
+                  ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.all(Gaps.card),
                 ),
               ),
             ),
-            SizedBox(height: Gaps.cardPad + 12),
+            SizedBox(height: Gaps.card),
 
             // 등록 버튼
             Center(
@@ -760,7 +783,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                   style: FilledButton.styleFrom(
                     padding: EdgeInsets.symmetric(
                       horizontal: Gaps.screen * 2,
-                      vertical: Gaps.card + 4,
+                      vertical: 12,
                     ),
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.surface,
@@ -783,7 +806,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                 ),
               ),
             ),
-            SizedBox(height: Gaps.screen * 5),
+            SizedBox(height: Gaps.screen),
           ],
         ),
       ),

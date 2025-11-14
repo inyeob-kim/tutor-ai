@@ -238,8 +238,28 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
         controller: controller,
         keyboardType: keyboardType,
         decoration: InputDecoration(
-          labelText: label + (required ? ' *' : ''),
+          label: required
+              ? RichText(
+                  text: TextSpan(
+                    text: label,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: ' *',
+                        style: TextStyle(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Text(label),
           hintText: hint,
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
           prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.cardPad),
@@ -277,6 +297,10 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
         value: value,
         decoration: InputDecoration(
           labelText: label,
+          hintText: '${label} 선택',
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
           prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.cardPad),

@@ -436,7 +436,7 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
               theme: theme,
               colorScheme: colorScheme,
             ),
-            SizedBox(height: Gaps.cardPad + 12),
+            SizedBox(height: Gaps.card),
 
             // 등록 버튼
             Center(
@@ -447,7 +447,7 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
                   style: FilledButton.styleFrom(
                     padding: EdgeInsets.symmetric(
                       horizontal: Gaps.screen * 2,
-                      vertical: Gaps.card + 4,
+                      vertical: 12,
                     ),
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.surface,
@@ -470,7 +470,7 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
                 ),
               ),
             ),
-            SizedBox(height: Gaps.screen * 5),
+            SizedBox(height: Gaps.screen),
           ],
         ),
       ),
@@ -515,9 +515,28 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
         keyboardType: keyboardType,
         maxLines: maxLines,
         decoration: InputDecoration(
-          labelText: label + (required ? ' *' : ''),
+          label: required
+              ? RichText(
+                  text: TextSpan(
+                    text: label,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: ' *',
+                        style: TextStyle(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Text(label),
           hintText: hint,
-          hintStyle: TextStyle(color: AppColors.textMuted),
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
           prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.card),
@@ -556,17 +575,21 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
+            hintText: '날짜 선택',
+            hintStyle: TextStyle(
+              color: AppColors.textSecondary.withOpacity(0.5),
+            ),
             prefixIcon: Icon(icon, color: AppColors.textSecondary),
             border: InputBorder.none,
             contentPadding: EdgeInsets.all(Gaps.card),
             suffixIcon: const Icon(Icons.chevron_right),
           ),
           child: Text(
-            value != null ? DateFormat('yyyy-MM-dd').format(value) : '날짜 선택',
+            value != null ? DateFormat('yyyy-MM-dd').format(value) : '',
             style: TextStyle(
               color: value != null
                   ? colorScheme.onSurface
-                  : colorScheme.onSurfaceVariant,
+                  : Colors.transparent,
             ),
           ),
         ),

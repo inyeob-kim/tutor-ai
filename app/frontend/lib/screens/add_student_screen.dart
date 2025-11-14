@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 
@@ -28,7 +29,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   final _hourlyRateController = TextEditingController();
   final _notesController = TextEditingController();
 
-  DateTime? _startDate;
+  DateTime? _startDate = DateTime.now();
   bool _isActive = true;
   bool _isLoading = false;
   bool _isAdult = true; // 디폴트는 성인
@@ -125,7 +126,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         if (_startDate != null)
           'start_date': DateFormat('yyyy-MM-dd').format(_startDate!),
         if (_hourlyRateController.text.isNotEmpty)
-          'hourly_rate': int.tryParse(_hourlyRateController.text) ?? 0,
+          'hourly_rate': int.tryParse(_hourlyRateController.text.replaceAll(',', '')) ?? 0,
         if (_notesController.text.isNotEmpty) 'notes': _notesController.text.trim(),
         'is_active': _isActive,
       };
@@ -439,9 +440,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
           padding: EdgeInsets.all(Gaps.card),
           cacheExtent: 500,
           children: [
-            // 필수 정보 섹션
-            _buildSectionTitle('필수 정보', theme, colorScheme),
-            SizedBox(height: Gaps.row),
             _buildTextField(
               controller: _nameController,
               label: '이름',
@@ -462,11 +460,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               theme: theme,
               colorScheme: colorScheme,
             ),
-            SizedBox(height: Gaps.cardPad + 4),
+            SizedBox(height: Gaps.card),
 
-            // 추가 정보 섹션
-            _buildSectionTitle('추가 정보', theme, colorScheme),
-            SizedBox(height: Gaps.row),
             // 성인 여부 토글
             Card(
               elevation: 0,
@@ -573,12 +568,10 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               colorScheme: colorScheme,
             ),
             SizedBox(height: Gaps.card),
-            _buildTextField(
+            _buildCurrencyTextField(
               controller: _hourlyRateController,
               label: '시간당 수강료',
-              hint: '예: 50000',
-              icon: Icons.attach_money_outlined,
-              keyboardType: TextInputType.number,
+              hint: '예: 50,000',
               theme: theme,
               colorScheme: colorScheme,
             ),
@@ -610,7 +603,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 onChanged: (value) => setState(() => _isActive = value),
               ),
             ),
-            SizedBox(height: Gaps.cardPad + 12),
+            SizedBox(height: Gaps.card),
 
             // 등록 버튼
             Center(
@@ -621,7 +614,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   style: FilledButton.styleFrom(
                     padding: EdgeInsets.symmetric(
                       horizontal: Gaps.screen * 2,
-                      vertical: Gaps.card + 4,
+                      vertical: 12,
                     ),
                     backgroundColor: AppColors.primary,
                   ),
@@ -643,23 +636,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 ),
               ),
             ),
-            SizedBox(height: Gaps.screen * 5),
+            SizedBox(height: Gaps.screen),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(
-    String title,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    return Text(
-      title,
-      style: theme.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: colorScheme.onSurface,
       ),
     );
   }
@@ -688,8 +667,28 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         keyboardType: keyboardType,
         maxLines: maxLines,
         decoration: InputDecoration(
-          labelText: label + (required ? ' *' : ''),
+          label: required
+              ? RichText(
+                  text: TextSpan(
+                    text: label,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: ' *',
+                        style: TextStyle(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Text(label),
           hintText: hint,
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
           prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.card),
@@ -727,12 +726,24 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         value: value,
         decoration: InputDecoration(
           labelText: label,
+          hintText: '${label} 선택',
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
           prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.card),
         ),
         items: [
-          const DropdownMenuItem<String>(value: null, child: Text('선택 안함')),
+          DropdownMenuItem<String>(
+            value: null,
+            child: Text(
+              '선택 안함',
+              style: TextStyle(
+                color: AppColors.textSecondary.withOpacity(0.5),
+              ),
+            ),
+          ),
           ...options.map((option) => DropdownMenuItem(
                 value: option,
                 child: Text(option),
@@ -765,17 +776,21 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
+            hintText: '날짜 선택',
+            hintStyle: TextStyle(
+              color: AppColors.textSecondary.withOpacity(0.5),
+            ),
             prefixIcon: Icon(icon, color: AppColors.textSecondary),
             border: InputBorder.none,
             contentPadding: EdgeInsets.all(Gaps.card),
             suffixIcon: const Icon(Icons.chevron_right),
           ),
           child: Text(
-            value != null ? DateFormat('yyyy-MM-dd').format(value) : '날짜 선택',
+            value != null ? DateFormat('yyyy-MM-dd').format(value) : '',
             style: TextStyle(
               color: value != null
                   ? colorScheme.onSurface
-                  : colorScheme.onSurfaceVariant,
+                  : Colors.transparent,
             ),
           ),
         ),
@@ -783,5 +798,89 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     );
   }
 
+  Widget _buildCurrencyTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        side: BorderSide(
+          color: colorScheme.outline.withOpacity(0.1),
+        ),
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          _CurrencyInputFormatter(),
+        ],
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 16, right: 8),
+            child: Center(
+              widthFactor: 1.0,
+              child: Text(
+                '₩',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 40,
+            minHeight: 0,
+          ),
+          suffixText: '원',
+          suffixStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(Gaps.card),
+        ),
+      ),
+    );
+  }
+}
+
+/// 원화 금액 입력 포맷터 (쉼표 자동 추가)
+class _CurrencyInputFormatter extends TextInputFormatter {
+  final numberFormat = NumberFormat('#,###');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // 숫자만 추출
+    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    
+    if (digitsOnly.isEmpty) {
+      return TextEditingValue.empty;
+    }
+
+    // 쉼표 추가
+    final formatted = numberFormat.format(int.parse(digitsOnly));
+    
+    // 커서 위치를 끝으로 설정 (간단한 방법)
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }
 

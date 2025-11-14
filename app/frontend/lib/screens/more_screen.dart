@@ -233,9 +233,9 @@ class _MoreScreenState extends State<MoreScreen> {
                       child: OutlinedButton(
                         onPressed: () => _handleLogout(context),
                         style: OutlinedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: Gaps.screen * 2,
-                            vertical: Gaps.card + 4,
+                            vertical: 12,
                           ),
                           side: BorderSide(color: AppColors.error),
                         ),

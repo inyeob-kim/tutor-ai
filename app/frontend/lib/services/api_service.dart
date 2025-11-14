@@ -3,10 +3,23 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8000';  // /api/v1 제거 (백엔드 라우터가 직접 /students, /schedules 사용)
+  /// 플랫폼별 baseUrl 설정
+  /// - Web: localhost 사용
+  /// - Android 에뮬레이터: 10.0.2.2 사용 (localhost를 호스트 머신으로 매핑)
+  /// - iOS 시뮬레이터/실제 기기: localhost 사용
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8000';
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8000';  // Android 에뮬레이터용
+    } else {
+      return 'http://localhost:8000';  // iOS 시뮬레이터, 실제 기기
+    }
+  }
   
   static Future<Map<String, dynamic>> createStudent(Map<String, dynamic> data) async {
     try {
@@ -105,6 +118,49 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error creating schedule: $e');
+    }
+  }
+
+  /// 반복 수업 일괄 생성
+  static Future<Map<String, dynamic>> bulkGenerateSchedule({
+    required int teacherId,
+    required int studentId,
+    required String subjectId,
+    required int weekday, // 0=월요일, 6=일요일 (Python weekday 형식)
+    required String startTime,
+    required String endTime,
+    required String dateFrom,
+    required String dateTo,
+    String? notes,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'teacher_id': teacherId.toString(),
+        'student_id': studentId.toString(),
+        'subject_id': subjectId,
+        'weekday': weekday.toString(),
+        'start_time': startTime,
+        'end_time': endTime,
+        'date_from': dateFrom,
+        'date_to': dateTo,
+      };
+      if (notes != null && notes.isNotEmpty) {
+        queryParams['notes'] = notes;
+      }
+
+      final uri = Uri.parse('$baseUrl/schedules/bulk-generate').replace(
+        queryParameters: queryParams,
+      );
+
+      final response = await http.post(uri);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to bulk generate schedule: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error bulk generating schedule: $e');
     }
   }
 

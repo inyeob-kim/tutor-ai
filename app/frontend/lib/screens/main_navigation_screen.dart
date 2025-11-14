@@ -135,7 +135,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               children: _screens,
             ),
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.fromLTRB(Gaps.screen, 0, Gaps.screen, Gaps.screen),
+        padding: EdgeInsets.fromLTRB(Gaps.screen, 0, Gaps.screen, 8),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(Radii.card + 10),
           child: NavigationBar(

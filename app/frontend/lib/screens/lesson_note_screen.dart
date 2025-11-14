@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../theme/tokens.dart';
+import '../widgets/loading_indicator.dart';
 
 class LessonNoteScreen extends StatefulWidget {
   final String scheduleId;
@@ -211,7 +212,7 @@ class _LessonNoteScreenState extends State<LessonNoteScreen> {
                 decoration: InputDecoration(
                   hintText: '오늘 수업 내용, 학생의 이해도, 다음 수업 준비사항 등을 기록하세요.',
                   hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    color: AppColors.textSecondary.withOpacity(0.5),
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.all(Gaps.cardPad),
@@ -222,37 +223,32 @@ class _LessonNoteScreenState extends State<LessonNoteScreen> {
                 ),
               ),
             ),
-            SizedBox(height: Gaps.screen),
+            SizedBox(height: Gaps.card),
             // 저장 버튼
             Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: 400),
-                child: ElevatedButton(
+                child: FilledButton(
                   onPressed: _isSaving ? null : _saveNotes,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.surface,
+                  style: FilledButton.styleFrom(
                     padding: EdgeInsets.symmetric(
                       horizontal: Gaps.screen * 2,
-                      vertical: Gaps.card + 4,
+                      vertical: 12,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(Radii.chip),
-                    ),
-                    elevation: 0,
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.surface,
                   ),
                   child: _isSaving
                       ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                          height: Gaps.screen,
+                          width: Gaps.screen,
+                          child: SmallLoadingIndicator(
+                            size: 20,
                           ),
                         )
                       : Text(
                           '저장하기',
-                          style: theme.textTheme.labelLarge?.copyWith(
+                          style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.surface,
                           ),
