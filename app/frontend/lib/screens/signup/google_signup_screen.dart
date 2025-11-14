@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../routes/app_routes.dart';
@@ -17,6 +18,32 @@ class GoogleSignupScreen extends StatefulWidget {
 
 class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
   bool _isLoading = false;
+  bool _imageLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkImageAsset();
+  }
+
+  /// 이미지 asset 존재 여부 확인
+  Future<void> _checkImageAsset() async {
+    try {
+      await rootBundle.load('assets/images/logo-transparent.png');
+      if (mounted) {
+        setState(() {
+          _imageLoaded = true;
+        });
+      }
+    } catch (e) {
+      print('⚠️ 이미지 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _imageLoaded = false;
+        });
+      }
+    }
+  }
 
   Future<void> _handleGoogleSignIn() async {
     if (!mounted || _isLoading) return;
@@ -168,20 +195,44 @@ class _GoogleSignupScreenState extends State<GoogleSignupScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 로고/아이콘 영역
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.school_rounded,
-                  size: 64,
-                  color: AppColors.primary,
-                ),
-              ),
+              // 로고 이미지
+              _imageLoaded
+                  ? Image.asset(
+                      'assets/images/logo-transparent.png',
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        print('⚠️ Image.asset 에러: $error');
+                        // 이미지 로드 실패 시 fallback
+                        return Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.school_rounded,
+                            size: 64,
+                            color: AppColors.primary,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.school_rounded,
+                        size: 64,
+                        color: AppColors.primary,
+                      ),
+                    ),
               SizedBox(height: Gaps.screen * 2),
 
               // 타이틀

@@ -15,49 +15,55 @@ class TeacherSubjectsScreen extends StatefulWidget {
 }
 
 class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
-  final List<String> _availableSubjects = [
-    '수학',
-    '영어',
-    '국어',
-    '과학',
-    '사회',
-    '역사',
-    '물리',
-    '화학',
-    '생물',
-    '지구과학',
-    '영어회화',
-    '토익',
-    '토플',
-    '일본어',
-    '중국어',
-    '프로그래밍',
-    '논술',
-    '제2외국어',
-  ];
-
+  String? _selectedCategory;
   late List<String> _selectedSubjects;
 
-  final TextEditingController _newSubjectController = TextEditingController();
+  // 카테고리별 과목 목록
+  final Map<String, List<Map<String, dynamic>>> _subjectsByCategory = {
+    '국어/문학': [
+      {'name': '국어', 'icon': Icons.menu_book, 'color': AppColors.success},
+      {'name': '문학', 'icon': Icons.book, 'color': AppColors.success},
+      {'name': '논술', 'icon': Icons.edit_note, 'color': AppColors.primary},
+    ],
+    '수학': [
+      {'name': '수학', 'icon': Icons.calculate, 'color': AppColors.primary},
+    ],
+    '외국어': [
+      {'name': '영어', 'icon': Icons.translate, 'color': AppColors.warning},
+      {'name': '중국어', 'icon': Icons.language, 'color': AppColors.warning},
+      {'name': '일본어', 'icon': Icons.translate, 'color': AppColors.warning},
+      {'name': '영어회화', 'icon': Icons.chat, 'color': AppColors.warning},
+      {'name': '토익', 'icon': Icons.school, 'color': AppColors.warning},
+      {'name': '토플', 'icon': Icons.school, 'color': AppColors.warning},
+    ],
+    '과학': [
+      {'name': '과학', 'icon': Icons.science, 'color': AppColors.error},
+      {'name': '물리', 'icon': Icons.speed, 'color': AppColors.primary},
+      {'name': '화학', 'icon': Icons.science, 'color': AppColors.success},
+      {'name': '생물', 'icon': Icons.eco, 'color': AppColors.success},
+      {'name': '지구과학', 'icon': Icons.terrain, 'color': AppColors.primary},
+    ],
+    '사회/역사': [
+      {'name': '사회', 'icon': Icons.public, 'color': AppColors.primary},
+      {'name': '역사', 'icon': Icons.history, 'color': AppColors.warning},
+    ],
+    '예체능': [
+      {'name': '음악', 'icon': Icons.music_note, 'color': AppColors.warning},
+      {'name': '미술', 'icon': Icons.palette, 'color': AppColors.error},
+      {'name': '체육', 'icon': Icons.sports_soccer, 'color': AppColors.success},
+    ],
+    '기타': [
+      {'name': '프로그래밍', 'icon': Icons.code, 'color': AppColors.primary},
+      {'name': '컴퓨터', 'icon': Icons.computer, 'color': AppColors.primary},
+    ],
+  };
 
   @override
   void initState() {
     super.initState();
     _selectedSubjects = List<String>.from(
-      widget.initialSubjects ?? ['수학', '영어', '과학'],
+      widget.initialSubjects ?? [],
     );
-    // 선택된 과목이 사용 가능한 과목 목록에 없으면 추가
-    for (final subject in _selectedSubjects) {
-      if (!_availableSubjects.contains(subject)) {
-        _availableSubjects.add(subject);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _newSubjectController.dispose();
-    super.dispose();
   }
 
   void _toggleSubject(String subject) {
@@ -70,31 +76,7 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
     });
   }
 
-  void _addCustomSubject() {
-    final subject = _newSubjectController.text.trim();
-    if (subject.isNotEmpty && !_availableSubjects.contains(subject)) {
-      setState(() {
-        _availableSubjects.add(subject);
-        _selectedSubjects.add(subject);
-        _newSubjectController.clear();
-      });
-    }
-  }
-
-  void _removeSubject(String subject) {
-    setState(() {
-      _selectedSubjects.remove(subject);
-      // 기본 과목 목록에서는 제거하지 않고, 커스텀 과목만 제거
-      if (!['수학', '영어', '국어', '과학', '사회', '역사', '물리', '화학', '생물', 
-            '지구과학', '영어회화', '토익', '토플', '일본어', '중국어', '프로그래밍', 
-            '논술', '제2외국어'].contains(subject)) {
-        _availableSubjects.remove(subject);
-      }
-    });
-  }
-
   void _saveSubjects() {
-    // TODO: API로 서버에 저장
     Navigator.of(context).pop(_selectedSubjects);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -102,6 +84,11 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
         backgroundColor: AppColors.success,
       ),
     );
+  }
+
+  List<Map<String, dynamic>> get _currentSubjects {
+    if (_selectedCategory == null) return [];
+    return _subjectsByCategory[_selectedCategory!] ?? [];
   }
 
   @override
@@ -128,223 +115,261 @@ class _TeacherSubjectsScreenState extends State<TeacherSubjectsScreen> {
           ),
         ],
       ),
-      body: ListView(
+      body: CustomScrollView(
         physics: const TossScrollPhysics(),
-        padding: EdgeInsets.all(Gaps.card),
-        children: [
-          // 안내 문구
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Radii.chip + 4),
-              side: BorderSide(
-                color: colorScheme.outline.withOpacity(0.1),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(Gaps.card),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    color: colorScheme.primary,
-                    size: 24,
-                  ),
-                  SizedBox(width: Gaps.row),
-                  Expanded(
-                    child: Text(
-                      '가르칠 수 있는 과목을 선택하세요. 학생 등록 시 이 과목들 중에서 선택할 수 있습니다.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.all(Gaps.card),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // 안내 문구
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Radii.card),
+                    side: BorderSide(
+                      color: colorScheme.outline.withOpacity(0.1),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: Gaps.cardPad + 4),
-
-          // 선택된 과목 섹션
-          Text(
-            '선택된 과목 (${_selectedSubjects.length}개)',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          SizedBox(height: Gaps.row),
-          if (_selectedSubjects.isEmpty)
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(Radii.chip + 4),
-                side: BorderSide(
-                  color: colorScheme.outline.withOpacity(0.1),
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(Gaps.cardPad + 4),
-                child: Center(
-                  child: Text(
-                    '선택된 과목이 없습니다',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                  child: Padding(
+                    padding: EdgeInsets.all(Gaps.cardPad),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
+                        SizedBox(width: Gaps.row),
+                        Expanded(
+                          child: Text(
+                            '가르칠 수 있는 과목을 선택하세요. 학생 등록 시 이 과목들 중에서 선택할 수 있습니다.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-            )
-          else
-            Wrap(
-              spacing: Gaps.row - 2,
-              runSpacing: Gaps.row - 2,
-              children: _selectedSubjects.map((subject) {
-                return Chip(
-                  label: Text(subject),
-                  backgroundColor: colorScheme.primaryContainer,
-                  labelStyle: TextStyle(
-                    color: colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  onDeleted: () => _removeSubject(subject),
-                  deleteIcon: Icon(
-                    Icons.close,
-                    size: 18,
-                    color: colorScheme.onPrimaryContainer,
-                  ),
-                );
-              }).toList(),
-            ),
-          SizedBox(height: Gaps.card + 16),
+                SizedBox(height: Gaps.cardPad + 4),
 
-          // 사용 가능한 과목 섹션
-          Text(
-            '과목 선택',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          SizedBox(height: Gaps.row),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Radii.chip + 4),
-              side: BorderSide(
-                color: colorScheme.outline.withOpacity(0.1),
-              ),
-            ),
-            child: Column(
-              children: [
-                ..._availableSubjects.map((subject) {
-                  final isSelected = _selectedSubjects.contains(subject);
-                  return InkWell(
-                    onTap: () => _toggleSubject(subject),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: Gaps.card,
-                        vertical: Gaps.card,
+                // 선택된 과목 섹션
+                Text(
+                  '선택된 과목 (${_selectedSubjects.length}개)',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: Gaps.row),
+                if (_selectedSubjects.isEmpty)
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Radii.card),
+                      side: BorderSide(
+                        color: colorScheme.outline.withOpacity(0.1),
                       ),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: colorScheme.outline.withOpacity(0.1),
-                            width: 1,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(Gaps.cardPad + 4),
+                      child: Center(
+                        child: Text(
+                          '선택된 과목이 없습니다',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isSelected
-                                ? Icons.check_circle_rounded
-                                : Icons.circle_outlined,
-                            color: isSelected
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: Gaps.row - 2,
+                    runSpacing: Gaps.row - 2,
+                    children: _selectedSubjects.map((subject) {
+                      return Chip(
+                        label: Text(subject),
+                        backgroundColor: colorScheme.primaryContainer,
+                        labelStyle: TextStyle(
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        deleteIcon: Icon(
+                          Icons.close,
+                          size: 18,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                        onDeleted: () {
+                          setState(() {
+                            _selectedSubjects.remove(subject);
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                SizedBox(height: Gaps.cardPad + 4),
+
+                // 카테고리 선택
+                Text(
+                  '카테고리 선택',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(height: Gaps.row),
+                Container(
+                  height: 50,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _subjectsByCategory.keys.length,
+                    itemBuilder: (context, index) {
+                      final category = _subjectsByCategory.keys.elementAt(index);
+                      final isSelected = _selectedCategory == category;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedCategory = isSelected ? null : category;
+                          });
+                        },
+                        child: Container(
+                          margin: EdgeInsets.only(right: Gaps.row),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: Gaps.card,
+                            vertical: Gaps.row,
                           ),
-                          SizedBox(width: Gaps.row),
-                          Expanded(
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary : AppColors.surface,
+                            borderRadius: BorderRadius.circular(Radii.chip),
+                            border: Border.all(
+                              color: isSelected ? AppColors.primary : AppColors.divider,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Center(
                             child: Text(
-                              subject,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                color: isSelected
-                                    ? colorScheme.onSurface
-                                    : colorScheme.onSurfaceVariant,
+                              category,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                color: isSelected ? AppColors.surface : AppColors.textSecondary,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
-          SizedBox(height: Gaps.cardPad + 4),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(height: Gaps.cardPad + 4),
 
-          // 커스텀 과목 추가
-          Text(
-            '새 과목 추가',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          SizedBox(height: Gaps.row),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Radii.chip + 4),
-              side: BorderSide(
-                color: colorScheme.outline.withOpacity(0.1),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(Gaps.card),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _newSubjectController,
-                      decoration: InputDecoration(
-                        hintText: '과목 이름 입력',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(Radii.chip),
-                        ),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: Gaps.card,
-                          vertical: 12,
-                        ),
-                      ),
-                      onSubmitted: (_) => _addCustomSubject(),
+                // 선택된 카테고리의 과목들
+                if (_selectedCategory != null) ...[
+                  Text(
+                    '$_selectedCategory 과목',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(width: Gaps.row - 2),
-                  FilledButton.icon(
-                    onPressed: _addCustomSubject,
-                    icon: Icon(Icons.add, size: 20),
-                    label: Text('추가'),
-                    style: FilledButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: Gaps.card,
-                        vertical: 12,
+                  SizedBox(height: Gaps.row),
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Radii.card),
+                      side: BorderSide(
+                        color: colorScheme.outline.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(Gaps.card),
+                      child: Wrap(
+                        spacing: Gaps.row,
+                        runSpacing: Gaps.row,
+                        children: _currentSubjects.map((subjectData) {
+                          final subject = subjectData['name'] as String;
+                          final icon = subjectData['icon'] as IconData;
+                          final color = subjectData['color'] as Color;
+                          final isSelected = _selectedSubjects.contains(subject);
+                          
+                          return InkWell(
+                            onTap: () => _toggleSubject(subject),
+                            borderRadius: BorderRadius.circular(Radii.chip),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: Gaps.card,
+                                vertical: Gaps.row,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? colorScheme.primaryContainer
+                                    : colorScheme.surface,
+                                borderRadius: BorderRadius.circular(Radii.chip),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : colorScheme.outline.withOpacity(0.2),
+                                  width: isSelected ? 2 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    icon,
+                                    size: 20,
+                                    color: isSelected ? AppColors.primary : color,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    subject,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? colorScheme.onPrimaryContainer
+                                          : colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Radii.card),
+                      side: BorderSide(
+                        color: colorScheme.outline.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(Gaps.cardPad + 4),
+                      child: Center(
+                        child: Text(
+                          '카테고리를 선택하면 관련 과목들이 표시됩니다',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ],
-              ),
+                SizedBox(height: Gaps.screen * 2),
+              ]),
             ),
           ),
-          SizedBox(height: Gaps.card + 16),
         ],
       ),
     );
   }
 }
-

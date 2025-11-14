@@ -192,10 +192,6 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
           physics: const TossScrollPhysics(),
           padding: EdgeInsets.all(Gaps.card),
           children: [
-            // 필수 정보 섹션
-            _buildSectionTitle('필수 정보', theme, colorScheme),
-            SizedBox(height: Gaps.row),
-            
             // 학생 선택
             _buildSectionTitle('학생 선택', theme, colorScheme),
             SizedBox(height: Gaps.row),
@@ -231,12 +227,8 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
                               onTap: () {
                                 setState(() {
                                   _selectedStudentId = student['id'];
-                                  // 학생이 선택되면 첫 번째 과목을 기본값으로 설정
-                                  if (student['subjects'] != null &&
-                                      student['subjects'] is List &&
-                                      (student['subjects'] as List).isNotEmpty) {
-                                    _selectedSubject = student['subjects'][0].toString();
-                                  }
+                                  // 과목은 자동 선택하지 않음
+                                  _selectedSubject = null;
                                 });
                               },
                               child: Container(
@@ -513,6 +505,7 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
         decoration: InputDecoration(
           labelText: label + (required ? ' *' : ''),
           hintText: hint,
+          hintStyle: TextStyle(color: AppColors.textMuted),
           prefixIcon: Icon(icon, color: AppColors.textSecondary),
           border: InputBorder.none,
           contentPadding: EdgeInsets.all(Gaps.card),
