@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../widgets/section_title.dart';
 import '../services/api_service.dart';
+import '../services/teacher_service.dart';
 import 'add_student_screen.dart';
 import 'edit_student_screen.dart';
+import 'inactive_students_screen.dart';
 import '../theme/tokens.dart';
 import '../widgets/loading_indicator.dart';
 
@@ -36,8 +38,10 @@ class _StudentsScreenState extends State<StudentsScreen> {
     });
 
     try {
-      final studentsData = await ApiService.getStudents();
+      // 활성화된 학생만 조회
+      final studentsData = await ApiService.getStudents(isActive: true);
       final studentsList = studentsData.map((s) {
+        final studentId = s['student_id'] as int?;
         final name = s['name'] as String? ?? '이름 없음';
         final grade = s['grade'] as String?;
         
@@ -59,10 +63,12 @@ class _StudentsScreenState extends State<StudentsScreen> {
         final sessions = s['total_sessions'] as int? ?? 0;
         final completedSessions = s['completed_sessions'] as int? ?? 0;
         final isAdult = s['is_adult'] as bool? ?? false;
+        final isActive = s['is_active'] as bool? ?? true;
         final nextClass = s['next_class'] as String? ?? '';
         final attendanceRate = sessions > 0 ? ((completedSessions / sessions) * 100).round() : 0;
 
         return Student(
+          studentId: studentId,
           name: name,
           grade: grade,
           subjects: subjects,
@@ -73,6 +79,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
           nextClass: nextClass,
           attendanceRate: attendanceRate,
           isAdult: isAdult,
+          isActive: isActive,
         );
       }).toList();
 
@@ -174,6 +181,31 @@ class _StudentsScreenState extends State<StudentsScreen> {
               ),
             ),
             actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const InactiveStudentsScreen(),
+                      ),
+                    );
+                    // 비활성화된 학생 목록에서 돌아오면 목록 새로고침
+                    _loadStudents();
+                  },
+                  icon: const Icon(Icons.person_off_outlined, size: 18),
+                  label: const Text('비활성화'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(right: 16),
                 child: OutlinedButton.icon(
@@ -571,6 +603,12 @@ class _StudentsScreenState extends State<StudentsScreen> {
         theme: theme,
         colorScheme: colorScheme,
         onClose: () => Navigator.of(context).pop(),
+        onDeactivated: () {
+          // 비활성화된 경우 목록에서 제거
+          setState(() {
+            students = students.where((s) => s.studentId != student.studentId).toList();
+          });
+        },
       ),
     );
   }
@@ -581,12 +619,14 @@ class _StudentDetailModal extends StatelessWidget {
   final ThemeData theme;
   final ColorScheme colorScheme;
   final VoidCallback onClose;
+  final VoidCallback? onDeactivated;
 
   const _StudentDetailModal({
     required this.student,
     required this.theme,
     required this.colorScheme,
     required this.onClose,
+    this.onDeactivated,
   });
 
   @override
@@ -831,6 +871,119 @@ class _StudentDetailModal extends StatelessWidget {
                     label: const Text('학생 정보 수정'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 비활성화/활성화 버튼
+                  OutlinedButton.icon(
+                    onPressed: student.studentId != null ? () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(student.isActive ? '학생 비활성화' : '학생 활성화'),
+                          content: Text(
+                            student.isActive
+                                ? '${student.name} 학생을 비활성화하시겠습니까?\n비활성화된 학생은 수업 등록이나 홈 화면에 표시되지 않습니다.'
+                                : '${student.name} 학생을 다시 활성화하시겠습니까?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('취소'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: student.isActive ? Colors.red : AppColors.success,
+                              ),
+                              child: Text(student.isActive ? '비활성화' : '활성화'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true && student.studentId != null) {
+                        try {
+                          // 비활성화하는 경우 해당 학생의 모든 스케줄 취소
+                          if (student.isActive) {
+                            final teacher = await TeacherService.instance.loadTeacher();
+                            if (teacher != null) {
+                              // 해당 학생의 모든 confirmed 스케줄 조회
+                              final schedules = await ApiService.getSchedules(
+                                studentId: student.studentId!,
+                                status: 'confirmed',
+                                pageSize: 500, // 충분히 큰 값
+                              );
+                              
+                              // 각 스케줄 취소 처리
+                              for (final schedule in schedules) {
+                                final scheduleId = schedule['schedule_id'] as int?;
+                                if (scheduleId != null) {
+                                  try {
+                                    await ApiService.deleteSchedule(
+                                      scheduleId: scheduleId,
+                                      cancelledBy: teacher.teacherId,
+                                      cancelReason: '학생 비활성화로 인한 취소',
+                                    );
+                                  } catch (e) {
+                                    print('⚠️ 스케줄 취소 실패: $e');
+                                  }
+                                }
+                              }
+                            }
+                          }
+                          
+                          // 학생 비활성화/활성화
+                          await ApiService.updateStudent(
+                            studentId: student.studentId!,
+                            data: {'is_active': !student.isActive},
+                          );
+                          
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            
+                            // 비활성화된 경우 목록에서 즉시 제거
+                            if (student.isActive && onDeactivated != null) {
+                              onDeactivated!();
+                            }
+                            
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  student.isActive
+                                      ? '${student.name} 학생이 비활성화되었습니다. 모든 수업이 취소되었습니다.'
+                                      : '${student.name} 학생이 활성화되었습니다.',
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('오류가 발생했습니다: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      }
+                    } : null,
+                    icon: Icon(
+                      student.isActive ? Icons.person_off_rounded : Icons.person_add_rounded,
+                    ),
+                    label: Text(student.isActive ? '학생 비활성화' : '학생 활성화'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      foregroundColor: student.isActive
+                          ? Colors.red
+                          : AppColors.success,
+                      side: BorderSide(
+                        color: student.isActive
+                            ? Colors.red
+                            : AppColors.success,
+                      ),
                     ),
                   ),
                 ],

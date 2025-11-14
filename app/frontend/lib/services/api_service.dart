@@ -41,10 +41,17 @@ class ApiService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getStudents({String? query}) async {
+  static Future<List<Map<String, dynamic>>> getStudents({
+    String? query,
+    bool? isActive,
+  }) async {
     try {
+      final queryParams = <String, String>{};
+      if (query != null) queryParams['q'] = query;
+      if (isActive != null) queryParams['is_active'] = isActive.toString();
+
       final uri = Uri.parse('$baseUrl/students').replace(
-        queryParameters: query != null ? {'q': query} : null,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
       );
       
       final response = await http.get(uri);
@@ -58,6 +65,28 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error getting students: $e');
+    }
+  }
+
+  /// 학생 정보 업데이트
+  static Future<Map<String, dynamic>> updateStudent({
+    required int studentId,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/students/$studentId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data ?? {}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to update student: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating student: $e');
     }
   }
 

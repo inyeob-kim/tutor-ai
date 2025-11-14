@@ -90,8 +90,8 @@ class HomeScreenState extends State<HomeScreen> {
         status: 'confirmed', // 취소된 수업 제외
       );
 
-      // 학생 정보 조회 (스케줄에 학생 이름 표시용)
-      final students = await ApiService.getStudents();
+      // 학생 정보 조회 (스케줄에 학생 이름 표시용) - 활성화된 학생만
+      final students = await ApiService.getStudents(isActive: true);
 
       // 스케줄을 ScheduleItem으로 변환
       final now = DateTime.now();

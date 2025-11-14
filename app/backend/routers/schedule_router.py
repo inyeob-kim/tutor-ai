@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, func, and_
@@ -25,6 +26,32 @@ def _schedule_to_out(schedule: Schedule) -> ScheduleOut:
 
 @router.post("", response_model=ScheduleOut, status_code=201)
 async def create_schedule(payload: ScheduleCreate, session: AsyncSession = Depends(get_session)):
+    from datetime import datetime
+    
+    # 시간 파싱
+    start_time_str = payload.start_time
+    end_time_str = payload.end_time
+    
+    # 충돌 확인 (취소된 수업 제외)
+    conflict_count = (
+        await session.execute(
+            select(func.count())
+            .select_from(Schedule)
+            .where(
+                and_(
+                    Schedule.teacher_id == payload.teacher_id,
+                    Schedule.lesson_date == payload.lesson_date,
+                    Schedule.status != "cancelled",  # 취소된 수업 제외
+                    Schedule.start_time < end_time_str,
+                    Schedule.end_time > start_time_str,
+                )
+            )
+        )
+    ).scalar_one()
+    
+    if conflict_count > 0:
+        raise HTTPException(status_code=409, detail="해당 시간대에 이미 등록된 수업이 있습니다.")
+    
     data = payload.model_dump(exclude_unset=True)
     sched = Schedule(**data)
     session.add(sched)
@@ -66,11 +93,19 @@ async def list_schedules(
         stmt = stmt.where(Schedule.status == status)
         cnt = cnt.where(Schedule.status == status)
     if date_from:
-        stmt = stmt.where(Schedule.lesson_date >= date_from)
-        cnt = cnt.where(Schedule.lesson_date >= date_from)
+        try:
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from format, expected YYYY-MM-DD")
+        stmt = stmt.where(Schedule.lesson_date >= date_from_obj)
+        cnt = cnt.where(Schedule.lesson_date >= date_from_obj)
     if date_to:
-        stmt = stmt.where(Schedule.lesson_date <= date_to)
-        cnt = cnt.where(Schedule.lesson_date <= date_to)
+        try:
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to format, expected YYYY-MM-DD")
+        stmt = stmt.where(Schedule.lesson_date <= date_to_obj)
+        cnt = cnt.where(Schedule.lesson_date <= date_to_obj)
 
     total = (await session.execute(cnt)).scalar_one()
     rows = (
@@ -132,6 +167,7 @@ async def check_conflict(
         and_(
             Schedule.teacher_id == teacher_id,
             Schedule.lesson_date == lesson_date_obj,
+            Schedule.status != "cancelled",  # 취소된 수업 제외
             Schedule.start_time < end_time_str,
             Schedule.end_time > start_time_str,
         )
@@ -205,11 +241,27 @@ async def bulk_generate(
     return {"created": created}
 
 
-@router.delete("/{schedule_id}", status_code=204)
-async def delete_schedule(schedule_id: int, session: AsyncSession = Depends(get_session)):
+@router.delete("/{schedule_id}", response_model=ScheduleOut)
+async def delete_schedule(
+    schedule_id: int,
+    cancelled_by: int | None = Query(None, description="취소한 사용자 ID (teacher_id)"),
+    cancel_reason: str | None = Query(None, description="취소 사유"),
+    session: AsyncSession = Depends(get_session),
+):
+    """스케줄을 삭제하는 대신 취소 상태로 변경"""
     obj = await session.get(Schedule, schedule_id)
     if not obj:
         raise HTTPException(404, "Schedule not found")
-    await session.delete(obj)
+    
+    # 취소 상태로 변경
+    from datetime import datetime
+    obj.status = "cancelled"
+    obj.cancelled_at = datetime.now()
+    if cancelled_by is not None:
+        obj.cancelled_by = cancelled_by
+    if cancel_reason is not None:
+        obj.cancel_reason = cancel_reason
+    
     await session.commit()
-    return None
+    await session.refresh(obj)
+    return _schedule_to_out(obj)

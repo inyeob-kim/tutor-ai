@@ -126,6 +126,7 @@ async def create_student(payload: StudentCreate, session: AsyncSession = Depends
 async def list_students(
     q: str | None = Query(None, description="이름 부분검색"),
     teacher_id: int | None = Query(None, description="담당 교사 ID"),
+    is_active: bool | None = Query(None, description="활성화 여부 (None: 전체, True: 활성화만, False: 비활성화만)"),
     orderBy: str = Query("created_at"),
     order: str = Query("desc"),
     page: int = Query(1, ge=1),
@@ -149,6 +150,10 @@ async def list_students(
     if teacher_id is not None:
         base = base.where(Student.teacher_id == teacher_id)
         cnt = cnt.where(Student.teacher_id == teacher_id)
+
+    if is_active is not None:
+        base = base.where(Student.is_active == is_active)
+        cnt = cnt.where(Student.is_active == is_active)
 
     if q:
         # 암호화된 필드는 직접 검색 불가, 해시 필드로 정확 일치 검색

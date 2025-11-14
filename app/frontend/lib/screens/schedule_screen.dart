@@ -223,7 +223,8 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   /// 학생 목록 로드
   Future<void> _loadStudents() async {
     try {
-      final studentsData = await ApiService.getStudents();
+      // 활성화된 학생만 조회
+      final studentsData = await ApiService.getStudents(isActive: true);
       final studentsMap = <int, Student>{};
       
       for (final s in studentsData) {
@@ -235,10 +236,12 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         final sessions = s['total_sessions'] as int? ?? 0;
         final completedSessions = s['completed_sessions'] as int? ?? 0;
         final isAdult = s['is_adult'] as bool? ?? false;
+        final isActive = s['is_active'] as bool? ?? true;
         final nextClass = s['next_class'] as String? ?? '';
         final attendanceRate = sessions > 0 ? ((completedSessions / sessions) * 100).round() : 0;
 
         final student = Student(
+          studentId: studentId,
           name: name,
           grade: grade,
           subjects: subjects,
@@ -249,6 +252,7 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
           nextClass: nextClass,
           attendanceRate: attendanceRate,
           isAdult: isAdult,
+          isActive: isActive,
         );
         
         studentsMap[studentId] = student;

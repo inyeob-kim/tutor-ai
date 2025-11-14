@@ -79,7 +79,8 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
   Future<void> _loadStudents() async {
     setState(() => _isLoadingStudents = true);
     try {
-      final studentsData = await ApiService.getStudents();
+      // 활성화된 학생만 조회
+      final studentsData = await ApiService.getStudents(isActive: true);
       // API 응답을 올바른 형식으로 변환
       final studentsList = studentsData.map((s) {
         final studentId = s['student_id'] as int?;
