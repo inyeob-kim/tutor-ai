@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../theme/scroll_physics.dart';
@@ -43,45 +44,44 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
   Future<void> _loadStudents() async {
     setState(() => _isLoadingStudents = true);
     try {
-      final students = await ApiService.getStudents();
+      final studentsData = await ApiService.getStudents();
+      // API 응답을 올바른 형식으로 변환
+      final studentsList = studentsData.map((s) {
+        final studentId = s['student_id'] as int?;
+        final name = s['name'] as String? ?? '이름 없음';
+        // 백엔드에서는 subject_id (단일 문자열)를 반환하므로, 이를 리스트로 변환
+        final subjectId = s['subject_id'] as String?;
+        List<String> subjects = [];
+        if (subjectId != null && subjectId.isNotEmpty) {
+          // subject_id가 있으면 리스트에 추가
+          subjects = [subjectId];
+        } else {
+          // 없으면 기존 방식(subjects 배열)도 시도 (하위 호환성)
+          final subjectsArray = s['subjects'] as List<dynamic>?;
+          if (subjectsArray != null && subjectsArray.isNotEmpty) {
+            subjects = subjectsArray.map((e) => e.toString()).toList();
+          }
+        }
+        
+        return {
+          'id': studentId, // student_id를 id로 변환
+          'name': name,
+          'subjects': subjects,
+        };
+      }).where((s) => s['id'] != null).toList();
+      
       setState(() {
-        _students = students;
+        _students = studentsList;
         _selectedStudentId = null; // 명시적으로 선택 해제
         _selectedSubject = null; // 과목도 선택 해제
         _isLoadingStudents = false;
       });
     } catch (e) {
-      // API 실패 시 데모 데이터 사용
+      print('⚠️ 학생 목록 로드 실패: $e');
       setState(() {
-        _students = [
-          {
-            'id': 1,
-            'name': '김민수',
-            'subjects': ['수학'],
-          },
-          {
-            'id': 2,
-            'name': '이지은',
-            'subjects': ['영어', '수학'],
-          },
-          {
-            'id': 3,
-            'name': '박서준',
-            'subjects': ['과학', '수학'],
-          },
-          {
-            'id': 4,
-            'name': '최유진',
-            'subjects': ['영어'],
-          },
-          {
-            'id': 5,
-            'name': '정다은',
-            'subjects': ['국어', '영어'],
-          },
-        ];
-        _selectedStudentId = null; // 명시적으로 선택 해제
-        _selectedSubject = null; // 과목도 선택 해제
+        _students = [];
+        _selectedStudentId = null;
+        _selectedSubject = null;
         _isLoadingStudents = false;
       });
     }
@@ -137,7 +137,7 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final amount = int.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
+      final amount = int.tryParse(_amountController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
       if (amount <= 0) {
         throw Exception('청구 금액은 0보다 커야 합니다');
       }
@@ -386,14 +386,10 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
               }(),
 
             // 청구 금액
-            _buildSectionTitle('청구 금액', theme, colorScheme),
-            SizedBox(height: Gaps.row),
-            _buildTextField(
+            _buildCurrencyTextField(
               controller: _amountController,
-              label: '금액',
+              label: '청구금액',
               hint: '예: 200000',
-              icon: Icons.attach_money_outlined,
-              keyboardType: TextInputType.number,
               required: true,
               theme: theme,
               colorScheme: colorScheme,
@@ -401,8 +397,6 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
             SizedBox(height: Gaps.cardPad + 4),
 
             // 청구 날짜
-            _buildSectionTitle('청구 날짜', theme, colorScheme),
-            SizedBox(height: Gaps.row),
             _buildDateField(
               label: '청구일',
               value: _billingDate,
@@ -425,8 +419,6 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
             SizedBox(height: Gaps.cardPad + 4),
 
             // 메모
-            _buildSectionTitle('메모 (선택사항)', theme, colorScheme),
-            SizedBox(height: Gaps.row),
             _buildTextField(
               controller: _notesController,
               label: '메모',
@@ -594,6 +586,117 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCurrencyTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+    bool required = false,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.chip + 4),
+        side: BorderSide(
+          color: colorScheme.outline.withOpacity(0.1),
+        ),
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          _CurrencyInputFormatter(),
+        ],
+        decoration: InputDecoration(
+          label: required
+              ? RichText(
+                  text: TextSpan(
+                    text: label,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: ' *',
+                        style: TextStyle(
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Text(label),
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.5),
+          ),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 16, right: 8),
+            child: Center(
+              widthFactor: 1.0,
+              child: Text(
+                '₩',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 40,
+            minHeight: 0,
+          ),
+          suffixText: '원',
+          suffixStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(Gaps.card),
+        ),
+        validator: required
+            ? (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '$label을(를) 입력해주세요';
+                }
+                return null;
+              }
+            : null,
+      ),
+    );
+  }
+}
+
+/// 원화 금액 입력 포맷터 (쉼표 자동 추가)
+class _CurrencyInputFormatter extends TextInputFormatter {
+  final numberFormat = NumberFormat('#,###');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // 숫자만 추출
+    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    
+    if (digitsOnly.isEmpty) {
+      return TextEditingValue.empty;
+    }
+
+    // 쉼표 추가
+    final formatted = numberFormat.format(int.parse(digitsOnly));
+    
+    // 커서 위치를 끝으로 설정 (간단한 방법)
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
