@@ -106,5 +106,17 @@ class SettingsService {
     final subjectsJson = jsonEncode(subjects);
     await prefs.setString(_keyTeacherSubjects, subjectsJson);
   }
+
+  // 다크 모드 설정 가져오기
+  static Future<bool> getDarkMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('dark_mode') ?? false;
+  }
+
+  // 다크 모드 설정 저장
+  static Future<void> setDarkMode(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dark_mode', enabled);
+  }
 }
 

@@ -642,12 +642,52 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
     }
   }
 
-  // 타임슬롯 리스트 생성
+  // 해당 시간대가 등록된 수업의 시간 범위 내에 있는지 확인
+  bool _isTimeSlotOccupied(int hour) {
+    final slotStart = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      hour,
+      0,
+    );
+    final slotEnd = slotStart.add(const Duration(hours: 1));
+
+    // 등록된 수업 중에서 해당 시간대와 겹치는 수업이 있는지 확인
+    for (final lesson in _filteredLessons) {
+      final lessonEnd = lesson.startsAt.add(Duration(minutes: lesson.durationMin));
+      
+      // 시간대가 겹치는지 확인: slotStart < lessonEnd && slotEnd > lesson.startsAt
+      if (slotStart.isBefore(lessonEnd) && slotEnd.isAfter(lesson.startsAt)) {
+        // 해당 시간대에 시작하는 수업이 아니면 (다른 수업의 시간 범위 내에 있으면) occupied
+        if (lesson.startsAt.hour != hour) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // 타임슬롯 리스트 생성 (이미 등록된 수업의 시간 범위 내에 있는 타임슬롯 제외)
   List<int> get _timeSlots {
-    return List.generate(
+    final allSlots = List.generate(
       _endHour - _startHour + 1,
       (index) => _startHour + index,
     );
+    
+    // 등록된 수업의 시간 범위 내에 있는 타임슬롯 제외
+    return allSlots.where((hour) {
+      // 해당 시간대에 시작하는 수업이 있으면 표시 (수업 카드로 표시)
+      if (_findLessonForSlot(hour) != null) {
+        return true;
+      }
+      // 해당 시간대가 다른 수업의 시간 범위 내에 있으면 제외
+      if (_isTimeSlotOccupied(hour)) {
+        return false;
+      }
+      // 그 외의 경우 표시
+      return true;
+    }).toList();
   }
 
   void _toggleDone(String lessonId) {

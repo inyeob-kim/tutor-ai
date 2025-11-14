@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
+import '../main.dart';
+import '../services/settings_service.dart';
 
 class AppSettingsScreen extends StatefulWidget {
   const AppSettingsScreen({super.key});
@@ -13,6 +15,21 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   bool notificationsEnabled = true;
   bool darkModeEnabled = false;
   bool autoBackupEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final isDarkMode = await SettingsService.getDarkMode();
+    if (mounted) {
+      setState(() {
+        darkModeEnabled = isDarkMode;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +95,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                       title: '다크 모드',
                       subtitle: '어두운 테마를 사용합니다',
                       value: darkModeEnabled,
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         setState(() => darkModeEnabled = value);
-                        // TODO: 다크 모드 적용
+                        await SettingsService.setDarkMode(value);
+                        // 테마 변경 적용
+                        final appState = App.of(context);
+                        if (appState != null) {
+                          appState.changeThemeMode(value);
+                        }
                       },
                     ),
                     const Divider(height: 1),

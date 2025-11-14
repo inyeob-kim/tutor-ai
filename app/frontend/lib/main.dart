@@ -6,6 +6,7 @@ import 'firebase_options.dart';
 import 'routes/app_routes.dart';
 import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
+import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -49,13 +50,47 @@ Future<void> main() async {
   runApp(const App());
 }
 
-class App extends StatelessWidget {
+class App extends StatefulWidget {
   const App({super.key});
+
+  @override
+  State<App> createState() => _AppState();
+
+  static _AppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_AppState>();
+}
+
+class _AppState extends State<App> {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    final isDarkMode = await SettingsService.getDarkMode();
+    if (mounted) {
+      setState(() {
+        _themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+      });
+    }
+  }
+
+  void changeThemeMode(bool isDark) {
+    setState(() {
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    });
+    SettingsService.setDarkMode(isDark);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: _themeMode,
       debugShowCheckedModeBanner: false,
       onGenerateRoute: AppRoutes.generateRoute,
       // ✅ 스플래시에서 FirebaseAuth.instance.currentUser를 확인
