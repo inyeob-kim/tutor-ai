@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
 import '../services/settings_service.dart';
@@ -185,6 +186,9 @@ class _SnsScreenState extends State<SnsScreen> {
 
 
   void _toggleLike(int index) {
+    // 햅틱 피드백 추가
+    HapticFeedback.lightImpact();
+    
     setState(() {
       final filteredPosts = _filteredPosts;
       if (index >= filteredPosts.length) return;
@@ -430,14 +434,14 @@ class _SnsScreenState extends State<SnsScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryLight,
+                              color: Colors.transparent,
                               borderRadius: BorderRadius.circular(Radii.chip),
                             ),
                             child: Text(
                               post['subject'] as String,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
+                                color: AppColors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
@@ -471,45 +475,10 @@ class _SnsScreenState extends State<SnsScreen> {
             Row(
               children: [
                 // Like Button
-                InkWell(
+                _AnimatedLikeButton(
+                  isLiked: isLiked,
+                  likes: likes,
                   onTap: () => _toggleLike(index),
-                  borderRadius: BorderRadius.circular(Radii.icon),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: Gaps.row,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isLiked
-                          ? AppColors.primaryLight
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(Radii.icon),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isLiked
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          size: 18,
-                          color: isLiked
-                              ? AppColors.primary
-                              : AppColors.textMuted,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '$likes',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isLiked
-                                ? AppColors.primary
-                                : AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
                 SizedBox(width: Gaps.row),
                 // Comment Button
@@ -556,4 +525,101 @@ class _SnsScreenState extends State<SnsScreen> {
     );
   }
 }
+
+/// 애니메이션이 적용된 좋아요 버튼
+class _AnimatedLikeButton extends StatefulWidget {
+  final bool isLiked;
+  final int likes;
+  final VoidCallback onTap;
+
+  const _AnimatedLikeButton({
+    required this.isLiked,
+    required this.likes,
+    required this.onTap,
+  });
+
+  @override
+  State<_AnimatedLikeButton> createState() => _AnimatedLikeButtonState();
+}
+
+class _AnimatedLikeButtonState extends State<_AnimatedLikeButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _controller.forward().then((_) {
+      _controller.reverse();
+    });
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return InkWell(
+      onTap: _handleTap,
+      borderRadius: BorderRadius.circular(Radii.icon),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: Gaps.row,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: widget.isLiked
+              ? AppColors.primaryLight
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(Radii.icon),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: Icon(
+                widget.isLiked
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                size: 18,
+                color: widget.isLiked
+                    ? AppColors.error
+                    : AppColors.textMuted,
+              ),
+            ),
+            SizedBox(width: 4),
+            Text(
+              '${widget.likes}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: widget.isLiked
+                    ? AppColors.error
+                    : AppColors.textMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 

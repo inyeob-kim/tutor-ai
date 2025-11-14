@@ -14,6 +14,8 @@ import 'edit_teacher_profile_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'help_screen.dart';
+import 'sns_screen.dart';
+import 'stats_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -236,6 +238,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: '토요일과 일요일은 수업 시간대에서 제외합니다',
                       value: _excludeWeekends,
                       onChanged: _saveExcludeWeekends,
+                    ),
+                  ],
+                ),
+                SizedBox(height: Gaps.cardPad + 4),
+
+                // 마케팅 / SNS 도구
+                _buildSectionTitle('마케팅 / SNS 도구', theme, colorScheme),
+                SizedBox(height: Gaps.row),
+                _buildSettingsCard(
+                  theme: theme,
+                  colorScheme: colorScheme,
+                  children: [
+                    _buildListTile(
+                      theme: theme,
+                      colorScheme: colorScheme,
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: 'SNS',
+                      subtitle: '학생 및 학부모와 소통합니다',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SnsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: Gaps.cardPad + 4),
+
+                // 통계 및 분석
+                _buildSectionTitle('통계 및 분석', theme, colorScheme),
+                SizedBox(height: Gaps.row),
+                _buildSettingsCard(
+                  theme: theme,
+                  colorScheme: colorScheme,
+                  children: [
+                    _buildListTile(
+                      theme: theme,
+                      colorScheme: colorScheme,
+                      icon: Icons.bar_chart_rounded,
+                      title: '통계',
+                      subtitle: '학생, 수업, 청구 통계를 확인합니다',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const StatsScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

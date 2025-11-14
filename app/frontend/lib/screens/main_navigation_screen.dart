@@ -3,9 +3,7 @@ import 'home_screen.dart';
 import 'schedule_screen.dart';
 import 'students_screen.dart';
 import 'billing_screen.dart';
-import 'stats_screen.dart';
-import 'settings_screen.dart';
-import 'sns_screen.dart';
+import 'more_screen.dart';
 import '../theme/tokens.dart';
 import '../services/teacher_service.dart';
 
@@ -22,13 +20,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
 
   List<Widget> get _screens => [
-    HomeScreen(key: _homeScreenKey),
-    const StudentsScreen(),
-    ScheduleScreen(key: _scheduleScreenKey),
-    const SnsScreen(),
-    const StatsScreen(),
-    const BillingScreen(),
-    const SettingsScreen(),
+    HomeScreen(key: _homeScreenKey),           // 0: HOME
+    ScheduleScreen(key: _scheduleScreenKey),   // 1: SCHEDULE
+    const StudentsScreen(),                    // 2: STUDENTS
+    const BillingScreen(),                     // 3: BILLING
+    const MoreScreen(),                        // 4: MORE
   ];
 
   @override
@@ -38,7 +34,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _loadTeacherInfo();
     
     // 첫 로드 시 스케줄 화면이 선택되어 있으면 오늘 날짜로 리셋
-    if (_currentIndex == 2) {
+    if (_currentIndex == 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _scheduleScreenKey.currentState != null) {
           _scheduleScreenKey.currentState!.forceResetToToday();
@@ -79,13 +75,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       });
     }
     
-    // 스케줄 화면(인덱스 2)으로 전환될 때마다 오늘 날짜로 리셋
-    if (index == 2) {
+    // 스케줄 화면(인덱스 1)으로 전환될 때마다 오늘 날짜로 리셋
+    if (index == 1) {
       // 스케줄 화면으로 전환 시 항상 오늘 날짜로 리셋
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _scheduleScreenKey.currentState != null) {
           // 다른 화면에서 왔으면 무조건 오늘로 리셋
-          if (previousIndex != 2) {
+          if (previousIndex != 1) {
             _scheduleScreenKey.currentState!.forceResetToToday();
           } else {
             // 이미 스케줄 화면이어도 선택된 날짜가 오늘이 아니면 리셋
@@ -122,39 +118,29 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
             destinations: [
               NavigationDestination(
-                icon: Icon(Icons.home_rounded, size: 24, color: AppColors.textMuted),
-                selectedIcon: Icon(Icons.home_rounded, size: 24, color: AppColors.primary),
+                icon: Icon(Icons.home, size: 24, color: AppColors.textMuted),
+                selectedIcon: Icon(Icons.home, size: 24, color: AppColors.primary),
                 label: '홈',
               ),
               NavigationDestination(
-                icon: Icon(Icons.person_rounded, size: 24, color: AppColors.textMuted),
-                selectedIcon: Icon(Icons.person_rounded, size: 24, color: AppColors.primary),
-                label: '학생',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.event_note_rounded, size: 24, color: AppColors.textMuted),
-                selectedIcon: Icon(Icons.event_note_rounded, size: 24, color: AppColors.primary),
+                icon: Icon(Icons.calendar_today, size: 24, color: AppColors.textMuted),
+                selectedIcon: Icon(Icons.calendar_today, size: 24, color: AppColors.primary),
                 label: '스케줄',
               ),
               NavigationDestination(
-                icon: Icon(Icons.chat_bubble_outline_rounded, size: 24, color: AppColors.textMuted),
-                selectedIcon: Icon(Icons.chat_bubble_rounded, size: 24, color: AppColors.primary),
-                label: '커뮤니티',
+                icon: Icon(Icons.people, size: 24, color: AppColors.textMuted),
+                selectedIcon: Icon(Icons.people, size: 24, color: AppColors.primary),
+                label: '학생',
               ),
               NavigationDestination(
-                icon: Icon(Icons.bar_chart_rounded, size: 24, color: AppColors.textMuted),
-                selectedIcon: Icon(Icons.bar_chart_rounded, size: 24, color: AppColors.primary),
-                label: '통계',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.receipt_long_rounded, size: 24, color: AppColors.textMuted),
-                selectedIcon: Icon(Icons.receipt_long_rounded, size: 24, color: AppColors.primary),
+                icon: Icon(Icons.credit_card, size: 24, color: AppColors.textMuted),
+                selectedIcon: Icon(Icons.credit_card, size: 24, color: AppColors.primary),
                 label: '청구',
               ),
               NavigationDestination(
-                icon: Icon(Icons.tune_rounded, size: 24, color: AppColors.textMuted),
-                selectedIcon: Icon(Icons.tune_rounded, size: 24, color: AppColors.primary),
-                label: '설정',
+                icon: Icon(Icons.more_horiz, size: 24, color: AppColors.textMuted),
+                selectedIcon: Icon(Icons.more_horiz, size: 24, color: AppColors.primary),
+                label: '더보기',
               ),
             ],
           ),

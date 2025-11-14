@@ -3,7 +3,7 @@ import '../screens/main_navigation_screen.dart';
 import '../screens/schedule_screen.dart';
 import '../screens/students_screen.dart';
 import '../screens/billing_screen.dart';
-import '../screens/settings_screen.dart';
+import '../screens/more_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/add_student_screen.dart';
 import '../screens/add_schedule_screen.dart';
@@ -26,7 +26,7 @@ class AppRoutes {
   static const String schedule = '/schedule';
   static const String students = '/students';
   static const String billing = '/billing';
-  static const String settings = '/settings';
+  static const String more = '/more';
         static const String addStudent = '/students/add';
   static const String addSchedule = '/schedules/add';
   static const String addBilling = '/billing/add';
@@ -71,9 +71,9 @@ class AppRoutes {
           builder: (_) => const BillingScreen(),
           settings: routeSettings,
         );
-      case settings:
+      case more:
         return MaterialPageRoute(
-          builder: (_) => const SettingsScreen(),
+          builder: (_) => const MoreScreen(),
           settings: routeSettings,
         );
       case addStudent:
