@@ -62,7 +62,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
     final theme = Theme.of(context);
     final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>? ?? {};
     final subjects = args['subjects'] as List<String>? ?? [];
-    final name = args['name'] as String? ?? '';
+    final nickname = args['nickname'] as String? ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -114,7 +114,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
                 },
                 onSubmitted: (_) {
                   if (_isValid && !_isLoading) {
-                    _handleSignup(context, subjects, name);
+                    _handleSignup(context, subjects, nickname);
                   }
                 },
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -180,7 +180,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
               child: SafeArea(
                 child: FilledButton(
                   onPressed: (_isValid && !_isLoading)
-                      ? () => _handleSignup(context, subjects, name)
+                      ? () => _handleSignup(context, subjects, nickname)
                       : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -218,7 +218,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
   Future<void> _handleSignup(
     BuildContext context,
     List<String> subjects,
-    String name,
+    String nickname,
   ) async {
     if (mounted) {
       setState(() {
@@ -240,7 +240,7 @@ class _PhoneInputScreenState extends State<PhoneInputScreen> {
 
       // Teacher 정보 생성 (DB에 저장)
       await TeacherService.instance.createTeacher(
-        name: name,
+        nickname: nickname,
         phone: phoneDigits,
         email: user.email,
         subjects: subjects,

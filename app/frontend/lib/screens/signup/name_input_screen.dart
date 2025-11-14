@@ -46,7 +46,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
           color: AppColors.textPrimary,
         ),
         title: Text(
-          '이름 입력',
+          '닉네임 입력',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
@@ -73,7 +73,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
                       '/signup/phone',
                       arguments: {
                         'subjects': subjects,
-                        'name': _nameController.text.trim(),
+                        'nickname': _nameController.text.trim(),
                       },
                     );
                   }
@@ -83,7 +83,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
                   color: AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: '이름을 입력하세요',
+                  hintText: '닉네임을 입력하세요',
                   hintStyle: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w400,
                     color: AppColors.textMuted,
@@ -133,7 +133,7 @@ class _NameInputScreenState extends State<NameInputScreen> {
                             '/signup/phone',
                             arguments: {
                               'subjects': subjects,
-                              'name': _nameController.text.trim(),
+                              'nickname': _nameController.text.trim(),
                             },
                           );
                         }

@@ -1,14 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
+import 'package:flutter/material.dart';
+
 import '../models/lesson.dart';
 import '../models/student.dart';
-import '../services/settings_service.dart';
 import '../services/api_service.dart';
+import '../services/settings_service.dart';
 import '../services/teacher_service.dart';
 import '../theme/scroll_physics.dart';
 import '../theme/tokens.dart';
-import 'add_schedule_screen.dart';
 import 'add_recurring_schedule_screen.dart';
+import 'add_schedule_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -22,6 +23,8 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   DateTime _selectedDate = DateTime.now();
   DateTime _viewMonth = DateTime.now(); // 현재 보는 월
   final ScrollController _dateScrollController = ScrollController();
+  final Map<DateTime, GlobalKey> _dateKeys = {}; // 날짜별 GlobalKey 저장
+  double? _measuredItemWidth; // 측정된 실제 아이템 너비
 
   // 타임슬롯 설정 (설정에서 가져옴)
   int _startHour = 12;
@@ -33,6 +36,8 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   Map<int, Student> _studentsMap = {};
   // 수업 목록
   List<Lesson> _lessons = [];
+  // 날짜별 수업 목록 캐시 (날짜 문자열 -> 수업 목록)
+  Map<String, List<Lesson>> _lessonsCache = {};
   
   // 마지막으로 오늘 날짜로 리셋한 날짜 (날짜 변경 감지용)
   DateTime? _lastResetDate;
@@ -102,16 +107,41 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       if (mounted) {
         _isVisible = true;
         resetToTodayIfNeeded();
+        // 오늘 날짜의 수업 목록 새로고침 (캐시 무효화)
+        final today = DateTime.now();
+        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+        _lessonsCache.remove(todayStr);
+        _loadLessons(forceRefresh: true);
+        
         // 스크롤 위치도 업데이트 - 여러 프레임에 걸쳐 시도
+        // 첫 번째 프레임 후
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (mounted) {
+            _scrollToSelectedDate();
+          }
+        });
+        // 두 번째 프레임 후 (ListView 렌더링 완료 보장)
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) {
             _scrollToSelectedDate();
-            // 한 번 더 시도 (ListView 렌더링 완료 보장)
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) {
-                _scrollToSelectedDate();
-              }
-            });
+          }
+        });
+        // 세 번째 프레임 후 (GlobalKey 생성 완료 보장)
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) {
+            _scrollToSelectedDate();
+          }
+        });
+        // 네 번째 프레임 후 (최종 확인)
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted) {
+            _scrollToSelectedDate();
+          }
+        });
+        // 다섯 번째 프레임 후 (추가 확인)
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            _scrollToSelectedDate();
           }
         });
       }
@@ -147,20 +177,38 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
           _selectedDate = selectedDate;
           _viewMonth = DateTime(selectedDate.year, selectedDate.month, 1);
         });
-        // 스크롤을 위해 여러 프레임 대기 (ListView 렌더링 완료 보장)
+        // 스크롤을 위해 여러 프레임 대기 (ListView 렌더링 및 GlobalKey 생성 완료 보장)
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            // 첫 번째 프레임 후에도 조금 더 기다려서 ListView가 완전히 렌더링되도록
-            Future.delayed(const Duration(milliseconds: 200), () {
+            // 첫 번째 프레임 후
+            Future.delayed(const Duration(milliseconds: 50), () {
               if (mounted) {
                 _scrollToSelectedDate();
                 _loadLessons();
-                // 한 번 더 시도 (중앙 정렬 보장)
-                Future.delayed(const Duration(milliseconds: 300), () {
-                  if (mounted) {
-                    _scrollToSelectedDate();
-                  }
-                });
+              }
+            });
+            // 두 번째 프레임 후 (ListView 렌더링 완료 보장)
+            Future.delayed(const Duration(milliseconds: 200), () {
+              if (mounted) {
+                _scrollToSelectedDate();
+              }
+            });
+            // 세 번째 프레임 후 (GlobalKey 생성 완료 보장)
+            Future.delayed(const Duration(milliseconds: 400), () {
+              if (mounted) {
+                _scrollToSelectedDate();
+              }
+            });
+            // 네 번째 프레임 후 (최종 확인)
+            Future.delayed(const Duration(milliseconds: 600), () {
+              if (mounted) {
+                _scrollToSelectedDate();
+              }
+            });
+            // 다섯 번째 프레임 후 (추가 확인)
+            Future.delayed(const Duration(milliseconds: 800), () {
+              if (mounted) {
+                _scrollToSelectedDate();
               }
             });
           }
@@ -221,8 +269,8 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
     }
   }
 
-  /// 수업 목록 로드
-  Future<void> _loadLessons() async {
+  /// 수업 목록 로드 (캐시 사용)
+  Future<void> _loadLessons({bool forceRefresh = false}) async {
     try {
       final teacher = await TeacherService.instance.loadTeacher();
       if (teacher == null) {
@@ -234,14 +282,33 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         return;
       }
 
-      // 선택된 날짜
+      // 선택된 날짜 문자열 생성
       final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
 
-      // 스케줄 조회
+      // 캐시 확인 (강제 새로고침이 아닐 때만)
+      if (!forceRefresh && _lessonsCache.containsKey(dateStr)) {
+        if (mounted) {
+          setState(() {
+            _lessons = _lessonsCache[dateStr]!;
+          });
+        }
+        print('✅ 캐시에서 수업 목록 로드: $dateStr (${_lessons.length}개)');
+        return;
+      }
+
+      // 오늘 날짜로 수업 조회
+      final today = DateTime.now();
+      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      
+      // 선택된 날짜가 오늘이면 오늘 날짜로 조회, 아니면 선택된 날짜로 조회
+      final queryDateStr = dateStr == todayStr ? todayStr : dateStr;
+
+      // 스케줄 조회 (취소된 수업 제외)
       final schedules = await ApiService.getSchedules(
         teacherId: teacher.teacherId,
-        dateFrom: dateStr,
-        dateTo: dateStr,
+        dateFrom: queryDateStr,
+        dateTo: queryDateStr,
+        status: 'confirmed', // 취소된 수업 제외
       );
 
       // 학생 정보 다시 로드 (스케줄에 학생 이름 표시용)
@@ -249,14 +316,27 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         await _loadStudents();
       }
 
-      // 수업을 Lesson으로 변환
-      final lessonsList = schedules.map((s) {
+      // 수업을 Lesson으로 변환 (취소된 수업 필터링)
+      final lessonsList = schedules
+          .where((s) {
+            // 취소된 수업 제외
+            final status = s['status'] as String? ?? 'pending';
+            return status != 'cancelled';
+          })
+          .map((s) {
         final scheduleId = s['schedule_id'] as int? ?? 0;
         final studentId = s['student_id'] as int? ?? 0;
         final subject = s['subject_id'] as String? ?? '과목 없음';
         final startTime = s['start_time'] as String? ?? '00:00';
         final endTime = s['end_time'] as String? ?? '00:00';
         final status = s['status'] as String? ?? 'pending';
+        final lessonDate = s['lesson_date'] as String? ?? queryDateStr;
+
+        // 날짜 파싱
+        final dateParts = lessonDate.split('-');
+        final lessonYear = dateParts.isNotEmpty ? int.tryParse(dateParts[0]) ?? _selectedDate.year : _selectedDate.year;
+        final lessonMonth = dateParts.length > 1 ? int.tryParse(dateParts[1]) ?? _selectedDate.month : _selectedDate.month;
+        final lessonDay = dateParts.length > 2 ? int.tryParse(dateParts[2]) ?? _selectedDate.day : _selectedDate.day;
 
         // 시간 파싱
         final startParts = startTime.split(':');
@@ -268,18 +348,18 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
 
         // 시작 시간 계산
         final startsAt = DateTime(
-          _selectedDate.year,
-          _selectedDate.month,
-          _selectedDate.day,
+          lessonYear,
+          lessonMonth,
+          lessonDay,
           startHour,
           startMin,
         );
 
         // 종료 시간 계산
         final endsAt = DateTime(
-          _selectedDate.year,
-          _selectedDate.month,
-          _selectedDate.day,
+          lessonYear,
+          lessonMonth,
+          lessonDay,
           endHour,
           endMin,
         );
@@ -304,11 +384,16 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         );
       }).toList();
 
+      // 캐시에 저장
+      _lessonsCache[dateStr] = lessonsList;
+
       if (mounted) {
         setState(() {
           _lessons = lessonsList;
         });
       }
+      
+      print('✅ 수업 목록 로드 완료: $dateStr (${lessonsList.length}개)');
     } catch (e) {
       print('⚠️ 수업 목록 로드 실패: $e');
       if (mounted) {
@@ -343,8 +428,20 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   void _scrollToSelectedDate({int retryCount = 0}) {
     // 스크롤 컨트롤러가 아직 준비되지 않았으면 재시도
     if (!_dateScrollController.hasClients) {
-      if (retryCount < 10 && mounted) {
+      if (retryCount < 20 && mounted) {
         Future.delayed(Duration(milliseconds: 50 * (retryCount + 1)), () {
+          if (mounted) {
+            _scrollToSelectedDate(retryCount: retryCount + 1);
+          }
+        });
+      }
+      return;
+    }
+    
+    final position = _dateScrollController.position;
+    if (!position.hasViewportDimension || !position.hasContentDimensions) {
+      if (retryCount < 20 && mounted) {
+        Future.delayed(Duration(milliseconds: 100 * (retryCount + 1)), () {
           if (mounted) {
             _scrollToSelectedDate(retryCount: retryCount + 1);
           }
@@ -357,32 +454,26 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
     final lastDayOfMonth = DateTime(_viewMonth.year, _viewMonth.month + 1, 0);
     final daysInMonth = lastDayOfMonth.day;
     
-    // 해당 월의 모든 날짜 생성
     final allDates = List.generate(daysInMonth, (index) {
       return DateTime(_viewMonth.year, _viewMonth.month, index + 1);
     });
     
-    // 주말 제외 옵션이 켜져 있으면 주말 제외 (실제 표시되는 날짜 목록과 동일)
     final dates = _excludeWeekends
         ? allDates.where((date) {
-            final weekday = date.weekday; // 1=월요일, 7=일요일
-            return weekday != 6 && weekday != 7; // 토요일(6), 일요일(7) 제외
+            final weekday = date.weekday;
+            return weekday != 6 && weekday != 7;
           }).toList()
         : allDates;
     
-    // 선택된 날짜의 인덱스 찾기
     final selectedIndex = dates.indexWhere((date) =>
         date.year == _selectedDate.year &&
         date.month == _selectedDate.month &&
         date.day == _selectedDate.day);
     
-    if (selectedIndex == -1) return;
-    
-    final position = _dateScrollController.position;
-    if (!position.hasViewportDimension || !position.hasContentDimensions) {
-      // 뷰포트나 콘텐츠 크기가 아직 결정되지 않았으면 재시도
+    if (selectedIndex == -1) {
+      // 선택된 날짜를 찾을 수 없으면 재시도
       if (retryCount < 10 && mounted) {
-        Future.delayed(Duration(milliseconds: 100 * (retryCount + 1)), () {
+        Future.delayed(Duration(milliseconds: 200), () {
           if (mounted) {
             _scrollToSelectedDate(retryCount: retryCount + 1);
           }
@@ -391,31 +482,113 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       return;
     }
     
-    // 각 날짜 카드의 실제 너비 계산
-    // padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: 12) = 20px 좌우 (총 40px)
-    // margin: EdgeInsets.only(right: Gaps.row) = 10px 오른쪽
-    // 날짜 숫자 + 요일 텍스트의 대략적인 너비 = 약 50-60px
-    // 총 카드 너비 = 50-60px (내용) + 40px (패딩) + 10px (마진) = 약 100-110px
-    // 실제 측정값 기반으로 더 정확하게 조정
-    const itemWidth = 100.0; // 카드 너비 + 마진 (더 정확한 값)
+    // 선택된 날짜의 GlobalKey 찾기 (렌더링된 경우)
+    final selectedDateKey = _dateKeys[_selectedDate];
+    if (selectedDateKey?.currentContext != null) {
+      // Scrollable.ensureVisible을 사용하여 정확한 위치로 스크롤
+      try {
+        Scrollable.ensureVisible(
+          selectedDateKey!.currentContext!,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOutCubic,
+          alignment: 0.5, // 중앙 정렬
+        );
+        return;
+      } catch (e) {
+        // ensureVisible 실패 시 fallback 사용
+        print('⚠️ ensureVisible 실패: $e');
+      }
+    }
+    
+    // GlobalKey가 없거나 ensureVisible이 실패한 경우 계산 기반 스크롤 사용
+    // 실제 카드 너비 측정 시도
+    // 기본값: padding (40px) + 내용 (50px) + margin (10px) = 100px
+    // 12일이 중앙에 오는 문제를 해결하기 위해 증가
+    double itemWidth = _measuredItemWidth ?? 140.0;
+    
+    // 첫 번째와 두 번째 렌더링된 아이템의 실제 간격 측정 시도 (가장 정확한 방법)
+    if (_measuredItemWidth == null && dates.length >= 2) {
+      final firstDate = dates[0];
+      final secondDate = dates[1]; 
+      final firstKey = _dateKeys[firstDate];
+      final secondKey = _dateKeys[secondDate];
+      
+      if (firstKey?.currentContext != null && secondKey?.currentContext != null) {
+        final firstBox = firstKey!.currentContext!.findRenderObject() as RenderBox?;
+        final secondBox = secondKey!.currentContext!.findRenderObject() as RenderBox?;
+        
+        if (firstBox != null && secondBox != null) {
+          // 두 아이템의 실제 간격 측정
+          // 첫 번째 아이템의 왼쪽 끝에서 두 번째 아이템의 왼쪽 끝까지의 거리
+          final firstPosition = firstBox.localToGlobal(Offset.zero);
+          final secondPosition = secondBox.localToGlobal(Offset.zero);
+          final actualSpacing = secondPosition.dx - firstPosition.dx;
+          
+          if (actualSpacing > 0) {
+            // 측정된 값에 약간의 보정값 추가 (더 정확한 중앙 정렬을 위해)
+            final correctedSpacing = actualSpacing + 2.0;
+            setState(() {
+              _measuredItemWidth = correctedSpacing;
+            });
+            itemWidth = correctedSpacing;
+          }
+        }
+      }
+    }
+    
+    // 두 번째 방법: 첫 번째 아이템만 측정하고 margin 추가
+    if (_measuredItemWidth == null && dates.isNotEmpty) {
+      final firstDate = dates[0];
+      final firstKey = _dateKeys[firstDate];
+      if (firstKey?.currentContext != null) {
+        final RenderBox? renderBox = firstKey!.currentContext!.findRenderObject() as RenderBox?;
+        if (renderBox != null) {
+          final measuredWidth = renderBox.size.width;
+          // Container의 margin (Gaps.row = 10px) 추가
+          if (measuredWidth > 0) {
+            // 약간의 보정값 추가
+            final totalWidth = measuredWidth + Gaps.row + 5.0;
+            setState(() {
+              _measuredItemWidth = totalWidth;
+            });
+            itemWidth = totalWidth;
+          }
+        }
+      }
+    }
+    
     final viewportWidth = position.viewportDimension;
     final maxScrollExtent = position.maxScrollExtent;
     
-    // 선택된 날짜를 중앙에 위치시키기 위한 스크롤 위치 계산
-    // 중앙 정렬: 선택된 아이템의 중심이 뷰포트의 중심에 오도록
-    // 스크롤 위치 = (인덱스 * 아이템 너비) - (뷰포트 너비 / 2) + (아이템 너비 / 2)
-    // ListView의 좌우 padding은 자동으로 고려됨 (ScrollController는 padding을 제외한 위치를 반환)
-    final targetScrollPosition = (selectedIndex * itemWidth) - (viewportWidth / 2) + (itemWidth / 2);
-    
-    // 스크롤 가능한 범위 내로 클램프
+    // 중앙 정렬 계산
+    // 선택된 아이템의 중심이 뷰포트의 중심에 오도록 계산
+    // Container의 margin (Gaps.row = 10px)도 포함해야 함
+    // 실제 아이템 간격 = itemWidth (이미 margin 포함되어 있음)
+    // 하지만 측정된 너비가 margin을 포함하지 않을 수 있으므로 확인 필요
+    final itemCenterPosition = selectedIndex * itemWidth + (itemWidth / 2);
+    final viewportCenter = viewportWidth / 2;
+    // ListView의 padding (Gaps.card = 16px)은 스크롤 위치에 자동으로 포함됨
+    // 하지만 실제 스크롤 위치 계산 시 padding을 고려해야 할 수도 있음
+    // 12일이 중앙에 오는 문제를 해결하기 위해 약간의 오프셋 추가
+    final targetScrollPosition = itemCenterPosition - viewportCenter;
     final clampedPosition = targetScrollPosition.clamp(0.0, maxScrollExtent > 0 ? maxScrollExtent : 0.0);
     
-    // 스크롤 애니메이션 (더 부드럽게)
-    _dateScrollController.animateTo(
-      clampedPosition,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutCubic,
-    );
+    // 현재 위치와 목표 위치가 충분히 다를 때만 스크롤
+    final currentPosition = position.pixels;
+    if ((currentPosition - clampedPosition).abs() > 5.0) {
+      _dateScrollController.animateTo(
+        clampedPosition,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+      );
+    } else if (retryCount < 5) {
+      // 위치가 거의 맞지만 GlobalKey가 아직 생성되지 않았을 수 있으므로 재시도
+      Future.delayed(Duration(milliseconds: 200), () {
+        if (mounted) {
+          _scrollToSelectedDate(retryCount: retryCount + 1);
+        }
+      });
+    }
   }
 
 
@@ -526,10 +699,23 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         ),
       );
       if (result == true) {
-        // 목록 새로고침 - 약간의 지연을 두어 서버 반영 시간 확보
-        Future.delayed(const Duration(milliseconds: 300), () {
+        // 캐시 무효화 (오늘 날짜와 선택된 날짜)
+        final today = DateTime.now();
+        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+        final selectedDateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+        _lessonsCache.remove(todayStr);
+        _lessonsCache.remove(selectedDateStr);
+        
+        // 목록 새로고침 - 서버 반영 시간 확보를 위해 여러 번 시도
+        Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
-            _loadLessons();
+            _loadLessons(forceRefresh: true);
+          }
+        });
+        // 한 번 더 시도 (서버 동기화 지연 대비)
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          if (mounted) {
+            _loadLessons(forceRefresh: true);
           }
         });
       }
@@ -573,17 +759,55 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
     );
 
     if (confirm == true) {
-      setState(() {
-        _lessons.removeWhere((l) => l.id == lessonId);
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('수업이 취소되었습니다.'),
-            backgroundColor: AppColors.success,
-          ),
+      try {
+        // API 호출하여 스케줄 취소
+        final scheduleId = int.parse(lessonId);
+        final teacher = await TeacherService.instance.loadTeacher();
+        
+        await ApiService.deleteSchedule(
+          scheduleId: scheduleId,
+          cancelledBy: teacher?.teacherId,
+          cancelReason: '사용자 취소',
         );
+        
+        // 캐시 무효화 (오늘 날짜와 선택된 날짜)
+        final today = DateTime.now();
+        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+        final selectedDateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+        _lessonsCache.remove(todayStr);
+        _lessonsCache.remove(selectedDateStr);
+        
+        // 수업 목록 즉시 새로고침 (서버 반영 시간 확보를 위해 약간의 지연)
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _loadLessons(forceRefresh: true);
+          }
+        });
+        // 한 번 더 시도 (서버 동기화 지연 대비)
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            _loadLessons(forceRefresh: true);
+          }
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('수업이 취소되었습니다.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        print('❌ 수업 취소 실패: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('수업 취소 실패: ${e.toString()}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       }
     }
   }
@@ -639,8 +863,25 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
                               ),
                             );
                             if (result == true) {
-                              // 목록 새로고침
-                              _loadLessons();
+                              // 캐시 무효화 (오늘 날짜와 선택된 날짜)
+                              final today = DateTime.now();
+                              final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+                              final selectedDateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+                              _lessonsCache.remove(todayStr);
+                              _lessonsCache.remove(selectedDateStr);
+                              
+                              // 목록 새로고침 - 서버 반영 시간 확보를 위해 여러 번 시도
+                              Future.delayed(const Duration(milliseconds: 500), () {
+                                if (mounted) {
+                                  _loadLessons(forceRefresh: true);
+                                }
+                              });
+                              // 한 번 더 시도 (서버 동기화 지연 대비)
+                              Future.delayed(const Duration(milliseconds: 1000), () {
+                                if (mounted) {
+                                  _loadLessons(forceRefresh: true);
+                                }
+                              });
                             }
                           },
                           icon: const Icon(Icons.repeat_rounded, size: 18),
@@ -933,6 +1174,12 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
                     date.month == today.month &&
                     date.day == today.day;
 
+                // 날짜별 GlobalKey 생성 및 저장
+                if (!_dateKeys.containsKey(date)) {
+                  _dateKeys[date] = GlobalKey();
+                }
+                final dateKey = _dateKeys[date]!;
+
                 return GestureDetector(
                   onTap: () async {
                     setState(() {
@@ -940,6 +1187,9 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
                       // 선택한 날짜가 다른 월이면 월도 업데이트
                       if (date.year != _viewMonth.year || date.month != _viewMonth.month) {
                         _viewMonth = DateTime(date.year, date.month, 1);
+                        // 다른 월로 변경되면 이전 월의 키들 정리
+                        _dateKeys.removeWhere((key, _) => 
+                          key.year != _viewMonth.year || key.month != _viewMonth.month);
                       }
                     });
                     await _refreshDisabledHours();
@@ -955,11 +1205,11 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
                         });
                       }
                     });
-                    // 선택된 날짜의 수업 로드
+                    // 선택된 날짜의 수업 로드 (캐시 사용)
                     _loadLessons();
                   },
                   child: Container(
-                    key: isSelected ? ValueKey('selected_date_${date.day}') : null,
+                    key: dateKey,
                     margin: EdgeInsets.only(right: Gaps.row),
                     padding: EdgeInsets.symmetric(horizontal: Gaps.screen, vertical: 12),
                     decoration: BoxDecoration(

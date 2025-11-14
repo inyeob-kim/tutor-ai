@@ -14,6 +14,7 @@ class ScheduleItem {
   final String student;
   final String subject;
   ScheduleStatus status;
+  final String? notes;
 
   ScheduleItem({
     required this.id,
@@ -22,6 +23,7 @@ class ScheduleItem {
     required this.student,
     required this.subject,
     required this.status,
+    this.notes,
   });
 }
 
@@ -29,10 +31,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   List<ScheduleItem> schedule = [];
   bool _isLoading = true;
 
@@ -42,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // 홈화면 진입 시 Teacher 정보 로드 (캐시 또는 API)
     _loadTeacherInfo();
     // 오늘의 스케줄 로드
-    _loadTodaySchedules();
+    loadTodaySchedules();
   }
 
   /// Teacher 정보 로드
@@ -50,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final teacher = await TeacherService.instance.loadTeacher();
       if (teacher != null && mounted) {
-        print('✅ 홈화면: Teacher 정보 로드 완료 - name=${teacher.name}, subject_id=${teacher.subjectId}');
+        print('✅ 홈화면: Teacher 정보 로드 완료 - nickname=${teacher.nickname}, subject_id=${teacher.subjectId}');
         // 필요시 setState로 UI 업데이트
         setState(() {});
       }
@@ -59,8 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// 오늘의 스케줄 로드
-  Future<void> _loadTodaySchedules() async {
+  /// 오늘의 스케줄 로드 (public으로 변경하여 외부에서 호출 가능)
+  Future<void> loadTodaySchedules() async {
     setState(() {
       _isLoading = true;
     });
@@ -80,11 +82,12 @@ class _HomeScreenState extends State<HomeScreen> {
       final dateFrom = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
       final dateTo = dateFrom;
 
-      // 스케줄 조회
+      // 스케줄 조회 (취소된 수업 제외)
       final schedules = await ApiService.getSchedules(
         teacherId: teacher.teacherId,
         dateFrom: dateFrom,
         dateTo: dateTo,
+        status: 'confirmed', // 취소된 수업 제외
       );
 
       // 학생 정보 조회 (스케줄에 학생 이름 표시용)
@@ -103,6 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final startTime = s['start_time'] as String? ?? '';
         final endTime = s['end_time'] as String? ?? '';
         final status = s['status'] as String? ?? 'pending';
+        final notes = s['notes'] as String?;
 
         // 시간 파싱
         final startParts = startTime.split(':');
@@ -140,6 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
           student: studentName,
           subject: subject,
           status: scheduleStatus,
+          notes: notes,
         );
       }).toList();
 
@@ -163,14 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void toggleComplete(String id) {
-    setState(() {
-      final item = schedule.firstWhere((s) => s.id == id);
-      item.status = item.status == ScheduleStatus.completed
-          ? ScheduleStatus.upcoming
-          : ScheduleStatus.completed;
-    });
-  }
+  // toggleComplete 함수 제거 - 체크박스는 자동으로 상태가 결정됨
 
   int get todayLessonCount {
     return schedule.length;
@@ -529,7 +527,24 @@ class _HomeScreenState extends State<HomeScreen> {
             : colorScheme.outlineVariant;
 
     return GestureDetector(
-      onTap: () => toggleComplete(item.id),
+      onTap: () {
+        // 수업 메모 작성 화면으로 이동
+        Navigator.of(context).pushNamed(
+          '/lesson-note',
+          arguments: {
+            'scheduleId': item.id,
+            'studentName': item.student,
+            'subject': item.subject,
+            'time': '${item.time} - ${item.endTime}',
+            'notes': item.notes,
+          },
+        ).then((result) {
+          // 메모 저장 후 홈 화면 새로고침
+          if (result == true) {
+            loadTodaySchedules();
+          }
+        });
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -546,115 +561,74 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(Radii.icon - 2),
-                    color: isCompleted ? accentColor : AppColors.surface,
-                    border: Border.all(
-                      color: accentColor,
-                      width: 2,
-                    ),
-                  ),
-                  child: isCompleted
-                      ? Icon(Icons.check_rounded, size: 16, color: AppColors.surface)
-                      : null,
-                ),
-                SizedBox(width: Gaps.card),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: isCurrent ? 0.15 : 0.08),
-                              borderRadius: BorderRadius.circular(Radii.chip + 2),
-                            ),
-                            child: Text(
-                              '${item.time} - ${item.endTime}',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: accentColor,
-                              ),
-                            ),
-                          ),
-                          if (isCurrent) ...[
-                            const SizedBox(width: 8),
-                            Icon(Icons.bolt_rounded, size: 18, color: accentColor),
-                          ],
-                        ],
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: isCurrent ? 0.15 : 0.08),
+                        borderRadius: BorderRadius.circular(Radii.chip + 2),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        item.student,
-                        style: theme.textTheme.titleMedium?.copyWith(
+                      child: Text(
+                        '${item.time} - ${item.endTime}',
+                        style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: isCompleted
-                              ? colorScheme.onSurface.withValues(alpha: 0.5)
-                              : colorScheme.onSurface,
-                          decoration:
-                              isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                          color: accentColor,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.subject,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                    ),
+                    if (isCurrent) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.bolt_rounded, size: 18, color: accentColor),
                     ],
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  item.student,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isCompleted
+                        ? colorScheme.onSurface.withValues(alpha: 0.5)
+                        : colorScheme.onSurface,
+                    decoration:
+                        isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.subject,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
-            if (item.status != ScheduleStatus.completed) ...[
-              const SizedBox(height: 18),
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    // TODO: 수업 메모 작성 화면으로 이동
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${item.student}님의 수업 메모 작성'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  },
+            if (item.notes != null && item.notes!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(Gaps.card),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(Radii.card - 2),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(Radii.card - 2),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: 12),
-                    child: Row(
-                      children: [
-                        Icon(Icons.chat_bubble_outline_rounded, size: 18, color: accentColor),
-                        SizedBox(width: Gaps.row),
-                        Expanded(
-                          child: Text(
-                            '오늘 수업 메모 작성하기',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: accentColor,
-                            ),
-                          ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.note_rounded, size: 18, color: accentColor),
+                    SizedBox(width: Gaps.row),
+                    Expanded(
+                      child: Text(
+                        '메모 있음',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: accentColor,
+                          fontWeight: FontWeight.w500,
                         ),
-                        Icon(Icons.arrow_forward_ios_rounded, size: 14, color: accentColor),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],

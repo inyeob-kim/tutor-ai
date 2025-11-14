@@ -26,7 +26,7 @@ class _ByeScreenState extends State<ByeScreen> {
       final teacher = TeacherService.instance.currentTeacher;
       if (mounted) {
         setState(() {
-          _teacherName = teacher?.name ?? '';
+          _teacherName = teacher?.nickname ?? '';
         });
       }
     } catch (e) {

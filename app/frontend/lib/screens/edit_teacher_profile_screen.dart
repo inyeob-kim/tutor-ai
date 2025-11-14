@@ -42,7 +42,7 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
       if (teacher != null && mounted) {
         setState(() {
           _teacher = teacher;
-          _nameController = TextEditingController(text: teacher.name);
+          _nameController = TextEditingController(text: teacher.nickname);
           _phoneController = TextEditingController(text: teacher.phone);
           _emailController = TextEditingController(text: teacher.email ?? '');
           _bankNameController = TextEditingController(text: teacher.bankName ?? '');
@@ -97,7 +97,7 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
       final phoneDigits = _phoneController.text.replaceAll(RegExp(r'[^\d]'), '');
 
       final updateData = <String, dynamic>{
-        'name': _nameController.text.trim(),
+        'nickname': _nameController.text.trim(),
         'phone': phoneDigits,
         if (_emailController.text.isNotEmpty) 'email': _emailController.text.trim(),
         if (_bankNameController.text.isNotEmpty) 'bank_name': _bankNameController.text.trim(),
@@ -173,8 +173,8 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
             _buildSectionTitle('프로필 정보', theme, colorScheme),
             _buildTextField(
               controller: _nameController,
-              label: '이름',
-              hint: '이름을 입력하세요',
+              label: '닉네임',
+              hint: '닉네임을 입력하세요',
               icon: Icons.person_outline_rounded,
               required: true,
               theme: theme,

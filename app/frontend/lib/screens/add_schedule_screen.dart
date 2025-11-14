@@ -31,6 +31,8 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
   bool _isLoading = false;
   List<Map<String, dynamic>> _students = [];
   bool _isLoadingStudents = false;
+  // 해당 날짜의 등록된 수업 목록 (disabled 처리용)
+  List<Map<String, dynamic>> _existingSchedules = [];
 
   // 타임슬롯 정의 (30분 단위)
   final List<String> _timeSlots = [
@@ -65,6 +67,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
     }
     
     _loadStudents();
+    _loadExistingSchedules();
   }
 
   @override
@@ -128,10 +131,81 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
         // 날짜 변경 시 시간 범위 초기화
         _selectedTimeRange = {'start': null, 'end': null};
       });
+      // 날짜 변경 시 해당 날짜의 등록된 수업 목록 다시 로드
+      _loadExistingSchedules();
     }
   }
 
+  /// 해당 날짜의 등록된 수업 목록 로드
+  Future<void> _loadExistingSchedules() async {
+    try {
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher == null) return;
+
+      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final schedules = await ApiService.getSchedules(
+        teacherId: teacher.teacherId,
+        dateFrom: dateStr,
+        dateTo: dateStr,
+        status: 'confirmed', // confirmed 수업만
+      );
+
+      if (mounted) {
+        setState(() {
+          _existingSchedules = schedules;
+        });
+      }
+    } catch (e) {
+      print('⚠️ 등록된 수업 목록 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _existingSchedules = [];
+        });
+      }
+    }
+  }
+
+  /// 타임슬롯이 이미 등록된 수업과 겹치는지 확인
+  bool _isTimeSlotDisabled(String timeSlot) {
+    if (_existingSchedules.isEmpty) return false;
+
+    // 타임슬롯의 시간 파싱
+    final slotParts = timeSlot.split(':');
+    final slotHour = int.tryParse(slotParts[0]) ?? 0;
+    final slotMin = int.tryParse(slotParts[1]) ?? 0;
+    final slotTime = slotHour * 60 + slotMin; // 분 단위로 변환
+
+    // 각 등록된 수업과 겹치는지 확인
+    for (final schedule in _existingSchedules) {
+      final startTime = schedule['start_time'] as String? ?? '00:00';
+      final endTime = schedule['end_time'] as String? ?? '00:00';
+
+      final startParts = startTime.split(':');
+      final endParts = endTime.split(':');
+      final startHour = int.tryParse(startParts[0]) ?? 0;
+      final startMin = startParts.length > 1 ? (int.tryParse(startParts[1]) ?? 0) : 0;
+      final endHour = int.tryParse(endParts[0]) ?? 0;
+      final endMin = endParts.length > 1 ? (int.tryParse(endParts[1]) ?? 0) : 0;
+
+      final scheduleStart = startHour * 60 + startMin;
+      final scheduleEnd = endHour * 60 + endMin;
+
+      // 타임슬롯이 수업 시간 범위 내에 있는지 확인
+      // 타임슬롯은 30분 단위이므로, 해당 시간대의 시작점을 기준으로 확인
+      if (slotTime >= scheduleStart && slotTime < scheduleEnd) {
+        return true; // 겹침
+      }
+    }
+
+    return false;
+  }
+
   void _selectTimeSlot(String timeSlot) {
+    // disabled된 타임슬롯은 선택 불가
+    if (_isTimeSlotDisabled(timeSlot)) {
+      return;
+    }
+
     setState(() {
       if (_selectedTimeRange['start'] == null) {
         // 시작 시간 선택
@@ -222,17 +296,45 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
         return;
       }
 
+      final lessonDate = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final startTime = _selectedTimeRange['start'] as String;
+      final endTime = _selectedTimeRange['end'] ?? _selectedTimeRange['start'] as String;
+
+      // 시간 충돌 체크
+      final hasConflict = await ApiService.checkScheduleConflict(
+        teacherId: teacher.teacherId,
+        lessonDate: lessonDate,
+        startTime: startTime,
+        endTime: endTime,
+      );
+
+      if (hasConflict) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('해당 시간대에 이미 등록된 수업이 있습니다.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
+        return;
+      }
+
       final data = <String, dynamic>{
         'teacher_id': teacher.teacherId, // 현재 로그인한 선생님 ID 추가
         'student_id': _selectedStudentId,
-        'lesson_date': DateFormat('yyyy-MM-dd').format(_selectedDate),
-        'start_time': _selectedTimeRange['start'],
-        'end_time': _selectedTimeRange['end'] ?? _selectedTimeRange['start'],
+        'lesson_date': lessonDate,
+        'start_time': startTime,
+        'end_time': endTime,
         'subject_id': _selectedSubject!, // subject_id로 변경 (백엔드는 subject_id 사용)
         if (_notesController.text.isNotEmpty) 'notes': _notesController.text.trim(),
       };
 
       await ApiService.createSchedule(data);
+
+      // 등록된 수업 목록 다시 로드 (disabled 상태 업데이트)
+      await _loadExistingSchedules();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -369,40 +471,50 @@ class _AddScheduleScreenState extends State<AddScheduleScreen> {
                         final isSelected = _isTimeSlotSelected(timeSlot);
                         final isStart = _isTimeSlotStart(timeSlot);
                         final isEnd = _isTimeSlotEnd(timeSlot);
+                        final isDisabled = _isTimeSlotDisabled(timeSlot);
                         
                         return InkWell(
-                          onTap: () => _selectTimeSlot(timeSlot),
+                          onTap: isDisabled ? null : () => _selectTimeSlot(timeSlot),
                           borderRadius: BorderRadius.circular(Radii.icon),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: Gaps.row,
-                              vertical: Gaps.row - 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? (isStart || isEnd
-                                      ? AppColors.primary
-                                      : colorScheme.primaryContainer)
-                                  : colorScheme.surface,
-                              borderRadius: BorderRadius.circular(Radii.chip),
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : colorScheme.outline.withOpacity(0.2),
-                                width: isSelected ? 2 : 1,
+                          child: Opacity(
+                            opacity: isDisabled ? 0.4 : 1.0,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: Gaps.row,
+                                vertical: Gaps.row - 2,
                               ),
-                            ),
-                            child: Text(
-                              timeSlot,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: isStart || isEnd
-                                    ? FontWeight.w700
-                                    : FontWeight.normal,
-                                color: isSelected
-                                    ? (isStart || isEnd
-                                        ? AppColors.surface
-                                        : colorScheme.onPrimaryContainer)
-                                    : colorScheme.onSurface,
+                              decoration: BoxDecoration(
+                                color: isDisabled
+                                    ? colorScheme.surfaceContainerHighest
+                                    : (isSelected
+                                        ? (isStart || isEnd
+                                            ? AppColors.primary
+                                            : colorScheme.primaryContainer)
+                                        : colorScheme.surface),
+                                borderRadius: BorderRadius.circular(Radii.chip),
+                                border: Border.all(
+                                  color: isDisabled
+                                      ? colorScheme.outline.withOpacity(0.3)
+                                      : (isSelected
+                                          ? AppColors.primary
+                                          : colorScheme.outline.withOpacity(0.2)),
+                                  width: isSelected ? 2 : 1,
+                                ),
+                              ),
+                              child: Text(
+                                timeSlot,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  fontWeight: isStart || isEnd
+                                      ? FontWeight.w700
+                                      : FontWeight.normal,
+                                  color: isDisabled
+                                      ? colorScheme.onSurface.withOpacity(0.4)
+                                      : (isSelected
+                                          ? (isStart || isEnd
+                                              ? AppColors.surface
+                                              : colorScheme.onPrimaryContainer)
+                                          : colorScheme.onSurface),
+                                ),
                               ),
                             ),
                           ),

@@ -7,7 +7,7 @@ import 'settings_service.dart';
 /// Teacher 정보 모델
 class Teacher {
   final int teacherId;
-  final String name;
+  final String nickname;
   final String phone;
   final String? email;
   final String? subjectId;
@@ -27,7 +27,7 @@ class Teacher {
 
   Teacher({
     required this.teacherId,
-    required this.name,
+    required this.nickname,
     required this.phone,
     this.email,
     this.subjectId,
@@ -69,7 +69,7 @@ class Teacher {
 
     return Teacher(
       teacherId: json['teacher_id'] as int,
-      name: json['name'] as String,
+      nickname: json['nickname'] as String,
       phone: json['phone'] as String,
       email: json['email'] as String?,
       subjectId: json['subject_id'] as String?,
@@ -93,7 +93,7 @@ class Teacher {
   Map<String, dynamic> toJson() {
     return {
       'teacher_id': teacherId,
-      'name': name,
+      'nickname': nickname,
       'phone': phone,
       'email': email,
       'subject_id': subjectId,
@@ -143,7 +143,7 @@ class TeacherService {
 
       // 캐시에서 로드 (forceRefresh가 false일 때)
       if (!forceRefresh && _currentTeacher != null) {
-        print('✅ 캐시에서 Teacher 정보 로드: ${_currentTeacher!.name}');
+        print('✅ 캐시에서 Teacher 정보 로드: ${_currentTeacher!.nickname}');
         return _currentTeacher;
       }
 
@@ -165,7 +165,7 @@ class TeacherService {
               }
             }
             
-            print('✅ SharedPreferences에서 Teacher 정보 로드: ${_currentTeacher!.name}');
+            print('✅ SharedPreferences에서 Teacher 정보 로드: ${_currentTeacher!.nickname}');
             return _currentTeacher;
           } catch (e) {
             print('⚠️ 캐시된 Teacher 정보 파싱 실패: $e');
@@ -200,7 +200,7 @@ class TeacherService {
         }
       }
       
-      print('✅ API에서 Teacher 정보 로드: ${_currentTeacher!.name}');
+      print('✅ API에서 Teacher 정보 로드: ${_currentTeacher!.nickname}');
       return _currentTeacher;
     } catch (e) {
       print('❌ Teacher 정보 로드 실패: $e');
@@ -210,7 +210,7 @@ class TeacherService {
 
   /// Teacher 정보 생성 (회원가입 시 사용)
   Future<Teacher?> createTeacher({
-    required String name,
+    required String nickname,
     required String phone,
     String? email,
     String? subjectId,
@@ -231,7 +231,7 @@ class TeacherService {
               : null);
 
       final teacherJson = await ApiService.createTeacher({
-        'name': name,
+        'nickname': nickname,
         'phone': phone,
         'email': email ?? user.email,
         'subject_id': finalSubjectId,
@@ -250,7 +250,7 @@ class TeacherService {
         }
       }
       
-      print('✅ Teacher 정보 생성 성공: ${_currentTeacher!.name}');
+      print('✅ Teacher 정보 생성 성공: ${_currentTeacher!.nickname}');
       return _currentTeacher;
     } catch (e) {
       print('❌ Teacher 정보 생성 실패: $e');

@@ -77,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
         if (teacher != null) {
           // ✅ 이미 회원가입 완료 → 메인 화면으로 바로 이동
           print('✅ 회원가입 완료 → MainNavigationScreen으로 이동');
-          print('✅ Teacher 정보: name=${teacher.name}, subject_id=${teacher.subjectId}');
+          print('✅ Teacher 정보: nickname=${teacher.nickname}, subject_id=${teacher.subjectId}');
           if (mounted) {
             Navigator.of(context).pushReplacementNamed(AppRoutes.mainNavigation);
           }

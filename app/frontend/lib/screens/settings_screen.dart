@@ -430,7 +430,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final user = auth.currentUser;
 
     // 표시할 이름과 이메일
-    final displayName = teacher?.name ?? user?.displayName ?? '선생님';
+    final displayName = teacher?.nickname ?? user?.displayName ?? '선생님';
     final displayEmail = teacher?.email ?? user?.email ?? 'teacher@example.com';
     
     // 이름의 첫 글자 (아바타용)

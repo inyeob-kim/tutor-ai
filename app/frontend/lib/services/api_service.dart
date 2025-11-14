@@ -117,6 +117,58 @@ class ApiService {
     }
   }
 
+  /// 스케줄 업데이트
+  static Future<Map<String, dynamic>> updateSchedule({
+    required int scheduleId,
+    String? notes,
+    String? status,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (notes != null) data['notes'] = notes;
+      if (status != null) data['status'] = status;
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/schedules/$scheduleId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to update schedule: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating schedule: $e');
+    }
+  }
+
+  /// 스케줄 취소 (삭제)
+  static Future<void> deleteSchedule({
+    required int scheduleId,
+    int? cancelledBy,
+    String? cancelReason,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+      if (cancelledBy != null) queryParams['cancelled_by'] = cancelledBy.toString();
+      if (cancelReason != null) queryParams['cancel_reason'] = cancelReason;
+
+      final uri = Uri.parse('$baseUrl/schedules/$scheduleId').replace(queryParameters: queryParams.isEmpty ? null : queryParams);
+      final response = await http.delete(uri);
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print('✅ 스케줄 취소 성공: schedule_id=$scheduleId');
+        return;
+      } else {
+        throw Exception('Failed to delete schedule: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error deleting schedule: $e');
+    }
+  }
+
   static Future<bool> checkScheduleConflict({
     required int teacherId,
     required String lessonDate,

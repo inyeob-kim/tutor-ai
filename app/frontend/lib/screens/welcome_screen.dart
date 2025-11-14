@@ -26,7 +26,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       final teacher = await TeacherService.instance.loadTeacher();
       if (mounted) {
         setState(() {
-          _teacherName = teacher?.name ?? '선생님';
+          _teacherName = teacher?.nickname ?? '선생님';
         });
         // 애니메이션 표시 후 메인 화면으로 이동
         Future.delayed(const Duration(seconds: 3), () {

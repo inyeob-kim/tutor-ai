@@ -17,6 +17,7 @@ import '../screens/signup/signup_complete_screen.dart';
 import '../screens/add_billing_screen.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/bye_screen.dart';
+import '../screens/lesson_note_screen.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -38,6 +39,7 @@ class AppRoutes {
   static const String signupComplete = '/signup/complete';
   static const String welcome = '/welcome';
   static const String bye = '/bye';
+  static const String lessonNote = '/lesson-note';
 
   static Route<dynamic> generateRoute(RouteSettings routeSettings) {
     final routeName = routeSettings.name ?? splash;
@@ -132,6 +134,18 @@ class AppRoutes {
             case bye:
               return MaterialPageRoute(
                 builder: (_) => const ByeScreen(),
+                settings: routeSettings,
+              );
+            case lessonNote:
+              final args = routeSettings.arguments as Map<String, dynamic>?;
+              return MaterialPageRoute(
+                builder: (_) => LessonNoteScreen(
+                  scheduleId: args?['scheduleId'] as String? ?? '',
+                  studentName: args?['studentName'] as String? ?? '',
+                  subject: args?['subject'] as String? ?? '',
+                  time: args?['time'] as String? ?? '',
+                  initialNotes: args?['notes'] as String?,
+                ),
                 settings: routeSettings,
               );
             default:

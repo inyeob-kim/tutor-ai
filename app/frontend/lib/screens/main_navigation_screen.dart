@@ -5,6 +5,7 @@ import 'students_screen.dart';
 import 'billing_screen.dart';
 import 'stats_screen.dart';
 import 'settings_screen.dart';
+import 'sns_screen.dart';
 import '../theme/tokens.dart';
 import '../services/teacher_service.dart';
 
@@ -18,11 +19,13 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScheduleScreenState> _scheduleScreenKey = GlobalKey<ScheduleScreenState>();
+  final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
 
   List<Widget> get _screens => [
-    const HomeScreen(),
+    HomeScreen(key: _homeScreenKey),
     const StudentsScreen(),
     ScheduleScreen(key: _scheduleScreenKey),
+    const SnsScreen(),
     const StatsScreen(),
     const BillingScreen(),
     const SettingsScreen(),
@@ -49,7 +52,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     try {
       final teacher = await TeacherService.instance.loadTeacher();
       if (teacher != null) {
-        print('✅ 메인 화면: Teacher 정보 로드 완료 - name=${teacher.name}, subject_id=${teacher.subjectId}');
+        print('✅ 메인 화면: Teacher 정보 로드 완료 - nickname=${teacher.nickname}, subject_id=${teacher.subjectId}');
         // 필요시 setState로 UI 업데이트
         if (mounted) {
           setState(() {});
@@ -66,6 +69,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     setState(() {
       _currentIndex = index;
     });
+    
+    // 홈 화면(인덱스 0)으로 전환될 때마다 오늘의 수업 목록 새로고침
+    if (index == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _homeScreenKey.currentState != null) {
+          _homeScreenKey.currentState!.loadTodaySchedules();
+        }
+      });
+    }
     
     // 스케줄 화면(인덱스 2)으로 전환될 때마다 오늘 날짜로 리셋
     if (index == 2) {
@@ -123,6 +135,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 icon: Icon(Icons.event_note_rounded, size: 24, color: AppColors.textMuted),
                 selectedIcon: Icon(Icons.event_note_rounded, size: 24, color: AppColors.primary),
                 label: '스케줄',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.chat_bubble_outline_rounded, size: 24, color: AppColors.textMuted),
+                selectedIcon: Icon(Icons.chat_bubble_rounded, size: 24, color: AppColors.primary),
+                label: '커뮤니티',
               ),
               NavigationDestination(
                 icon: Icon(Icons.bar_chart_rounded, size: 24, color: AppColors.textMuted),
