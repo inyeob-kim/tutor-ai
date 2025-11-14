@@ -227,19 +227,24 @@ class _MoreScreenState extends State<MoreScreen> {
                   SizedBox(height: Gaps.cardPad + 4),
 
                   // 로그아웃
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: OutlinedButton(
-                      onPressed: () => _handleLogout(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: Gaps.card),
-                        side: BorderSide(color: AppColors.error),
-                      ),
-                      child: Text(
-                        '로그아웃',
-                        style: TextStyle(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w600,
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: 400),
+                      child: OutlinedButton(
+                        onPressed: () => _handleLogout(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: Gaps.screen * 2,
+                            vertical: Gaps.card + 4,
+                          ),
+                          side: BorderSide(color: AppColors.error),
+                        ),
+                        child: Text(
+                          '로그아웃',
+                          style: TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),

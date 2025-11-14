@@ -401,18 +401,26 @@ class _LessonSettingsScreenState extends State<LessonSettingsScreen> {
                   ),
                 ),
                 SizedBox(height: Gaps.cardPad + 4),
-                ElevatedButton(
-                  onPressed: () {
-                    onChanged(selectedHour);
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(Radii.chip),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: 400),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        onChanged(selectedHour);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: Gaps.screen * 2,
+                          vertical: Gaps.card + 4,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(Radii.chip),
+                        ),
+                      ),
+                      child: const Text('확인'),
                     ),
                   ),
-                  child: const Text('확인'),
                 ),
               ],
             ),

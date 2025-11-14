@@ -224,35 +224,40 @@ class _LessonNoteScreenState extends State<LessonNoteScreen> {
             ),
             SizedBox(height: Gaps.screen),
             // 저장 버튼
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _saveNotes,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.surface,
-                  padding: EdgeInsets.symmetric(vertical: Gaps.card),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(Radii.chip),
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: 400),
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _saveNotes,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.surface,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: Gaps.screen * 2,
+                      vertical: Gaps.card + 4,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(Radii.chip),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
+                  child: _isSaving
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                          ),
+                        )
+                      : Text(
+                          '저장하기',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.surface,
+                          ),
+                        ),
                 ),
-                child: _isSaving
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
-                        ),
-                      )
-                    : Text(
-                        '저장하기',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.surface,
-                        ),
-                      ),
               ),
             ),
           ],

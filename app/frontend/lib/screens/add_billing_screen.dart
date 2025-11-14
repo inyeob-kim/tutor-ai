@@ -46,6 +46,8 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
       final students = await ApiService.getStudents();
       setState(() {
         _students = students;
+        _selectedStudentId = null; // 명시적으로 선택 해제
+        _selectedSubject = null; // 과목도 선택 해제
         _isLoadingStudents = false;
       });
     } catch (e) {
@@ -78,6 +80,8 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
             'subjects': ['국어', '영어'],
           },
         ];
+        _selectedStudentId = null; // 명시적으로 선택 해제
+        _selectedSubject = null; // 과목도 선택 해제
         _isLoadingStudents = false;
       });
     }
@@ -435,28 +439,36 @@ class _AddBillingScreenState extends State<AddBillingScreen> {
             SizedBox(height: Gaps.cardPad + 12),
 
             // 등록 버튼
-            FilledButton(
-              onPressed: _isLoading ? null : _submit,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: Gaps.card),
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.surface,
-              ),
-              child: _isLoading
-                  ? SizedBox(
-                      height: Gaps.screen,
-                      width: Gaps.screen,
-                      child: const SmallLoadingIndicator(
-                        size: 20,
-                      ),
-                    )
-                  : Text(
-                      '청구 등록',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.surface,
-                      ),
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: 400),
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: Gaps.screen * 2,
+                      vertical: Gaps.card + 4,
                     ),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.surface,
+                  ),
+                  child: _isLoading
+                      ? SizedBox(
+                          height: Gaps.screen,
+                          width: Gaps.screen,
+                          child: const SmallLoadingIndicator(
+                            size: 20,
+                          ),
+                        )
+                      : Text(
+                          '청구 등록',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.surface,
+                          ),
+                        ),
+                ),
+              ),
             ),
             SizedBox(height: Gaps.screen * 5),
           ],

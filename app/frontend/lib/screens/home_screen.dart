@@ -567,11 +567,14 @@ class HomeScreenState extends State<HomeScreen> {
   ) {
     final isCompleted = item.status == ScheduleStatus.completed;
     final isCurrent = item.status == ScheduleStatus.current;
-    final accentColor = isCurrent
-        ? AppColors.warning
-        : isCompleted
+    
+    // 색상 정의: 완료=회색, 진행중=초록색, 예정=주황색
+    final cardColor = isCompleted
+        ? AppColors.textMuted
+        : isCurrent
             ? AppColors.success
-            : colorScheme.outlineVariant;
+            : AppColors.warning; // 예정
+    final accentColor = cardColor;
 
     return GestureDetector(
       onTap: () {
@@ -616,11 +619,7 @@ class HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isCurrent 
-                            ? AppColors.warning.withValues(alpha: 0.15)
-                            : isCompleted
-                                ? AppColors.success.withValues(alpha: 0.15)
-                                : AppColors.primary.withValues(alpha: 0.1),
+                        color: cardColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(Radii.chip + 2),
                       ),
                       child: Text(
@@ -628,17 +627,13 @@ class HomeScreenState extends State<HomeScreen> {
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: isCurrent 
-                              ? AppColors.warning
-                              : isCompleted
-                                  ? AppColors.success
-                                  : AppColors.primary,
+                          color: cardColor,
                         ),
                       ),
                     ),
                     if (isCurrent) ...[
                       const SizedBox(width: 8),
-                      Icon(Icons.bolt_rounded, size: 18, color: AppColors.warning),
+                      Icon(Icons.bolt_rounded, size: 18, color: AppColors.success),
                     ],
                   ],
                 ),

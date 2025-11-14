@@ -245,28 +245,36 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
             SizedBox(height: Gaps.cardPad + 12),
 
             // 저장 버튼
-            FilledButton(
-              onPressed: _isLoading ? null : _submit,
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: Gaps.card),
-                backgroundColor: AppColors.primary,
-              ),
-              child: _isLoading
-                  ? SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
-                      ),
-                    )
-                  : Text(
-                      '저장',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.surface,
-                      ),
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: 400),
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: Gaps.screen * 2,
+                      vertical: Gaps.card + 4,
                     ),
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: _isLoading
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                          ),
+                        )
+                      : Text(
+                          '저장',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.surface,
+                          ),
+                        ),
+                ),
+              ),
             ),
             SizedBox(height: Gaps.screen * 5),
           ],
