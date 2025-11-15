@@ -111,6 +111,8 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _isVisible = true;
+        // 설정 다시 로드 (DB에서 최신 값 가져오기)
+        _loadSettings();
         resetToTodayIfNeeded();
         // 오늘 날짜의 수업 목록 새로고침 (캐시 무효화)
         final today = DateTime.now();
@@ -156,14 +158,17 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   /// 오늘 날짜로 리셋
   Future<void> _resetToToday({bool force = false}) async {
     final today = DateTime.now();
-      final excludeWeekends = await SettingsService.getExcludeWeekends();
+    
+    // DB에서 Teacher 정보를 가져와서 주말 제외 설정 사용
+    final teacher = await TeacherService.instance.loadTeacher();
+    final excludeWeekends = teacher?.excludeWeekends ?? await SettingsService.getExcludeWeekends();
     
     DateTime selectedDate = today;
-      if (excludeWeekends) {
+    if (excludeWeekends) {
       final weekday = today.weekday;
-        if (weekday == 6 || weekday == 7) {
-          // 다음 평일 찾기
-          int daysToAdd = weekday == 6 ? 2 : 1; // 토요일이면 2일 후(월요일), 일요일이면 1일 후(월요일)
+      if (weekday == 6 || weekday == 7) {
+        // 다음 평일 찾기
+        int daysToAdd = weekday == 6 ? 2 : 1; // 토요일이면 2일 후(월요일), 일요일이면 1일 후(월요일)
         selectedDate = today.add(Duration(days: daysToAdd));
       }
     }
@@ -464,10 +469,32 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
   }
 
   Future<void> _loadSettings() async {
-    final startHour = await SettingsService.getStartHour();
-    final endHour = await SettingsService.getEndHour();
+    // DB에서 Teacher 정보를 가져와서 수업 시간 설정 사용
+    final teacher = await TeacherService.instance.loadTeacher();
+    
+    int startHour = 12; // 기본값
+    int endHour = 22; // 기본값
+    bool excludeWeekends = false; // 기본값
+    
+    if (teacher != null) {
+      // DB에서 가져온 값 사용 (null이면 기본값 유지)
+      startHour = teacher.lessonStartHour ?? 12;
+      endHour = teacher.lessonEndHour ?? 22;
+      excludeWeekends = teacher.excludeWeekends;
+      
+      // SettingsService에도 동기화 (다른 화면에서 사용할 수 있도록)
+      await SettingsService.setStartHour(startHour);
+      await SettingsService.setEndHour(endHour);
+      await SettingsService.setExcludeWeekends(excludeWeekends);
+    } else {
+      // Teacher 정보가 없으면 SettingsService에서 가져오기
+      startHour = await SettingsService.getStartHour();
+      endHour = await SettingsService.getEndHour();
+      excludeWeekends = await SettingsService.getExcludeWeekends();
+    }
+    
     final disabledHours = await SettingsService.getDisabledHours(_selectedDate);
-    final excludeWeekends = await SettingsService.getExcludeWeekends();
+    
     setState(() {
       _startHour = startHour;
       _endHour = endHour;

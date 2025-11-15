@@ -200,6 +200,9 @@ async def update_teacher(
         "total_students",
         "monthly_income",
         "notes",
+        "lesson_start_hour",
+        "lesson_end_hour",
+        "exclude_weekends",
     }
 
     disallowed = [field for field in data.keys() if field not in allowed_fields]

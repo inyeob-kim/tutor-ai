@@ -45,6 +45,9 @@ async def list_teachers(
                 "total_students": t.total_students,
                 "monthly_income": t.monthly_income,
                 "notes": t.notes,
+                "lesson_start_hour": t.lesson_start_hour,
+                "lesson_end_hour": t.lesson_end_hour,
+                "exclude_weekends": t.exclude_weekends,
                 "created_at": t.created_at,
                 "updated_at": t.updated_at,
             }
@@ -79,6 +82,9 @@ async def get_teacher(teacher_id: int, db: AsyncSession = Depends(get_session)):
         "total_students": teacher.total_students,
         "monthly_income": teacher.monthly_income,
         "notes": teacher.notes,
+        "lesson_start_hour": teacher.lesson_start_hour,
+        "lesson_end_hour": teacher.lesson_end_hour,
+        "exclude_weekends": teacher.exclude_weekends,
         "created_at": teacher.created_at,
         "updated_at": teacher.updated_at,
     }
