@@ -16,6 +16,7 @@ class ScheduleItem {
   final String subject;
   ScheduleStatus status;
   final String? notes;
+  final String? attendanceStatus; // 'present', 'late', 'absent', null
 
   ScheduleItem({
     required this.id,
@@ -25,6 +26,7 @@ class ScheduleItem {
     required this.subject,
     required this.status,
     this.notes,
+    this.attendanceStatus,
   });
 }
 
@@ -35,21 +37,50 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<ScheduleItem> schedule = [];
   bool _isLoading = true;
   bool _hasNotifications = false; // 알림이 있는지 여부 (나중에 실제 알림 데이터와 연동)
   String? _teacherNickname;
+  bool _isVisible = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // 홈화면 진입 시 Teacher 정보 로드 (캐시 또는 API)
     _loadTeacherInfo();
     // 오늘의 스케줄 로드
     loadTodaySchedules();
     // 알림 스케줄링
     _scheduleReminders();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // 앱이 포그라운드로 돌아올 때 스케줄 새로고침
+    if (state == AppLifecycleState.resumed && _isVisible) {
+      loadTodaySchedules();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 화면이 다시 활성화될 때마다 스케줄 새로고침
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _isVisible = true;
+        loadTodaySchedules();
+      }
+    });
   }
 
   /// 일정 리마인드 알림 스케줄링
@@ -122,6 +153,7 @@ class HomeScreenState extends State<HomeScreen> {
         final endTime = s['end_time'] as String? ?? '';
         final status = s['status'] as String? ?? 'pending';
         final notes = s['notes'] as String?;
+        final attendanceStatus = s['attendance_status'] as String?; // 'present', 'late', 'absent', null
 
         // 시간 파싱
         final startParts = startTime.split(':');
@@ -160,6 +192,7 @@ class HomeScreenState extends State<HomeScreen> {
           subject: subject,
           status: scheduleStatus,
           notes: notes,
+          attendanceStatus: attendanceStatus,
         );
       }).toList();
 
@@ -640,14 +673,71 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  item.subject,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      item.subject,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (item.attendanceStatus != null) ...[
+                      const SizedBox(width: 8),
+                      _buildAttendanceBadge(item.attendanceStatus!, theme, colorScheme),
+                    ],
+                  ],
                 ),
               ],
             ),
+            // 출석/지각/결석 버튼 (완료되지 않은 수업에만 표시)
+            if (!isCompleted) ...[
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(Radii.card - 2),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: Gaps.card, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline_rounded, size: 18, color: accentColor),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildAttendanceChip(
+                            '출석',
+                            'show',
+                            item.attendanceStatus == 'present',
+                            () => _setAttendance(item.id, 'show'),
+                            theme,
+                            colorScheme,
+                          ),
+                          _buildAttendanceChip(
+                            '지각',
+                            'late',
+                            item.attendanceStatus == 'late',
+                            () => _setAttendance(item.id, 'late'),
+                            theme,
+                            colorScheme,
+                          ),
+                          _buildAttendanceChip(
+                            '결석',
+                            'absent',
+                            item.attendanceStatus == 'absent',
+                            () => _setAttendance(item.id, 'absent'),
+                            theme,
+                            colorScheme,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (item.notes != null && item.notes!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
@@ -677,6 +767,165 @@ class HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildAttendanceBadge(String attendanceStatus, ThemeData theme, ColorScheme colorScheme) {
+    String label;
+    Color badgeColor;
+    Color textColor;
+
+    switch (attendanceStatus) {
+      case 'present':
+        label = '출석';
+        badgeColor = AppColors.success.withValues(alpha: 0.15);
+        textColor = AppColors.success;
+        break;
+      case 'late':
+        label = '지각';
+        badgeColor = AppColors.warning.withValues(alpha: 0.15);
+        textColor = AppColors.warning;
+        break;
+      case 'absent':
+        label = '결석';
+        badgeColor = AppColors.error.withValues(alpha: 0.15);
+        textColor = AppColors.error;
+        break;
+      default:
+        label = '';
+        badgeColor = Colors.transparent;
+        textColor = Colors.transparent;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(Radii.chip),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttendanceChip(
+    String label,
+    String value,
+    bool isSelected,
+    VoidCallback onTap,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colorScheme.primaryContainer
+                : Colors.transparent,
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primary
+                  : colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: isSelected ? 1.5 : 1,
+            ),
+            borderRadius: BorderRadius.circular(Radii.chip),
+          ),
+          child: Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setAttendance(String scheduleId, String attendance) async {
+    try {
+      final id = int.parse(scheduleId);
+      
+      // 현재 출석 상태 확인 (백엔드 값: 'present', 'late', 'absent', null)
+      final currentItem = schedule.firstWhere((item) => item.id == scheduleId);
+      final currentAttendanceStatus = currentItem.attendanceStatus;
+      
+      // 프론트엔드 attendance 값('show', 'late', 'absent')을 백엔드 attendance_status 값('present', 'late', 'absent')으로 변환
+      String? attendanceStatus;
+      if (attendance == 'show') {
+        attendanceStatus = 'present';
+      } else if (attendance == 'late') {
+        attendanceStatus = 'late';
+      } else if (attendance == 'absent') {
+        attendanceStatus = 'absent';
+      }
+      
+      // 같은 버튼을 다시 누르면 null로 설정 (출석 상태 해제)
+      // 현재 상태가 클릭한 버튼의 상태와 같으면 null로, 다르면 새로운 상태로 설정
+      final newAttendanceStatus = currentAttendanceStatus == attendanceStatus ? null : attendanceStatus;
+      
+      // 로컬 상태 먼저 업데이트 (즉시 UI 반영)
+      if (mounted) {
+        setState(() {
+          final index = schedule.indexWhere((item) => item.id == scheduleId);
+          if (index != -1) {
+            schedule[index] = ScheduleItem(
+              id: schedule[index].id,
+              time: schedule[index].time,
+              endTime: schedule[index].endTime,
+              student: schedule[index].student,
+              subject: schedule[index].subject,
+              status: schedule[index].status,
+              notes: schedule[index].notes,
+              attendanceStatus: newAttendanceStatus,
+            );
+          }
+        });
+      }
+      
+      // API 호출하여 서버에 저장
+      await ApiService.updateSchedule(
+        scheduleId: id,
+        attendanceStatus: newAttendanceStatus,
+      );
+      
+      print('✅ 출석 상태 업데이트 완료: scheduleId=$id, attendanceStatus=$newAttendanceStatus');
+      
+      // 홈 화면 스케줄 새로고침 (서버 데이터 반영)
+      await loadTodaySchedules();
+      
+    } catch (e) {
+      print('❌ 출석 상태 업데이트 실패: $e');
+      
+      // 에러 발생 시 원래 상태로 복구
+      if (mounted) {
+        await loadTodaySchedules(); // 스케줄 다시 로드
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('출석 상태 업데이트 실패: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildQuickActions(ThemeData theme, ColorScheme colorScheme) {

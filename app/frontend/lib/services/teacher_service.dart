@@ -22,6 +22,9 @@ class Teacher {
   final String? hourlyRateMax;
   final String? availableDays;
   final String? availableTime;
+  final int? lessonStartHour;
+  final int? lessonEndHour;
+  final bool excludeWeekends;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -42,6 +45,9 @@ class Teacher {
     this.hourlyRateMax,
     this.availableDays,
     this.availableTime,
+    this.lessonStartHour,
+    this.lessonEndHour,
+    this.excludeWeekends = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -84,6 +90,9 @@ class Teacher {
       hourlyRateMax: json['hourly_rate_max']?.toString(),
       availableDays: json['available_days'] as String?,
       availableTime: json['available_time'] as String?,
+      lessonStartHour: json['lesson_start_hour'] as int?,
+      lessonEndHour: json['lesson_end_hour'] as int?,
+      excludeWeekends: json['exclude_weekends'] as bool? ?? false,
       createdAt: parseDateTime(json['created_at']),
       updatedAt: parseDateTime(json['updated_at']),
     );
@@ -164,6 +173,15 @@ class TeacherService {
               }
             }
             
+            // 수업 시간 설정을 DB에서 가져와서 SettingsService에 동기화
+            if (_currentTeacher!.lessonStartHour != null) {
+              await SettingsService.setStartHour(_currentTeacher!.lessonStartHour!);
+            }
+            if (_currentTeacher!.lessonEndHour != null) {
+              await SettingsService.setEndHour(_currentTeacher!.lessonEndHour!);
+            }
+            await SettingsService.setExcludeWeekends(_currentTeacher!.excludeWeekends);
+            
             print('✅ SharedPreferences에서 Teacher 정보 로드: ${_currentTeacher!.nickname}');
             return _currentTeacher;
           } catch (e) {
@@ -198,6 +216,15 @@ class TeacherService {
           print('✅ 선생님 과목 목록 로드: ${subjectList.join(", ")}');
         }
       }
+      
+      // 수업 시간 설정을 DB에서 가져와서 SettingsService에 동기화
+      if (_currentTeacher!.lessonStartHour != null) {
+        await SettingsService.setStartHour(_currentTeacher!.lessonStartHour!);
+      }
+      if (_currentTeacher!.lessonEndHour != null) {
+        await SettingsService.setEndHour(_currentTeacher!.lessonEndHour!);
+      }
+      await SettingsService.setExcludeWeekends(_currentTeacher!.excludeWeekends);
       
       print('✅ API에서 Teacher 정보 로드: ${_currentTeacher!.nickname}');
       return _currentTeacher;
@@ -248,6 +275,15 @@ class TeacherService {
           await SettingsService.setTeacherSubjects(subjectList);
         }
       }
+      
+      // 수업 시간 설정을 DB에서 가져와서 SettingsService에 동기화
+      if (_currentTeacher!.lessonStartHour != null) {
+        await SettingsService.setStartHour(_currentTeacher!.lessonStartHour!);
+      }
+      if (_currentTeacher!.lessonEndHour != null) {
+        await SettingsService.setEndHour(_currentTeacher!.lessonEndHour!);
+      }
+      await SettingsService.setExcludeWeekends(_currentTeacher!.excludeWeekends);
       
       print('✅ Teacher 정보 생성 성공: ${_currentTeacher!.nickname}');
       return _currentTeacher;

@@ -33,6 +33,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _startHour = 12;
   int _endHour = 22;
   bool _excludeWeekends = false;
+  bool _isSavingLessonSettings = false;
+  List<String> _originalTeacherSubjects = []; // 원본 과목 목록 (변경 감지용)
+  bool _isSavingSubjects = false;
 
   @override
   void initState() {
@@ -52,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _excludeWeekends = excludeWeekends;
       if (teacherSubjects.isNotEmpty) {
         _teacherSubjects = teacherSubjects;
+        _originalTeacherSubjects = List.from(teacherSubjects);
       }
     });
   }
@@ -72,18 +76,126 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveStartHour(int hour) async {
-    await SettingsService.setStartHour(hour);
     setState(() => _startHour = hour);
   }
 
   Future<void> _saveEndHour(int hour) async {
-    await SettingsService.setEndHour(hour);
     setState(() => _endHour = hour);
   }
 
-  Future<void> _saveExcludeWeekends(bool value) async {
-    await SettingsService.setExcludeWeekends(value);
-    setState(() => _excludeWeekends = value);
+  bool _hasSubjectsChanged() {
+    if (_teacherSubjects.length != _originalTeacherSubjects.length) {
+      return true;
+    }
+    final sortedCurrent = List.from(_teacherSubjects)..sort();
+    final sortedOriginal = List.from(_originalTeacherSubjects)..sort();
+    return sortedCurrent.toString() != sortedOriginal.toString();
+  }
+
+  Future<void> _saveSubjects() async {
+    if (_isSavingSubjects) return;
+    
+    setState(() => _isSavingSubjects = true);
+    
+    try {
+      // SharedPreferences에 저장
+      await SettingsService.setTeacherSubjects(_teacherSubjects);
+      
+      // DB에도 저장 (Teacher 업데이트)
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher != null) {
+        // 과목 목록을 콤마로 구분하여 subject_id에 저장
+        final subjectId = _teacherSubjects.join(',');
+        await ApiService.updateTeacher(teacher.teacherId, {
+          'subject_id': subjectId,
+        });
+        // TeacherService 캐시 새로고침
+        await TeacherService.instance.refresh();
+        print('✅ 선생님 과목 목록 DB 저장 완료: $subjectId');
+        
+        // 원본 목록 업데이트
+        setState(() {
+          _originalTeacherSubjects = List.from(_teacherSubjects);
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('과목 목록이 저장되었습니다.'),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        throw Exception('선생님 정보를 찾을 수 없습니다.');
+      }
+    } catch (e) {
+      print('⚠️ 선생님 과목 목록 DB 저장 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('과목 목록 저장에 실패했습니다: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingSubjects = false);
+      }
+    }
+  }
+
+  Future<void> _saveLessonSettings() async {
+    if (_isSavingLessonSettings) return;
+    
+    setState(() => _isSavingLessonSettings = true);
+    
+    try {
+      // 로컬 설정에 먼저 저장
+      await SettingsService.setStartHour(_startHour);
+      await SettingsService.setEndHour(_endHour);
+      await SettingsService.setExcludeWeekends(_excludeWeekends);
+      
+      // DB에도 저장
+      final teacher = await TeacherService.instance.loadTeacher();
+      if (teacher != null) {
+        await ApiService.updateTeacher(teacher.teacherId, {
+          'lesson_start_hour': _startHour,
+          'lesson_end_hour': _endHour,
+          'exclude_weekends': _excludeWeekends,
+        });
+        await TeacherService.instance.refresh();
+        print('✅ 수업 설정 DB 저장 완료: start=$_startHour, end=$_endHour, excludeWeekends=$_excludeWeekends');
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('수업 설정이 저장되었습니다.'),
+              backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        throw Exception('선생님 정보를 찾을 수 없습니다.');
+      }
+    } catch (e) {
+      print('⚠️ 수업 설정 DB 저장 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('수업 설정 저장에 실패했습니다: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingLessonSettings = false);
+      }
+    }
   }
 
   @override
@@ -184,36 +296,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           setState(() {
                             _teacherSubjects = result;
                           });
-                          // SharedPreferences에 저장
-                          await SettingsService.setTeacherSubjects(result);
-                          
-                          // DB에도 저장 (Teacher 업데이트)
-                          try {
-                            final teacher = await TeacherService.instance.loadTeacher();
-                            if (teacher != null) {
-                              // 과목 목록을 콤마로 구분하여 subject_id에 저장
-                              final subjectId = result.join(',');
-                              await ApiService.updateTeacher(teacher.teacherId, {
-                                'subject_id': subjectId,
-                              });
-                              // TeacherService 캐시 새로고침
-                              await TeacherService.instance.refresh();
-                              print('✅ 선생님 과목 목록 DB 저장 완료: $subjectId');
-                            }
-                          } catch (e) {
-                            print('⚠️ 선생님 과목 목록 DB 저장 실패: $e');
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('과목 목록 저장에 실패했습니다: ${e.toString()}'),
-                                  backgroundColor: AppColors.error,
-                                ),
-                              );
-                            }
-                          }
                         }
                       },
                     ),
+                    // 과목이 변경되었을 때만 저장 버튼 표시
+                    if (_hasSubjectsChanged()) ...[
+                      const Divider(height: 1),
+                      Padding(
+                        padding: EdgeInsets.all(Gaps.card),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: _isSavingSubjects ? null : _saveSubjects,
+                            icon: _isSavingSubjects
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                                    ),
+                                  )
+                                : const Icon(Icons.save_rounded, size: 20),
+                            label: Text(_isSavingSubjects ? '저장 중...' : '과목 저장'),
+                            style: FilledButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                              minimumSize: const Size(0, 48),
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.surface,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const Divider(height: 1),
                     _buildTimeRangeTile(
                       theme: theme,
@@ -237,7 +352,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: '주말 제외',
                       subtitle: '토요일과 일요일은 수업 시간대에서 제외합니다',
                       value: _excludeWeekends,
-                      onChanged: _saveExcludeWeekends,
+                      onChanged: (value) {
+                        setState(() => _excludeWeekends = value);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    // 저장 버튼 (카드 안에)
+                    Padding(
+                      padding: EdgeInsets.all(Gaps.card),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _isSavingLessonSettings ? null : _saveLessonSettings,
+                          icon: _isSavingLessonSettings
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                                  ),
+                                )
+                              : const Icon(Icons.save_rounded, size: 20),
+                          label: Text(_isSavingLessonSettings ? '저장 중...' : '수업 설정 저장'),
+                          style: FilledButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                            minimumSize: const Size(0, 48),
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.surface,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -453,7 +598,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: OutlinedButton(
                     onPressed: () => _handleLogout(context),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                      minimumSize: const Size(0, 48),
                       side: BorderSide(color: AppColors.error),
                     ),
                     child: Text(

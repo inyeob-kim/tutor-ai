@@ -29,6 +29,10 @@ class TeacherBase(BaseModel):
     total_students: Optional[int] = None
     monthly_income: Optional[int] = None
     notes: Optional[str] = None
+    # 수업 시간 설정 (타임슬롯 제한용)
+    lesson_start_hour: Optional[int] = None
+    lesson_end_hour: Optional[int] = None
+    exclude_weekends: Optional[bool] = None
 
     @field_validator("tax_type", mode="before")
     @classmethod
@@ -70,6 +74,10 @@ class TeacherUpdate(BaseModel):
     total_students: Optional[int] = None
     monthly_income: Optional[int] = None
     notes: Optional[str] = None
+    # 수업 시간 설정 (타임슬롯 제한용)
+    lesson_start_hour: Optional[int] = None
+    lesson_end_hour: Optional[int] = None
+    exclude_weekends: Optional[bool] = None
 
     @field_validator("bank_code", mode="before")
     @classmethod

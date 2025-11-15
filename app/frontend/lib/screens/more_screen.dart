@@ -235,8 +235,9 @@ class _MoreScreenState extends State<MoreScreen> {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: Gaps.screen * 2,
-                            vertical: 12,
+                            vertical: 14,
                           ),
+                          minimumSize: const Size(0, 48),
                           side: BorderSide(color: AppColors.error),
                         ),
                         child: Text(

@@ -485,7 +485,8 @@ class _AddRecurringScheduleScreenState extends State<AddRecurringScheduleScreen>
             FilledButton(
               onPressed: _isLoading ? null : _submit,
               style: FilledButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: Gaps.card),
+                padding: EdgeInsets.symmetric(vertical: 14, horizontal: Gaps.screen * 2),
+                minimumSize: const Size(0, 48),
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(Radii.chip),

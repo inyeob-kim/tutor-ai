@@ -199,9 +199,10 @@ class _StudentsScreenState extends State<StudentsScreen> {
                   label: const Text('비활성화'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
+                    minimumSize: const Size(0, 48),
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
                   ),
@@ -226,9 +227,10 @@ class _StudentsScreenState extends State<StudentsScreen> {
                   label: const Text('학생 추가'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
+                    minimumSize: const Size(0, 48),
                   ),
                 ),
               ),

@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime, date
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import BigInteger, Date, DateTime, Text, String, func, ForeignKey, Index
+from app.backend.db.enums import attendance_status
 
 from app.backend.db.base_class import Base
 class Schedule(Base):
@@ -16,6 +17,7 @@ class Schedule(Base):
     subject_id: Mapped[str] = mapped_column(String(50), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False, server_default="confirmed")
+    attendance_status: Mapped[str | None] = mapped_column(attendance_status, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     cancel_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

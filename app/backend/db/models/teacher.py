@@ -5,6 +5,7 @@ from sqlalchemy import (
     String,
     BigInteger,
     Integer,
+    Boolean,
     Date,
     DateTime,
     Text,
@@ -41,6 +42,10 @@ class Teacher(Base):
     available_time: Mapped[str | None] = mapped_column(String(200), nullable=True)
     vacation_start: Mapped[date | None] = mapped_column(Date, nullable=True)
     vacation_end: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # 수업 시간 설정 (타임슬롯 제한용)
+    lesson_start_hour: Mapped[int | None] = mapped_column(Integer, nullable=True, server_default="12")
+    lesson_end_hour: Mapped[int | None] = mapped_column(Integer, nullable=True, server_default="22")
+    exclude_weekends: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     total_students: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     monthly_income: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)

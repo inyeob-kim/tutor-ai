@@ -188,16 +188,30 @@ class ApiService {
       if (dateTo != null) queryParams['date_to'] = dateTo;
 
       final uri = Uri.parse('$baseUrl/schedules').replace(queryParameters: queryParams);
+      
+      print('📤 스케줄 조회 요청: $uri');
+      print('  - teacherId: $teacherId');
+      print('  - dateFrom: $dateFrom');
+      print('  - dateTo: $dateTo');
+      print('  - status: $status');
+      
       final response = await http.get(uri);
+
+      print('📥 스케줄 조회 응답:');
+      print('  - Status Code: ${response.statusCode}');
+      print('  - Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final items = data['items'] as List;
+        print('✅ 스케줄 조회 성공: ${items.length}개');
         return items.cast<Map<String, dynamic>>();
       } else {
+        print('❌ 스케줄 조회 실패: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to get schedules: ${response.body}');
       }
     } catch (e) {
+      print('❌ 스케줄 조회 에러: $e');
       throw Exception('Error getting schedules: $e');
     }
   }
@@ -207,24 +221,33 @@ class ApiService {
     required int scheduleId,
     String? notes,
     String? status,
+    String? attendanceStatus, // 'present', 'late', 'absent', null
   }) async {
     try {
       final data = <String, dynamic>{};
       if (notes != null) data['notes'] = notes;
       if (status != null) data['status'] = status;
+      if (attendanceStatus != null) data['attendance_status'] = attendanceStatus;
 
+      print('📤 스케줄 업데이트 요청: scheduleId=$scheduleId, attendanceStatus=$attendanceStatus');
+      
       final response = await http.patch(
         Uri.parse('$baseUrl/schedules/$scheduleId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data),
       );
 
+      print('📥 스케줄 업데이트 응답: Status Code=${response.statusCode}');
+
       if (response.statusCode == 200) {
+        print('✅ 스케줄 업데이트 성공');
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
+        print('❌ 스케줄 업데이트 실패: ${response.body}');
         throw Exception('Failed to update schedule: ${response.body}');
       }
     } catch (e) {
+      print('❌ 스케줄 업데이트 에러: $e');
       throw Exception('Error updating schedule: $e');
     }
   }

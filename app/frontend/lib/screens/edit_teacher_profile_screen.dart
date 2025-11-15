@@ -253,8 +253,9 @@ class _EditTeacherProfileScreenState extends State<EditTeacherProfileScreen> {
                   style: FilledButton.styleFrom(
                     padding: EdgeInsets.symmetric(
                       horizontal: Gaps.screen * 2,
-                      vertical: Gaps.card + 4,
+                      vertical: 14,
                     ),
+                    minimumSize: const Size(0, 48),
                     backgroundColor: AppColors.primary,
                   ),
                   child: _isLoading

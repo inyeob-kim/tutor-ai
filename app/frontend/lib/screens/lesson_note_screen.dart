@@ -233,8 +233,9 @@ class _LessonNoteScreenState extends State<LessonNoteScreen> {
                   style: FilledButton.styleFrom(
                     padding: EdgeInsets.symmetric(
                       horizontal: Gaps.screen * 2,
-                      vertical: 12,
+                      vertical: 14,
                     ),
+                    minimumSize: const Size(0, 48),
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.surface,
                   ),

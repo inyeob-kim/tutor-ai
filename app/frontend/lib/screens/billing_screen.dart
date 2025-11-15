@@ -501,9 +501,10 @@ class _BillingScreenState extends State<BillingScreen> {
                   label: const Text('청구 추가'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
+                    minimumSize: const Size(0, 48),
                   ),
                 ),
               ),

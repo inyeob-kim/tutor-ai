@@ -614,8 +614,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                   style: FilledButton.styleFrom(
                     padding: EdgeInsets.symmetric(
                       horizontal: Gaps.screen * 2,
-                      vertical: 12,
+                      vertical: 14,
                     ),
+                    minimumSize: const Size(0, 48),
                     backgroundColor: AppColors.primary,
                   ),
                   child: _isLoading

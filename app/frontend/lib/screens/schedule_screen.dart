@@ -321,12 +321,17 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       final queryDateStr = dateStr == todayStr ? todayStr : dateStr;
 
       // 스케줄 조회 (취소된 수업 제외)
+      print('🔍 수업 목록 로드 시작: queryDateStr=$queryDateStr, teacherId=${teacher.teacherId}');
       final schedules = await ApiService.getSchedules(
         teacherId: teacher.teacherId,
         dateFrom: queryDateStr,
         dateTo: queryDateStr,
         status: 'confirmed', // 취소된 수업 제외
       );
+      print('📋 API에서 받은 스케줄 수: ${schedules.length}개');
+      if (schedules.isNotEmpty) {
+        print('📋 첫 번째 스케줄 샘플: ${schedules.first}');
+      }
 
       // 학생 정보 다시 로드 (스케줄에 학생 이름 표시용)
       if (_studentsMap.isEmpty) {
@@ -334,16 +339,24 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       }
 
       // 수업을 Lesson으로 변환 (취소된 수업 및 비활성화된 학생의 수업 필터링)
+      print('🔄 수업 변환 시작: ${schedules.length}개 스케줄');
+      print('🔄 학생 맵 크기: ${_studentsMap.length}');
       final lessonsList = schedules
           .where((s) {
             // 취소된 수업 제외
             final status = s['status'] as String? ?? 'pending';
-            if (status == 'cancelled') return false;
+            if (status == 'cancelled') {
+              print('  ⏭️ 취소된 수업 제외: schedule_id=${s['schedule_id']}');
+              return false;
+            }
             
             // 비활성화된 학생의 수업 제외
             final studentId = s['student_id'] as int? ?? 0;
             final student = _studentsMap[studentId];
-            if (student != null && !student.isActive) return false;
+            if (student != null && !student.isActive) {
+              print('  ⏭️ 비활성화된 학생의 수업 제외: student_id=$studentId');
+              return false;
+            }
             
             return true;
           })
@@ -355,6 +368,7 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         final endTime = s['end_time'] as String? ?? '00:00';
         final status = s['status'] as String? ?? 'pending';
         final lessonDate = s['lesson_date'] as String? ?? queryDateStr;
+        final attendanceStatusFromApi = s['attendance_status'] as String?; // 'present', 'late', 'absent', null
 
         // 날짜 파싱
         final dateParts = lessonDate.split('-');
@@ -391,13 +405,21 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         // 수업 시간 (분)
         final durationMin = endsAt.difference(startsAt).inMinutes;
 
-        // 출석 상태
+        // 출석 상태 (백엔드의 attendance_status를 프론트엔드 형식으로 변환)
         String? attendance;
-        if (status == 'completed' || status == 'done') {
+        if (attendanceStatusFromApi == 'present') {
+          attendance = 'show';
+        } else if (attendanceStatusFromApi == 'late') {
+          attendance = 'late';
+        } else if (attendanceStatusFromApi == 'absent') {
+          attendance = 'absent';
+        }
+        // attendance_status가 없고 수업이 완료된 경우 기본값은 출석
+        else if (status == 'completed' || status == 'done') {
           attendance = 'show'; // 기본값은 출석
         }
 
-        return Lesson(
+        final lesson = Lesson(
           id: scheduleId.toString(),
           studentId: studentId.toString(),
           startsAt: startsAt,
@@ -406,7 +428,13 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
           status: status == 'completed' || status == 'done' ? 'done' : 'pending',
           attendance: attendance,
         );
+        
+        print('  ✅ 수업 변환: ${lesson.startsAt.hour}:${lesson.startsAt.minute.toString().padLeft(2, '0')} ${lesson.subject} (${lesson.durationMin}분)');
+        
+        return lesson;
       }).toList();
+      
+      print('🔄 수업 변환 완료: ${lessonsList.length}개');
 
       // 캐시에 저장
       _lessonsCache[dateStr] = lessonsList;
@@ -420,6 +448,11 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       }
       
       print('✅ 수업 목록 로드 완료: $dateStr (${lessonsList.length}개)');
+      if (lessonsList.isNotEmpty) {
+        for (final lesson in lessonsList) {
+          print('  - ${lesson.startsAt.hour}:${lesson.startsAt.minute.toString().padLeft(2, '0')} ${lesson.subject} (${lesson.durationMin}분)');
+        }
+      }
     } catch (e) {
       print('⚠️ 수업 목록 로드 실패: $e');
       if (mounted) {
@@ -647,8 +680,9 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
       return _filteredLessons.firstWhere(
         (lesson) {
           // 수업이 해당 시간대에 시작하는지 확인
-          // hour:00 또는 hour:30에 시작하는 수업
-          return lesson.startsAt.hour == hour;
+          // hour:00 ~ hour:59 사이에 시작하는 수업을 찾음
+          final lessonHour = lesson.startsAt.hour;
+          return lessonHour == hour;
         },
       );
     } catch (e) {
@@ -902,20 +936,72 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
     });
   }
 
-  void _setAttendance(String lessonId, String attendance) {
-    setState(() {
+  Future<void> _setAttendance(String lessonId, String attendance) async {
+    try {
+      final scheduleId = int.parse(lessonId);
+      
+      // 같은 버튼을 다시 누르면 null로 설정 (출석 상태 해제)
       final lesson = _lessons.firstWhere((l) => l.id == lessonId);
-      final index = _lessons.indexOf(lesson);
-      _lessons[index] = Lesson(
-        id: lesson.id,
-        studentId: lesson.studentId,
-        startsAt: lesson.startsAt,
-        subject: lesson.subject,
-        durationMin: lesson.durationMin,
-        status: lesson.status,
-        attendance: lesson.attendance == attendance ? null : attendance,
+      final newAttendance = lesson.attendance == attendance ? null : attendance;
+      final newAttendanceStatus = newAttendance == null ? null : (newAttendance == 'show' ? 'present' : newAttendance);
+      
+      // 로컬 상태 먼저 업데이트 (즉시 UI 반영)
+      if (mounted) {
+        setState(() {
+          final index = _lessons.indexOf(lesson);
+          _lessons[index] = Lesson(
+            id: lesson.id,
+            studentId: lesson.studentId,
+            startsAt: lesson.startsAt,
+            subject: lesson.subject,
+            durationMin: lesson.durationMin,
+            status: lesson.status,
+            attendance: newAttendance,
+          );
+        });
+      }
+      
+      // API 호출하여 서버에 저장
+      await ApiService.updateSchedule(
+        scheduleId: scheduleId,
+        attendanceStatus: newAttendanceStatus,
       );
-    });
+      
+      print('✅ 출석 상태 업데이트 완료: scheduleId=$scheduleId, attendanceStatus=$newAttendanceStatus');
+      
+      // 캐시 무효화하여 다음 로드 시 서버 데이터 반영
+      final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+      _lessonsCache.remove(dateStr);
+      
+      // 오늘 날짜의 캐시도 무효화 (홈 화면 동기화를 위해)
+      final today = DateTime.now();
+      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      _lessonsCache.remove(todayStr);
+      
+      // 선택된 날짜가 오늘이면 즉시 새로고침
+      if (dateStr == todayStr) {
+        await _loadLessons(forceRefresh: true);
+      }
+      
+    } catch (e) {
+      print('❌ 출석 상태 업데이트 실패: $e');
+      
+      // 에러 발생 시 원래 상태로 복구
+      if (mounted) {
+        final lesson = _lessons.firstWhere((l) => l.id == lessonId);
+        final index = _lessons.indexOf(lesson);
+        setState(() {
+          _lessons[index] = lesson; // 원래 상태로 복구
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('출석 상태 업데이트 실패: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Student? _findStudent(String studentId) {
@@ -954,14 +1040,19 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         _lessonsCache.remove(todayStr);
         _lessonsCache.remove(selectedDateStr);
         
+        // 즉시 새로고침
+        if (mounted) {
+          _loadLessons(forceRefresh: true);
+        }
+        
         // 목록 새로고침 - 서버 반영 시간 확보를 위해 여러 번 시도
-        Future.delayed(const Duration(milliseconds: 500), () {
+        Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
             _loadLessons(forceRefresh: true);
           }
         });
         // 한 번 더 시도 (서버 동기화 지연 대비)
-        Future.delayed(const Duration(milliseconds: 1000), () {
+        Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted) {
             _loadLessons(forceRefresh: true);
           }
@@ -1124,9 +1215,10 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
                   label: const Text('반복 등록'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
+                    minimumSize: const Size(0, 48),
                   ),
                 ),
               ),
@@ -1910,8 +2002,8 @@ class ScheduleScreenState extends State<ScheduleScreen> with WidgetsBindingObser
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 8,
+            horizontal: 16,
+            vertical: 12,
           ),
           decoration: BoxDecoration(
             color: isSelected

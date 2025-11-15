@@ -6,6 +6,7 @@ from typing import Optional, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 ScheduleStatus = Literal["confirmed", "cancelled", "completed", "no_show"]
+AttendanceStatus = Literal["present", "late", "absent"]
 
 
 class ScheduleBase(BaseModel):
@@ -17,6 +18,7 @@ class ScheduleBase(BaseModel):
     subject_id: str
     notes: Optional[str] = None
     status: ScheduleStatus = "confirmed"
+    attendance_status: Optional[AttendanceStatus] = None
     cancelled_at: Optional[datetime] = None
     cancelled_by: Optional[int] = None
     cancel_reason: Optional[str] = None
@@ -33,6 +35,7 @@ class ScheduleUpdate(BaseModel):
     subject_id: Optional[str] = None
     notes: Optional[str] = None
     status: Optional[ScheduleStatus] = None
+    attendance_status: Optional[AttendanceStatus] = None
     cancelled_at: Optional[datetime] = None
     cancelled_by: Optional[int] = None
     cancel_reason: Optional[str] = None
